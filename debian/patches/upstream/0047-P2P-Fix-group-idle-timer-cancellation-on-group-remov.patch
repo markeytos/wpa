@@ -1,0 +1,47 @@
+From 791e6df3dfb605acda94732eb35214d818c4f68d Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Sun, 19 Feb 2012 18:10:20 +0200
+Subject: [PATCH 47/58] P2P: Fix group idle timer cancellation on group
+ removal
+
+The wpas_p2p_group_idle_timeout was getting cancelled in the beginning
+of wpas_p2p_group_delete(). However, in the case of P2P client role,
+this function called wpa_supplicant_deauthenticate() next and that ended
+up changing state to WPA_DISCONNECTED which resulted in
+wpas_p2p_notif_disconnected() rescheduling the timeout. This left the
+unexpected timeout behind after the group was removed. If another group
+operation was started within P2P_MAX_CLIENT_IDLE (10) seconds, that
+timeout could end up terminating the group while it was still being set
+up.
+
+Fix this by reordering wpas_p2p_group_delete() to cancel the group idle
+timeout only after having called wpa_supplicant_deauthenticate(). The
+group idle timeout is still rescheduled, but it gets removed immediately
+afterwards when the actual group information is being cleared.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit a7a30b90e59e7c9f9db5ec5db6190a0fba4fc37e)
+---
+ wpa_supplicant/p2p_supplicant.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -219,8 +219,6 @@ static void wpas_p2p_group_delete(struct
+ 	char *gtype;
+ 	const char *reason;
+ 
+-	eloop_cancel_timeout(wpas_p2p_group_idle_timeout, wpa_s, NULL);
+-
+ 	ssid = wpa_s->current_ssid;
+ 	if (ssid == NULL) {
+ 		/*
+@@ -270,6 +268,8 @@ static void wpas_p2p_group_delete(struct
+ 	wpa_msg(wpa_s->parent, MSG_INFO, P2P_EVENT_GROUP_REMOVED "%s %s%s",
+ 		wpa_s->ifname, gtype, reason);
+ 
++	eloop_cancel_timeout(wpas_p2p_group_idle_timeout, wpa_s, NULL);
++
+ 	if (ssid)
+ 		wpas_notify_p2p_group_removed(wpa_s, ssid, gtype);
+ 

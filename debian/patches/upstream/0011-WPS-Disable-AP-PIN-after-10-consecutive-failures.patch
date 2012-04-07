@@ -1,0 +1,161 @@
+From 17b627e29b9f718a074781efc77323f38b52ab36 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Mon, 30 Jan 2012 17:31:06 +0200
+Subject: [PATCH 11/58] WPS: Disable AP PIN after 10 consecutive failures
+
+While the exponential increase in the lockout period provides an
+efficient mitigation mechanism against brute force attacks, this
+additional trigger to enter indefinite lockout period (cleared by
+restarting hostapd) will limit attacks even further by giving maximum of
+10 attempts (without authorized user action) even in a very long term
+attack.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit 32cdcf15b2d6716d6d348262e4870b3d64289926)
+---
+ src/ap/hostapd.h                |    1 +
+ src/ap/wps_hostapd.c            |   45 ++++++++++++++++++++++++++++++++++++---
+ src/wps/wps.h                   |    7 +++++-
+ src/wps/wps_enrollee.c          |    4 ++++
+ wpa_supplicant/wps_supplicant.c |    2 ++
+ 5 files changed, 55 insertions(+), 4 deletions(-)
+
+--- a/src/ap/hostapd.h
++++ b/src/ap/hostapd.h
+@@ -124,6 +124,7 @@ struct hostapd_data {
+ 	struct wpabuf *wps_probe_resp_ie;
+ #ifdef CONFIG_WPS
+ 	unsigned int ap_pin_failures;
++	unsigned int ap_pin_failures_consecutive;
+ 	struct upnp_wps_device_sm *wps_upnp;
+ 	unsigned int ap_pin_lockout_time;
+ #endif /* CONFIG_WPS */
+--- a/src/ap/wps_hostapd.c
++++ b/src/ap/wps_hostapd.c
+@@ -512,6 +512,8 @@ static void hostapd_wps_reenable_ap_pin(
+ 
+ 	if (hapd->conf->ap_setup_locked)
+ 		return;
++	if (hapd->ap_pin_failures_consecutive >= 10)
++		return;
+ 
+ 	wpa_printf(MSG_DEBUG, "WPS: Re-enable AP PIN");
+ 	wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_AP_SETUP_UNLOCKED);
+@@ -533,8 +535,10 @@ static int wps_pwd_auth_fail(struct host
+ 	 * force attacks.
+ 	 */
+ 	hapd->ap_pin_failures++;
+-	wpa_printf(MSG_DEBUG, "WPS: AP PIN authentication failure number %u",
+-		   hapd->ap_pin_failures);
++	hapd->ap_pin_failures_consecutive++;
++	wpa_printf(MSG_DEBUG, "WPS: AP PIN authentication failure number %u "
++		   "(%u consecutive)",
++		   hapd->ap_pin_failures, hapd->ap_pin_failures_consecutive);
+ 	if (hapd->ap_pin_failures < 3)
+ 		return 0;
+ 
+@@ -543,7 +547,15 @@ static int wps_pwd_auth_fail(struct host
+ 
+ 	wps_registrar_update_ie(hapd->wps->registrar);
+ 
+-	if (!hapd->conf->ap_setup_locked) {
++	if (!hapd->conf->ap_setup_locked &&
++	    hapd->ap_pin_failures_consecutive >= 10) {
++		/*
++		 * In indefinite lockdown - disable automatic AP PIN
++		 * reenablement.
++		 */
++		eloop_cancel_timeout(hostapd_wps_reenable_ap_pin, hapd, NULL);
++		wpa_printf(MSG_DEBUG, "WPS: AP PIN disabled indefinitely");
++	} else if (!hapd->conf->ap_setup_locked) {
+ 		if (hapd->ap_pin_lockout_time == 0)
+ 			hapd->ap_pin_lockout_time = 60;
+ 		else if (hapd->ap_pin_lockout_time < 365 * 24 * 60 * 60 &&
+@@ -569,6 +581,29 @@ static void hostapd_pwd_auth_fail(struct
+ }
+ 
+ 
++static int wps_ap_pin_success(struct hostapd_data *hapd, void *ctx)
++{
++	if (hapd->conf->ap_pin == NULL || hapd->wps == NULL)
++		return 0;
++
++	if (hapd->ap_pin_failures_consecutive == 0)
++		return 0;
++
++	wpa_printf(MSG_DEBUG, "WPS: Clear consecutive AP PIN failure counter "
++		   "- total validation failures %u (%u consecutive)",
++		   hapd->ap_pin_failures, hapd->ap_pin_failures_consecutive);
++	hapd->ap_pin_failures_consecutive = 0;
++
++	return 0;
++}
++
++
++static void hostapd_wps_ap_pin_success(struct hostapd_data *hapd)
++{
++	hostapd_wps_for_each(hapd, wps_ap_pin_success, NULL);
++}
++
++
+ static const char * wps_event_fail_reason[NUM_WPS_EI_VALUES] = {
+ 	"No Error", /* WPS_EI_NO_ERROR */
+ 	"TKIP Only Prohibited", /* WPS_EI_SECURITY_TKIP_ONLY_PROHIBITED */
+@@ -628,6 +663,9 @@ static void hostapd_wps_event_cb(void *c
+ 		break;
+ 	case WPS_EV_ER_SET_SELECTED_REGISTRAR:
+ 		break;
++	case WPS_EV_AP_PIN_SUCCESS:
++		hostapd_wps_ap_pin_success(hapd);
++		break;
+ 	}
+ 	if (hapd->wps_event_cb)
+ 		hapd->wps_event_cb(hapd->wps_event_cb_ctx, event, data);
+@@ -1287,6 +1325,7 @@ static void hostapd_wps_ap_pin_enable(st
+ {
+ 	wpa_printf(MSG_DEBUG, "WPS: Enabling AP PIN (timeout=%d)", timeout);
+ 	hapd->ap_pin_failures = 0;
++	hapd->ap_pin_failures_consecutive = 0;
+ 	hapd->conf->ap_setup_locked = 0;
+ 	if (hapd->wps->ap_setup_locked) {
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_AP_SETUP_UNLOCKED);
+--- a/src/wps/wps.h
++++ b/src/wps/wps.h
+@@ -457,7 +457,12 @@ enum wps_event {
+ 	/**
+ 	 * WPS_EV_ER_SET_SELECTED_REGISTRAR - ER: SetSelectedRegistrar event
+ 	 */
+-	WPS_EV_ER_SET_SELECTED_REGISTRAR
++	WPS_EV_ER_SET_SELECTED_REGISTRAR,
++
++	/**
++	 * WPS_EV_AP_PIN_SUCCESS - External Registrar used correct AP PIN
++	 */
++	WPS_EV_AP_PIN_SUCCESS
+ };
+ 
+ /**
+--- a/src/wps/wps_enrollee.c
++++ b/src/wps/wps_enrollee.c
+@@ -1064,6 +1064,10 @@ static enum wps_process_res wps_process_
+ 	}
+ 	wpabuf_free(decrypted);
+ 
++	if (wps->wps->ap)
++		wps->wps->event_cb(wps->wps->cb_ctx, WPS_EV_AP_PIN_SUCCESS,
++				   NULL);
++
+ 	wps->state = SEND_M7;
+ 	return WPS_CONTINUE;
+ }
+--- a/wpa_supplicant/wps_supplicant.c
++++ b/wpa_supplicant/wps_supplicant.c
+@@ -663,6 +663,8 @@ static void wpa_supplicant_wps_event(voi
+ 		wpa_supplicant_wps_event_er_set_sel_reg(wpa_s,
+ 							&data->set_sel_reg);
+ 		break;
++	case WPS_EV_AP_PIN_SUCCESS:
++		break;
+ 	}
+ }
+ 

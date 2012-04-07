@@ -1,0 +1,26 @@
+From 1d931b280127317a8b3513d380f772867eda0ca9 Mon Sep 17 00:00:00 2001
+From: Angie Chinchilla <angie.v.chinchilla@intel.com>
+Date: Tue, 21 Feb 2012 13:29:38 -0800
+Subject: [PATCH 35/58] Revert "nl80211: Fix CONFIG_TDLS=y build"
+
+This reverts commit f75709d115185c4162e29ab73c0a9420e43d3893.
+This should not have picked up due to missing dependent code in
+other patches that were not picked up in hostap-1.
+
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-hostap: Angie Chinchilla <angie.v.chinchilla@intel.com>
+---
+ src/drivers/driver_nl80211.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -2465,7 +2465,7 @@ static int nl80211_register_action_frame
+ #ifdef CONFIG_TDLS
+ 	if ((drv->capa.flags & WPA_DRIVER_FLAGS_TDLS_SUPPORT)) {
+ 		/* TDLS Discovery Response */
+-		if (nl80211_register_action_frame(bss, (u8 *) "\x04\x0e", 2) <
++		if (nl80211_register_action_frame(drv, (u8 *) "\x04\x0e", 2) <
+ 		    0)
+ 			return -1;
+ 	}

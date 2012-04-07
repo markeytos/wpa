@@ -1,0 +1,54 @@
+From f7356eced71a1884b510f8da642928f20fa3543d Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <j@w1.fi>
+Date: Sun, 5 Feb 2012 20:20:36 +0200
+Subject: [PATCH 19/58] P2P: Skip event notification on PD Response in
+ join-group case
+
+Provision Discovery is used as a notification to the GO in the case we
+are about join a running group. In such case, there is not much point in
+indicating the provision discovery response events to external programs
+especially when the PIN-to-be-displayed was different from the one
+returned for the p2p_connect command. Skip this confusing event
+completely for join-a-running-group case.
+
+Signed-hostap: Jouni Malinen <j@w1.fi>
+(cherry picked from commit c19316354ed46e688704c1ebcf1c7efe816ddf31)
+---
+ wpa_supplicant/p2p_supplicant.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -1759,6 +1759,16 @@ void wpas_prov_disc_resp(void *ctx, cons
+ 	struct wpa_supplicant *wpa_s = ctx;
+ 	unsigned int generated_pin = 0;
+ 
++	if (wpa_s->pending_pd_before_join &&
++	    (os_memcmp(peer, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0 ||
++	     os_memcmp(peer, wpa_s->pending_join_iface_addr, ETH_ALEN) == 0)) {
++		wpa_s->pending_pd_before_join = 0;
++		wpa_printf(MSG_DEBUG, "P2P: Starting pending "
++			   "join-existing-group operation");
++		wpas_p2p_join_start(wpa_s);
++		return;
++	}
++
+ 	if (config_methods & WPS_CONFIG_DISPLAY)
+ 		wpas_prov_disc_local_keypad(wpa_s, peer, "");
+ 	else if (config_methods & WPS_CONFIG_KEYPAD) {
+@@ -1771,15 +1781,6 @@ void wpas_prov_disc_resp(void *ctx, cons
+ 	wpas_notify_p2p_provision_discovery(wpa_s, peer, 0 /* response */,
+ 					    P2P_PROV_DISC_SUCCESS,
+ 					    config_methods, generated_pin);
+-
+-	if (wpa_s->pending_pd_before_join &&
+-	    (os_memcmp(peer, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0 ||
+-	     os_memcmp(peer, wpa_s->pending_join_iface_addr, ETH_ALEN) == 0)) {
+-		wpa_s->pending_pd_before_join = 0;
+-		wpa_printf(MSG_DEBUG, "P2P: Starting pending "
+-			   "join-existing-group operation");
+-		wpas_p2p_join_start(wpa_s);
+-	}
+ }
+ 
+ 

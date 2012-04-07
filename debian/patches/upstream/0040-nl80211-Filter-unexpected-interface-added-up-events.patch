@@ -1,0 +1,67 @@
+From f84a6203700c2600f60819ad6aad678e042d1c04 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <j@w1.fi>
+Date: Sat, 18 Feb 2012 13:13:23 +0200
+Subject: [PATCH 40/58] nl80211: Filter unexpected interface added/up events
+
+It looks like a RTM_NEWLINK event claiming the interface to be UP is
+delivered just before removing an interface after having first indicated
+that the interface was going down/removed. Ignore this event if the
+interface is not present anymore at the moment the event is processed.
+This fixes issues where an interface that was re-added after being
+removed did not get reconfigured properly.
+
+Signed-hostap: Jouni Malinen <j@w1.fi>
+intended-for: hostap-1
+(cherry picked from commit d1f4942ba18a303d275bbd955161674939d1d902)
+---
+ src/drivers/driver_nl80211.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -516,10 +516,28 @@ static void wpa_driver_nl80211_event_lin
+ 		   del ? "removed" : "added");
+ 
+ 	if (os_strcmp(drv->first_bss.ifname, event.interface_status.ifname) == 0) {
+-		if (del)
++		if (del) {
++			if (drv->if_removed) {
++				wpa_printf(MSG_DEBUG, "nl80211: if_removed "
++					   "already set - ignore event");
++				return;
++			}
+ 			drv->if_removed = 1;
+-		else
++		} else {
++			if (if_nametoindex(drv->first_bss.ifname) == 0) {
++				wpa_printf(MSG_DEBUG, "nl80211: Interface %s "
++					   "does not exist - ignore "
++					   "RTM_NEWLINK",
++					   drv->first_bss.ifname);
++				return;
++			}
++			if (!drv->if_removed) {
++				wpa_printf(MSG_DEBUG, "nl80211: if_removed "
++					   "already cleared - ignore event");
++				return;
++			}
+ 			drv->if_removed = 0;
++		}
+ 	}
+ 
+ 	wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_STATUS, &event);
+@@ -636,6 +654,14 @@ static void wpa_driver_nl80211_event_rtm
+ 			wpa_printf(MSG_DEBUG, "nl80211: Ignore interface up "
+ 				   "event since interface %s is down",
+ 				   namebuf);
++		} else if (if_nametoindex(drv->first_bss.ifname) == 0) {
++			wpa_printf(MSG_DEBUG, "nl80211: Ignore interface up "
++				   "event since interface %s does not exist",
++				   drv->first_bss.ifname);
++		} else if (drv->if_removed) {
++			wpa_printf(MSG_DEBUG, "nl80211: Ignore interface up "
++				   "event since interface %s is marked "
++				   "removed", drv->first_bss.ifname);
+ 		} else {
+ 			wpa_printf(MSG_DEBUG, "nl80211: Interface up");
+ 			drv->if_disabled = 0;

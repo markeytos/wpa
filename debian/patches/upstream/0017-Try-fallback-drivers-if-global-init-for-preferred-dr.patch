@@ -1,0 +1,41 @@
+From ba53656e8224cac7bd824673f785f66812460afa Mon Sep 17 00:00:00 2001
+From: Dan Williams <dcbw@redhat.com>
+Date: Sat, 4 Feb 2012 20:09:00 +0200
+Subject: [PATCH 17/58] Try fallback drivers if global init for preferred
+ drivers fails
+
+Driver global init was considered a hard failure. Thus if, for example,
+you used the Broadcom STA driver and didn't have nl80211 or cfg80211
+loaded into the kernel, and specified a driver value of "nl80211,wext",
+the nl80211 driver's global init would fail with the following message:
+
+nl80211: 'nl80211' generic netlink not found
+Failed to initialize driver 'nl80211'
+
+but since global init was a hard failure, creating the supplicant
+interface would fail and the WEXT driver would not be tried.
+Give other drivers a chance instead.
+
+Signed-hostap: Dan Williams <dcbw@redhat.com>
+intended-for: hostap-1
+(cherry picked from commit 0f4668ceac37e2c98ce6068bd255d0915974a706)
+---
+ wpa_supplicant/wpa_supplicant.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -1944,8 +1944,11 @@ static int wpa_supplicant_set_driver(str
+ 		for (i = 0; wpa_drivers[i]; i++) {
+ 			if (os_strlen(wpa_drivers[i]->name) == len &&
+ 			    os_strncmp(driver, wpa_drivers[i]->name, len) ==
+-			    0)
+-				return select_driver(wpa_s, i);
++			    0) {
++				/* First driver that succeeds wins */
++				if (select_driver(wpa_s, i) == 0)
++					return 0;
++			}
+ 		}
+ 
+ 		driver = pos + 1;

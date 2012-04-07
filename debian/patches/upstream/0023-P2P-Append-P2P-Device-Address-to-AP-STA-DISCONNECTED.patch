@@ -1,0 +1,76 @@
+From b05861bbd526830f586cc8e86dc2ab5e8651db04 Mon Sep 17 00:00:00 2001
+From: Jithu Jance <jithu@broadcom.com>
+Date: Sat, 10 Dec 2011 12:26:00 +0200
+Subject: [PATCH 23/58] P2P: Append P2P Device Address to AP-STA-DISCONNECTED
+ event
+
+Append "p2p_dev_addr" parameter to AP-STA-DISCONNECTED event for P2P
+connections. In addition, for AP-STA-CONNECTED event during P2P
+connection, the "dev_addr=" print is replaced with "p2p_dev_addr=" to
+be more consistent with other events.
+
+Signed-hostap: Jithu Jance <jithu@broadcom.com>
+(cherry picked from commit 10cc6c883e1ecf4b6f4c6fc9430ff09ab227bafc)
+---
+ src/ap/sta_info.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
+
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -777,17 +777,18 @@ void ap_sta_stop_sa_query(struct hostapd
+ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 			   int authorized)
+ {
++	const u8 *dev_addr = NULL;
+ 	if (!!authorized == !!(sta->flags & WLAN_STA_AUTHORIZED))
+ 		return;
+ 
+-	if (authorized) {
+-		const u8 *dev_addr = NULL;
+ #ifdef CONFIG_P2P
+-		dev_addr = p2p_group_get_dev_addr(hapd->p2p_group, sta->addr);
++	dev_addr = p2p_group_get_dev_addr(hapd->p2p_group, sta->addr);
+ #endif /* CONFIG_P2P */
++
++	if (authorized) {
+ 		if (dev_addr)
+ 			wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED
+-				MACSTR " dev_addr=" MACSTR,
++				MACSTR " p2p_dev_addr=" MACSTR,
+ 				MAC2STR(sta->addr), MAC2STR(dev_addr));
+ 		else
+ 			wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED
+@@ -795,7 +796,8 @@ void ap_sta_set_authorized(struct hostap
+ 		if (hapd->msg_ctx_parent &&
+ 		    hapd->msg_ctx_parent != hapd->msg_ctx && dev_addr)
+ 			wpa_msg(hapd->msg_ctx_parent, MSG_INFO,
+-				AP_STA_CONNECTED MACSTR " dev_addr=" MACSTR,
++				AP_STA_CONNECTED MACSTR " p2p_dev_addr="
++				MACSTR,
+ 				MAC2STR(sta->addr), MAC2STR(dev_addr));
+ 		else if (hapd->msg_ctx_parent &&
+ 			 hapd->msg_ctx_parent != hapd->msg_ctx)
+@@ -804,10 +806,20 @@ void ap_sta_set_authorized(struct hostap
+ 
+ 		sta->flags |= WLAN_STA_AUTHORIZED;
+ 	} else {
+-		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED MACSTR,
+-			MAC2STR(sta->addr));
++		if (dev_addr)
++			wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED
++				MACSTR " p2p_dev_addr=" MACSTR,
++				MAC2STR(sta->addr), MAC2STR(dev_addr));
++		else
++			wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED
++				MACSTR, MAC2STR(sta->addr));
+ 		if (hapd->msg_ctx_parent &&
+-		    hapd->msg_ctx_parent != hapd->msg_ctx)
++		    hapd->msg_ctx_parent != hapd->msg_ctx && dev_addr)
++			wpa_msg(hapd->msg_ctx_parent, MSG_INFO,
++				AP_STA_DISCONNECTED MACSTR " p2p_dev_addr="
++				MACSTR, MAC2STR(sta->addr), MAC2STR(dev_addr));
++		else if (hapd->msg_ctx_parent &&
++			 hapd->msg_ctx_parent != hapd->msg_ctx)
+ 			wpa_msg(hapd->msg_ctx_parent, MSG_INFO,
+ 				AP_STA_DISCONNECTED MACSTR,
+ 				MAC2STR(sta->addr));

@@ -1,0 +1,104 @@
+From b9ec7f810c93418171e370ed30b453a45b0dcde7 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Thu, 1 Mar 2012 22:06:03 +0200
+Subject: [PATCH 50/58] P2P: Fix provisioning info clearing after successful
+ WPS step
+
+Previously, this provisioning info was cleared using the P2P Interface
+Address of the GO as the key. That did not always work in the case the
+where we joined an already running group. This could result in the next
+connection to that same GO skipping provision discovery. Fix this by
+finding the peer entry based on its P2P Device Address instead of the
+P2P Interface Address which may not always be set.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+intended-for: hostap-1
+(cherry picked from commit 10531d216686119fe1b6ce1e3751d5a4c2f70f43)
+---
+ src/p2p/p2p.c                   |    6 +++---
+ src/p2p/p2p.h                   |    4 ++--
+ wpa_supplicant/p2p_supplicant.c |   16 ++++++++++++----
+ 3 files changed, 17 insertions(+), 9 deletions(-)
+
+--- a/src/p2p/p2p.c
++++ b/src/p2p/p2p.c
+@@ -157,14 +157,14 @@ u16 p2p_get_provisioning_info(struct p2p
+ }
+ 
+ 
+-void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *iface_addr)
++void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr)
+ {
+ 	struct p2p_device *dev = NULL;
+ 
+-	if (!iface_addr || !p2p)
++	if (!addr || !p2p)
+ 		return;
+ 
+-	dev = p2p_get_device_interface(p2p, iface_addr);
++	dev = p2p_get_device(p2p, addr);
+ 	if (dev)
+ 		dev->wps_prov_info = 0;
+ }
+--- a/src/p2p/p2p.h
++++ b/src/p2p/p2p.h
+@@ -1066,12 +1066,12 @@ u16 p2p_get_provisioning_info(struct p2p
+ /**
+  * p2p_clear_provisioning_info - Clear any stored provisioning info
+  * @p2p: P2P module context from p2p_init()
+- * @iface_addr: Peer P2P Interface Address
++ * @iface_addr: Peer P2P Device Address
+  *
+  * This function is used to clear stored WPS provisioning info for the given
+  * peer.
+  */
+-void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *iface_addr);
++void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr);
+ 
+ 
+ /* Event notifications from lower layer driver operations */
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -2403,7 +2403,7 @@ void wpas_p2p_deinit(struct wpa_supplica
+ 		/* Clear any stored provisioning info */
+ 		p2p_clear_provisioning_info(
+ 			wpa_s->global->p2p,
+-			wpa_s->go_params->peer_interface_addr);
++			wpa_s->go_params->peer_device_addr);
+ 	}
+ 
+ 	os_free(wpa_s->go_params);
+@@ -3428,14 +3428,22 @@ struct p2p_group * wpas_p2p_group_init(s
+ void wpas_p2p_wps_success(struct wpa_supplicant *wpa_s, const u8 *peer_addr,
+ 			  int registrar)
+ {
++	struct wpa_ssid *ssid = wpa_s->current_ssid;
++
+ 	if (!wpa_s->p2p_in_provisioning) {
+ 		wpa_printf(MSG_DEBUG, "P2P: Ignore WPS success event - P2P "
+ 			   "provisioning not in progress");
+ 		return;
+ 	}
+ 
+-	/* Clear any stored provisioning info */
+-	p2p_clear_provisioning_info(wpa_s->global->p2p, peer_addr);
++	if (ssid && ssid->mode == WPAS_MODE_INFRA) {
++		u8 go_dev_addr[ETH_ALEN];
++		os_memcpy(go_dev_addr, wpa_s->bssid, ETH_ALEN);
++		wpas_p2p_persistent_group(wpa_s, go_dev_addr, ssid->ssid,
++					  ssid->ssid_len);
++		/* Clear any stored provisioning info */
++		p2p_clear_provisioning_info(wpa_s->global->p2p, go_dev_addr);
++	}
+ 
+ 	eloop_cancel_timeout(wpas_p2p_group_formation_timeout, wpa_s->parent,
+ 			     NULL);
+@@ -3459,7 +3467,7 @@ void wpas_p2p_wps_failed(struct wpa_supp
+ 	if (wpa_s->go_params) {
+ 		p2p_clear_provisioning_info(
+ 			wpa_s->global->p2p,
+-			wpa_s->go_params->peer_interface_addr);
++			wpa_s->go_params->peer_device_addr);
+ 	}
+ 
+ 	wpas_notify_p2p_wps_failed(wpa_s, fail);

@@ -1,0 +1,45 @@
+From 4a7f260a0d2b9c9e9033063cdaa437866aedd7dd Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <j@w1.fi>
+Date: Sun, 12 Feb 2012 13:54:15 +0200
+Subject: [PATCH 32/58] WPS: Fix regression in post-WPS scan optimization
+
+Commit 3c85f144ce7aa3967f881a7584a5b125061ca436 fixed issues with P2P
+Action frame TX after disconnection by clearing wpa_s->assoc_freq.
+This resulted in a regression to the post-WPS scan optimization that
+used wpa_s->assoc_freq to enable fast single-channel scan. Fix this by
+copying wpa_s->assoc_freq to a local variable before calling
+wpa_supplicant_deauthenticate() that ends up calling
+wpa_supplicant_mark_disassoc() which will clear assoc_freq.
+
+Reported-by: Angie Chinchilla <angie.v.chinchilla@intel.com>
+intended-for: hostap-1
+Signed-hostap: Jouni Malinen <j@w1.fi>
+
+(manually fixed cherry pick from commit a565c23bf3783f95f67107551404093c28d371c0)
+---
+ wpa_supplicant/wps_supplicant.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/wpa_supplicant/wps_supplicant.c
++++ b/wpa_supplicant/wps_supplicant.c
+@@ -77,8 +77,10 @@ int wpas_wps_eapol_cb(struct wpa_supplic
+ 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_WPS && wpa_s->current_ssid &&
+ 	    !(wpa_s->current_ssid->key_mgmt & WPA_KEY_MGMT_WPS)) {
+ 		int disabled = wpa_s->current_ssid->disabled;
++		unsigned int freq = wpa_s->assoc_freq;
+ 		wpa_printf(MSG_DEBUG, "WPS: Network configuration replaced - "
+-			   "try to associate with the received credential");
++			   "try to associate with the received credential "
++			   "(freq=%u)", freq);
+ 		wpa_supplicant_deauthenticate(wpa_s,
+ 					      WLAN_REASON_DEAUTH_LEAVING);
+ 		if (disabled) {
+@@ -87,7 +89,7 @@ int wpas_wps_eapol_cb(struct wpa_supplic
+ 			return 1;
+ 		}
+ 		wpa_s->after_wps = 5;
+-		wpa_s->wps_freq = wpa_s->assoc_freq;
++		wpa_s->wps_freq = freq;
+ 		wpa_s->reassociate = 1;
+ 		wpa_supplicant_req_scan(wpa_s, 0, 0);
+ 		return 1;

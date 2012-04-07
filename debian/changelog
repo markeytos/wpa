@@ -1,6 +1,9 @@
 wpa (1.0~rc2-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * import new upstream snapshot 1.0-rc2:
+    - import git patches up to hostap_0_7_2-1504-g03de63c.
+    - temporarily disable conflicting patches.
   * merge source packages for hostapd and wpasupplicant under the new name
     "wpa", which is also used by upstream.
   * restrict wpasupplicant to linux-any and kfreebsd-any, hurd lacks kernel
@@ -9,7 +12,7 @@ wpa (1.0~rc2-1) UNRELEASED; urgency=low
   * update dep-5 version to final 1.0, no changes necessary:
     - order licenses alphabetically.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 01:00:36 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 01:06:52 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

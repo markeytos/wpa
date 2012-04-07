@@ -1,0 +1,35 @@
+From 22d947a783670d30e523d07e6470e840c6541bc0 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Wed, 25 Jan 2012 22:32:58 +0200
+Subject: [PATCH 01/58] Fix ap_sta_disconnect() to clear EAPOL/WPA
+ authenticator state
+
+Number of places in hostapd use ap_sta_disconnect() instead of
+ap_sta_disassociate() or ap_sta_deauthenticate(). There are some
+differences between these functions, e.g., in the area how quickly
+the EAPOL state machines get deinitialized. This can result in
+somewhat unexpected events since the EAPOL/WPA authenticator
+state machines could remain running after deauthentication.
+
+Address this by forcing EAPOL/WPA authenticator state machines
+to disabled state whenever ap_sta_disconnect() is called instead
+of waiting for the deauthentication callback or other timeout
+to clear the STA.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit ceb997f394773075c292e81c69cdd24717e7d1d5)
+---
+ src/ap/sta_info.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -806,6 +806,8 @@ void ap_sta_disconnect(struct hostapd_da
+ 	if (sta == NULL)
+ 		return;
+ 	ap_sta_set_authorized(hapd, sta, 0);
++	wpa_auth_sm_event(sta->wpa_sm, WPA_DEAUTH);
++	ieee802_1x_notify_port_enabled(sta->eapol_sm, 0);
+ 	sta->flags &= ~(WLAN_STA_AUTH | WLAN_STA_ASSOC);
+ 	eloop_cancel_timeout(ap_handle_timer, hapd, sta);
+ 	eloop_register_timeout(AP_MAX_INACTIVITY_AFTER_DEAUTH, 0,

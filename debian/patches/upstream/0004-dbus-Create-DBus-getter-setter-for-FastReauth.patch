@@ -1,0 +1,104 @@
+From 5045a668201f1027dbcc91bd8d092bbcee15a2e3 Mon Sep 17 00:00:00 2001
+From: Paul Stewart <pstew@chromium.org>
+Date: Sat, 28 Jan 2012 11:21:37 +0200
+Subject: [PATCH 04/58] dbus: Create DBus getter/setter for FastReauth
+
+Provide a means over DBus to set the conf->fast_reauth
+property, which controls whether TLS session resumption
+should be attempted for EAP-TLS 802.1X networks.
+
+Signed-off-by: Paul Stewart <pstew@chromium.org>
+(cherry picked from commit a4bbb6066d044c5fcac4e291349538ad3a46e164)
+---
+ wpa_supplicant/dbus/dbus_new.c          |    4 +++
+ wpa_supplicant/dbus/dbus_new_handlers.c |   48 +++++++++++++++++++++++++++++++
+ wpa_supplicant/dbus/dbus_new_handlers.h |    8 ++++++
+ 3 files changed, 60 insertions(+)
+
+--- a/wpa_supplicant/dbus/dbus_new.c
++++ b/wpa_supplicant/dbus/dbus_new.c
+@@ -2556,6 +2556,10 @@ static const struct wpa_dbus_property_de
+ 	  wpas_dbus_getter_networks,
+ 	  NULL
+ 	},
++	{ "FastReauth", WPAS_DBUS_NEW_IFACE_INTERFACE, "b",
++	  wpas_dbus_getter_fast_reauth,
++	  wpas_dbus_setter_fast_reauth
++	},
+ #ifdef CONFIG_WPS
+ 	{ "ProcessCredentials", WPAS_DBUS_NEW_IFACE_WPS, "b",
+ 	  wpas_dbus_getter_process_credentials,
+--- a/wpa_supplicant/dbus/dbus_new_handlers.c
++++ b/wpa_supplicant/dbus/dbus_new_handlers.c
+@@ -2182,6 +2182,54 @@ dbus_bool_t wpas_dbus_setter_ap_scan(DBu
+ 
+ 
+ /**
++ * wpas_dbus_getter_fast_reauth - Control fast
++ * reauthentication (TLS session resumption)
++ * @iter: Pointer to incoming dbus message iter
++ * @error: Location to store error on failure
++ * @user_data: Function specific data
++ * Returns: TRUE on success, FALSE on failure
++ *
++ * Getter function for "FastReauth" property.
++ */
++dbus_bool_t wpas_dbus_getter_fast_reauth(DBusMessageIter *iter,
++					 DBusError *error,
++					 void *user_data)
++{
++	struct wpa_supplicant *wpa_s = user_data;
++	dbus_bool_t fast_reauth = wpa_s->conf->fast_reauth ? TRUE : FALSE;
++
++	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_BOOLEAN,
++						&fast_reauth, error);
++}
++
++
++/**
++ * wpas_dbus_setter_fast_reauth - Control fast
++ * reauthentication (TLS session resumption)
++ * @iter: Pointer to incoming dbus message iter
++ * @error: Location to store error on failure
++ * @user_data: Function specific data
++ * Returns: TRUE on success, FALSE on failure
++ *
++ * Setter function for "FastReauth" property.
++ */
++dbus_bool_t wpas_dbus_setter_fast_reauth(DBusMessageIter *iter,
++				     DBusError *error,
++				     void *user_data)
++{
++	struct wpa_supplicant *wpa_s = user_data;
++	dbus_bool_t fast_reauth;
++
++	if (!wpas_dbus_simple_property_setter(iter, error, DBUS_TYPE_BOOLEAN,
++					      &fast_reauth))
++		return FALSE;
++
++	wpa_s->conf->fast_reauth = fast_reauth;
++	return TRUE;
++}
++
++
++/**
+  * wpas_dbus_getter_bss_expire_age - Get BSS entry expiration age
+  * @iter: Pointer to incoming dbus message iter
+  * @error: Location to store error on failure
+--- a/wpa_supplicant/dbus/dbus_new_handlers.h
++++ b/wpa_supplicant/dbus/dbus_new_handlers.h
+@@ -133,6 +133,14 @@ dbus_bool_t wpas_dbus_getter_ap_scan(DBu
+ dbus_bool_t wpas_dbus_setter_ap_scan(DBusMessageIter *iter, DBusError *error,
+ 				     void *user_data);
+ 
++dbus_bool_t wpas_dbus_getter_fast_reauth(DBusMessageIter *iter,
++					 DBusError *error,
++					 void *user_data);
++
++dbus_bool_t wpas_dbus_setter_fast_reauth(DBusMessageIter *iter,
++					 DBusError *error,
++					 void *user_data);
++
+ dbus_bool_t wpas_dbus_getter_bss_expire_age(DBusMessageIter *iter,
+ 					    DBusError *error, void *user_data);
+ 

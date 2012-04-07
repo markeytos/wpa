@@ -1,0 +1,76 @@
+From cb57320c7ffdc1115e06b28e1028c9ec382b3e19 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Fri, 27 Jan 2012 22:32:15 +0200
+Subject: [PATCH 03/58] WPS: Fix an interoperability issue with mixed mode and
+ AP Settings
+
+It looks like Windows 7 WPS implementation does not like multiple
+Authentication/Encryption Type bits to be set in M7 AP Settings
+attributes, i.e., it refused to add a network profile if the AP
+was configured for WPA/WPA2 mixed mode and AP PIN was used to
+enroll the network.
+
+Leave only a single bit set in the Authentication/Encryption Type
+attributes in M7 when the AP is acting as an Enrollee to avoid this
+issue.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit ce7b56afab8e6065e886b9471fa8071c8d2bd66b)
+---
+ src/wps/wps_enrollee.c |   35 +++++++++++++++++++++++++++++++----
+ 1 file changed, 31 insertions(+), 4 deletions(-)
+
+--- a/src/wps/wps_enrollee.c
++++ b/src/wps/wps_enrollee.c
+@@ -257,20 +257,47 @@ static int wps_build_cred_ssid(struct wp
+ 
+ static int wps_build_cred_auth_type(struct wps_data *wps, struct wpabuf *msg)
+ {
+-	wpa_printf(MSG_DEBUG, "WPS:  * Authentication Type");
++	u16 auth_type = wps->wps->auth_types;
++
++	/* Select the best authentication type */
++	if (auth_type & WPS_AUTH_WPA2PSK)
++		auth_type = WPS_AUTH_WPA2PSK;
++	else if (auth_type & WPS_AUTH_WPAPSK)
++		auth_type = WPS_AUTH_WPAPSK;
++	else if (auth_type & WPS_AUTH_OPEN)
++		auth_type = WPS_AUTH_OPEN;
++	else if (auth_type & WPS_AUTH_SHARED)
++		auth_type = WPS_AUTH_SHARED;
++
++	wpa_printf(MSG_DEBUG, "WPS:  * Authentication Type (0x%x)", auth_type);
+ 	wpabuf_put_be16(msg, ATTR_AUTH_TYPE);
+ 	wpabuf_put_be16(msg, 2);
+-	wpabuf_put_be16(msg, wps->wps->auth_types);
++	wpabuf_put_be16(msg, auth_type);
+ 	return 0;
+ }
+ 
+ 
+ static int wps_build_cred_encr_type(struct wps_data *wps, struct wpabuf *msg)
+ {
+-	wpa_printf(MSG_DEBUG, "WPS:  * Encryption Type");
++	u16 encr_type = wps->wps->encr_types;
++
++	/* Select the best encryption type */
++	if (wps->wps->auth_types & (WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK)) {
++		if (encr_type & WPS_ENCR_AES)
++			encr_type = WPS_ENCR_AES;
++		else if (encr_type & WPS_ENCR_TKIP)
++			encr_type = WPS_ENCR_TKIP;
++	} else {
++		if (encr_type & WPS_ENCR_WEP)
++			encr_type = WPS_ENCR_WEP;
++		else if (encr_type & WPS_ENCR_NONE)
++			encr_type = WPS_ENCR_NONE;
++	}
++
++	wpa_printf(MSG_DEBUG, "WPS:  * Encryption Type (0x%x)", encr_type);
+ 	wpabuf_put_be16(msg, ATTR_ENCR_TYPE);
+ 	wpabuf_put_be16(msg, 2);
+-	wpabuf_put_be16(msg, wps->wps->encr_types);
++	wpabuf_put_be16(msg, encr_type);
+ 	return 0;
+ }
+ 

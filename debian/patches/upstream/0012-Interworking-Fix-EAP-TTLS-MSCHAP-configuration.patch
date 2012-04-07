@@ -1,0 +1,27 @@
+From 4e6bdb158cb2e7d600c7e1aea8dd999f0d096016 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Tue, 31 Jan 2012 16:20:43 +0200
+Subject: [PATCH 12/58] Interworking: Fix EAP-TTLS/MSCHAP configuration
+
+Copy-paste error ended up using CHAP when MSCHAP was supposed to be
+set.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit d3f57d0ff19758377f40223b56afe5e8960fd0b8)
+---
+ wpa_supplicant/interworking.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/wpa_supplicant/interworking.c
++++ b/wpa_supplicant/interworking.c
+@@ -726,8 +726,8 @@ int interworking_connect(struct wpa_supp
+ 				goto fail;
+ 			break;
+ 		case NAI_REALM_INNER_NON_EAP_MSCHAP:
+-			if (wpa_config_set(ssid, "phase2", "\"auth=CHAP\"", 0)
+-			    < 0)
++			if (wpa_config_set(ssid, "phase2", "\"auth=MSCHAP\"",
++					   0) < 0)
+ 				goto fail;
+ 			break;
+ 		case NAI_REALM_INNER_NON_EAP_MSCHAPV2:

@@ -1,0 +1,38 @@
+From fdfee3fc154f36b6015e4aba1dbf3f886e5297c4 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Fri, 17 Feb 2012 11:34:56 +0200
+Subject: [PATCH 39/58] P2P: Do not include P2P IE in association request to
+ non-P2P AP
+
+This was previously fixed for most cases in commit
+ffad8858370e297b22ff5d9e6e36372755364ec0, but the check here for
+drivers that implement SME/MLME was missed in that commit.
+
+This removes the P2P IE from (Re)Association Request frame with
+drivers that do not use wpa_supplicant SME implementation and are
+P2P cabable when associating with a non-P2P AP (i.e., not a GO or
+P2P WLAN manager AP).
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+intended-for: hostap-1
+(cherry picked from commit b8a8d6774bf045f72d76fb4ac3dd557c4ee9f369)
+---
+ wpa_supplicant/wpa_supplicant.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/wpa_supplicant/wpa_supplicant.c
++++ b/wpa_supplicant/wpa_supplicant.c
+@@ -1284,11 +1284,10 @@ void wpa_supplicant_associate(struct wpa
+ 		u8 *pos;
+ 		size_t len;
+ 		int res;
+-		int p2p_group;
+-		p2p_group = wpa_s->drv_flags & WPA_DRIVER_FLAGS_P2P_CAPABLE;
+ 		pos = wpa_ie + wpa_ie_len;
+ 		len = sizeof(wpa_ie) - wpa_ie_len;
+-		res = wpas_p2p_assoc_req_ie(wpa_s, bss, pos, len, p2p_group);
++		res = wpas_p2p_assoc_req_ie(wpa_s, bss, pos, len,
++					    ssid->p2p_group);
+ 		if (res >= 0)
+ 			wpa_ie_len += res;
+ 	}

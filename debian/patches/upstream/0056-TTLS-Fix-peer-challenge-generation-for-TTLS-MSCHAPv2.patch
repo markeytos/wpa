@@ -1,0 +1,55 @@
+From 201f339dd8f7920653ac647bdab1de6c04783542 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Mon, 5 Mar 2012 16:59:03 +0200
+Subject: [PATCH 56/58] TTLS: Fix peer challenge generation for TTLS/MSCHAPv2
+
+Commit 30680e9332c96803533b9dae6105fd7b15b5bb52 changed the length
+of the implicit challenge result to match with the exact length used
+in TTLS. However, it failed to update the peer_challenge generation
+to use a separate random value. Previously, this was generated as
+part of the implicit challenge, but more correct way would have been
+to generate a random value for it separately. Do this now to fix the
+read after the allocated buffer (16 bytes after the implicit
+challenge).
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+intended-for: hostap-1
+(cherry picked from commit e19467e1618854c0ebf4bb847fb38ad9cebbe083)
+---
+ src/eap_peer/eap_ttls.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+--- a/src/eap_peer/eap_ttls.c
++++ b/src/eap_peer/eap_ttls.c
+@@ -441,7 +441,6 @@ static int eap_ttls_phase2_request_mscha
+ 			   "implicit challenge");
+ 		return -1;
+ 	}
+-	peer_challenge = challenge + 1 + EAP_TTLS_MSCHAPV2_CHALLENGE_LEN;
+ 
+ 	pos = eap_ttls_avp_add(buf, pos, RADIUS_ATTR_MS_CHAP_CHALLENGE,
+ 			       RADIUS_VENDOR_ID_MICROSOFT, 1,
+@@ -454,7 +453,14 @@ static int eap_ttls_phase2_request_mscha
+ 	data->ident = challenge[EAP_TTLS_MSCHAPV2_CHALLENGE_LEN];
+ 	*pos++ = data->ident;
+ 	*pos++ = 0; /* Flags */
+-	os_memcpy(pos, peer_challenge, EAP_TTLS_MSCHAPV2_CHALLENGE_LEN);
++	if (os_get_random(pos, EAP_TTLS_MSCHAPV2_CHALLENGE_LEN) < 0) {
++		os_free(challenge);
++		wpabuf_free(msg);
++		wpa_printf(MSG_ERROR, "EAP-TTLS/MSCHAPV2: Failed to get "
++			   "random data for peer challenge");
++		return -1;
++	}
++	peer_challenge = pos;
+ 	pos += EAP_TTLS_MSCHAPV2_CHALLENGE_LEN;
+ 	os_memset(pos, 0, 8); /* Reserved, must be zero */
+ 	pos += 8;
+@@ -462,6 +468,7 @@ static int eap_ttls_phase2_request_mscha
+ 				     password_len, pwhash, challenge,
+ 				     peer_challenge, pos, data->auth_response,
+ 				     data->master_key)) {
++		os_free(challenge);
+ 		wpabuf_free(msg);
+ 		wpa_printf(MSG_ERROR, "EAP-TTLS/MSCHAPV2: Failed to derive "
+ 			   "response");

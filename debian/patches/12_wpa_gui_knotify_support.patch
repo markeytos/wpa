@@ -18,7 +18,7 @@ Bug-Debian: http://bugs.debian.org/582793
  
  #include "wpagui.h"
  #include "dirent.h"
-@@ -1327,10 +1330,21 @@ void WpaGui::createTrayIcon(bool trayOnl
+@@ -1343,10 +1346,21 @@ void WpaGui::createTrayIcon(bool trayOnl
  void WpaGui::showTrayMessage(QSystemTrayIcon::MessageIcon type, int sec,
  			     const QString & msg)
  {

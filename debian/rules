@@ -46,7 +46,7 @@ override_dh_auto_build:
 	# build hostapd
 	cp --remove-destination $(HOSTAPD_DOT_CONFIG) hostapd/.config
 	dh_auto_build --sourcedirectory=hostapd \
-	              --buildsystem=qmake \
+	              --buildsystem=makefile \
 		      --parallel
 
 override_dh_auto_clean:
@@ -87,8 +87,9 @@ override_dh_install:
 		debian/wpasupplicant-udeb/sbin/wpa_supplicant
 
 override_dh_installchangelogs:
-	#dh_installchangelogs hostapd/ChangeLog
-	dh_installchangelogs wpa_supplicant/ChangeLog
+	dh_installchangelogs --package=hostapd hostapd/ChangeLog
+	dh_installchangelogs --package=wpasupplicant wpa_supplicant/ChangeLog
+	dh_installchangelogs --package=wpagui wpa_supplicant/ChangeLog
 ### end dh overrides
 
 %:

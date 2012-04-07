@@ -64,4 +64,4 @@ upstream/0058-dbus-Make-P2P-group-properties-accessible-individual.patch
 #09_dbus_emit_change_events.patch
 12_wpa_gui_knotify_support.patch
 13_human_readable_signal.patch
-#hostap_allow-linking-with-libnl-3.2.patch
+hostap_allow-linking-with-libnl-3.2.patch

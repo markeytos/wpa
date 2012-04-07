@@ -1,13 +1,15 @@
-wpasupplicant (0.7.3-7) UNRELEASED; urgency=low
+wpa (1.0~rc2-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * merge source packages for hostapd and wpasupplicant under the new name
+    "wpa", which is also used by upstream.
   * restrict wpasupplicant to linux-any and kfreebsd-any, hurd lacks kernel
     support.
   * bump standards version to 3.9.3, no changes necessary.
   * update dep-5 version to final 1.0, no changes necessary:
     - order licenses alphabetically.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 27 Feb 2012 22:04:09 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 01:00:36 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

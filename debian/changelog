@@ -2,6 +2,10 @@ wpa (1.0~rc2-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
   * import new upstream snapshot 1.0-rc2:
+    - fixes:
+      - hostapd: Fails to authenticate on wpa2 password (Closes: #483924)
+      - hostapd: EAPOL reauthentication/rekeying timeout loop when using WMM
+        (Closes: #655129, #659059)
     - import git patches up to hostap_0_7_2-1504-g03de63c.
     - temporarily disable conflicting patches.
     - rebase patches:
@@ -14,7 +18,7 @@ wpa (1.0~rc2-1) UNRELEASED; urgency=low
   * update dep-5 version to final 1.0, no changes necessary:
     - order licenses alphabetically.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 01:20:07 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 01:50:29 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

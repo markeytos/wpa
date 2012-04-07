@@ -1,0 +1,3 @@
+hostapd/hostapd      usr/sbin/
+hostapd/hostapd_cli  usr/sbin/
+debian/ifupdown.sh   etc/hostapd/

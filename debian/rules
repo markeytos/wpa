@@ -1,0 +1,84 @@
+#!/usr/bin/make -f
+
+CFLAGS = -MMD -Wall -g
+UCFLAGS = -MMD -Wall -g -Os
+CXXFLAGS = -g
+LDFLAGS = -Wl,--as-needed
+V = 1
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+	CXXFLAGS += -O0
+else
+	CFLAGS += -O2
+	CXXFLAGS += -O2
+endif
+
+export CFLAGS CXXFLAGS LDFLAGS V
+
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+BUILD_DOT_CONFIG := debian/config/$(DEB_HOST_ARCH_OS)
+UDEB_DOT_CONFIG := debian/config/$(DEB_HOST_ARCH_OS)-udeb
+
+### start dh overrides
+override_dh_auto_configure:
+	dh_auto_configure --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
+	                  --buildsystem=qmake
+
+override_dh_auto_build:
+	# Build udeb
+	cp -v --remove-destination $(UDEB_DOT_CONFIG) wpa_supplicant/.config
+	CFLAGS="$(UCFLAGS)" dh_auto_build --sourcedirectory=wpa_supplicant \
+	              --buildsystem=makefile \
+		      --parallel
+	mv -v wpa_supplicant/wpa_supplicant wpa_supplicant/wpa_supplicant-udeb
+	dh_auto_clean --sourcedirectory=wpa_supplicant \
+	              --buildsystem=makefile
+	# End udeb
+	cp -v --remove-destination $(BUILD_DOT_CONFIG) wpa_supplicant/.config
+	dh_auto_build --sourcedirectory=wpa_supplicant \
+	              --buildsystem=makefile \
+		      --parallel
+	dh_auto_build --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
+	              --buildsystem=qmake \
+		      --parallel
+
+override_dh_auto_clean:
+	dh_auto_clean --sourcedirectory=wpa_supplicant \
+	              --buildsystem=makefile
+	dh_auto_clean --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
+	              --buildsystem=qmake
+	find wpa_supplicant/wpa_gui-qt4 -type d \
+		-name \.moc -o -name \.ui -o -name \.obj | xargs rm -rf
+
+override_dh_auto_install:
+	$(info Skip dh_auto_install ...)
+
+override_dh_clean:
+	dh_clean wpa_supplicant/.config
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 debian/wpasupplicant/etc/wpa_supplicant/*.sh
+	chmod 0755 debian/wpagui/usr/share/wpagui/netdev_wrapper
+
+override_dh_install:
+	dh_install
+	install --mode=644 -D wpa_supplicant/dbus/dbus-wpa_supplicant.conf \
+		debian/wpasupplicant/etc/dbus-1/system.d/wpa_supplicant.conf
+	install --mode=644 -D wpa_supplicant/dbus/fi.epitest.hostap.WPASupplicant.service \
+		debian/wpasupplicant/usr/share/dbus-1/system-services/fi.epitest.hostap.WPASupplicant.service
+	install --mode=644 -D wpa_supplicant/dbus/fi.w1.wpa_supplicant1.service \
+		debian/wpasupplicant/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
+	install --mode=755 -D wpa_supplicant/examples/60_wpa_supplicant \
+		debian/wpasupplicant/usr/lib/pm-utils/sleep.d/60_wpa_supplicant
+	# Install udeb
+	install --mode=755 -D wpa_supplicant/wpa_supplicant-udeb \
+		debian/wpasupplicant-udeb/sbin/wpa_supplicant
+
+override_dh_installchangelogs:
+	dh_installchangelogs wpa_supplicant/ChangeLog
+### end dh overrides
+
+%:
+	dh $@

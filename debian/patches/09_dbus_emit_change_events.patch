@@ -1,0 +1,44 @@
+Description: Emit property changed events when adding/removing BSSes
+Origin: http://hostap.epitest.fi/gitweb/gitweb.cgi?p=hostap-07.git;a=commit;h=b80b5639935d37b95d00f86b57f2844a9c775f57
+Author: Dan Williams <dcbw@redhat.com>
+Bug-Debian: http://bugs.debian.org/617199
+---
+--- a/wpa_supplicant/dbus/dbus_new.c
++++ b/wpa_supplicant/dbus/dbus_new.c
+@@ -691,6 +691,10 @@ void wpas_dbus_signal_prop_changed(struc
+ 			wpas_dbus_getter_current_network;
+ 		prop = "CurrentNetwork";
+ 		break;
++	case WPAS_DBUS_PROP_BSSS:
++		getter = (WPADBusPropertyAccessor) wpas_dbus_getter_bsss;
++		prop = "BSSs";
++		break;
+ 	default:
+ 		wpa_printf(MSG_ERROR, "dbus: %s: Unknown Property value %d",
+ 			   __func__, property);
+@@ -1199,6 +1203,7 @@ int wpas_dbus_unregister_bss(struct wpa_
+ 	}
+ 
+ 	wpas_dbus_signal_bss_removed(wpa_s, bss_obj_path);
++	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_BSSS);
+ 
+ 	return 0;
+ }
+@@ -1263,6 +1268,7 @@ int wpas_dbus_register_bss(struct wpa_su
+ 	}
+ 
+ 	wpas_dbus_signal_bss_added(wpa_s, bss_obj_path);
++	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_BSSS);
+ 
+ 	return 0;
+ 
+--- a/wpa_supplicant/dbus/dbus_new.h
++++ b/wpa_supplicant/dbus/dbus_new.h
+@@ -30,6 +30,7 @@ enum wpas_dbus_prop {
+ 	WPAS_DBUS_PROP_STATE,
+ 	WPAS_DBUS_PROP_CURRENT_BSS,
+ 	WPAS_DBUS_PROP_CURRENT_NETWORK,
++	WPAS_DBUS_PROP_BSSS,
+ };
+ 
+ enum wpas_dbus_bss_prop {

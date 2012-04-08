@@ -1,4 +1,4 @@
-wpa (1.0~rc2-1) UNRELEASED; urgency=low
+wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -36,8 +36,10 @@ wpa (1.0~rc2-1) UNRELEASED; urgency=low
     syslog and control socket support, also patch systemd service file
   * drop 09_dbus_emit_change_events.patch, applied upstream.
   * fix ftbfs with gcc/g++ 4.7 (Closes: 667416)
+  * unfortunately, hostapd package historically added an epoch, so an epoch
+    must now be added to this source package too.
 
- -- Kel Modderman <kel@otaku42.de>  Sun, 08 Apr 2012 18:05:12 +1000
+ -- Kel Modderman <kel@otaku42.de>  Sun, 08 Apr 2012 21:30:13 +1000
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

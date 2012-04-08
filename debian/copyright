@@ -50,6 +50,10 @@ Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
            2007-2008 Intel Corporation
 License: BSD or GPL-2
 
+Files: src/common/wireless_copy.h
+Copyright: 1997-2007, Jean Tourrilhes <jt@hpl.hp.com>
+License: BSD or GPL-2
+
 Files: src/drivers/driver_atheros.c
 Copyright: 2004, Sam Leffler <sam@errno.com>
            2004, Video54 Technologies

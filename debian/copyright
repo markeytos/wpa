@@ -242,7 +242,9 @@ License: BSD or GPL-2
 Files: debian/*
 Copyright: 2004-2006, Kyle McMartin <kyle@debian.org>
            2006-2008, Reinhard Tartler <siretart@tauware.de>
+           2005-2009, Faidon Liambotis <paravoid@debian.org>
            2006-2012, Kel Modderman <kel@otaku42.de>
+           2010, Jan Dittberner <jandd@debian.org>
            2010-2012, Stefan Lippers-Hollmann <s.l-h@gmx.de>
 License: BSD or GPL-2
 

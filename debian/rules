@@ -1,9 +1,11 @@
 #!/usr/bin/make -f
 
-CFLAGS   = -MMD -Wall -g
+CFLAGS   = -MMD -Wall
+CFLAGS   += $(shell dpkg-buildflags --get CFLAGS)
+CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+CXXFLAGS =  $(shell dpkg-buildflags --get CXXFLAGS)
 UCFLAGS  = -MMD -Wall -g -Os
-CXXFLAGS = -g
-LDFLAGS  = -Wl,--as-needed
+LDFLAGS  =  $(shell dpkg-buildflags --get LDFLAGS),--as-needed
 BINDIR   = /sbin
 V = 0
 
@@ -15,7 +17,7 @@ else
 	CXXFLAGS += -O2
 endif
 
-export CFLAGS CXXFLAGS LDFLAGS BINDIR V
+export CFLAGS CPPFLAGS CXXFLAGS LDFLAGS BINDIR V
 
 DEB_HOST_ARCH_OS              ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 HOSTAPD_DOT_CONFIG            := debian/config/hostapd/$(DEB_HOST_ARCH_OS)

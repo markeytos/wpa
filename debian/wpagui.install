@@ -1,4 +1,3 @@
-debian/wpa_gui/netdev_wrapper usr/share/wpagui/
 debian/wpa_gui/wpa_gui*.xpm usr/share/pixmaps/
 wpa_supplicant/wpa_gui-qt4/wpa_gui usr/sbin/
 wpa_supplicant/wpa_gui-qt4/wpa_gui.desktop usr/share/applications/

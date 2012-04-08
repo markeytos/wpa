@@ -1,5 +1,5 @@
 Description: Debian specific patch to desktop meny entry, so that we may exec
- wpa_gui with best estimated privilege level via /usr/share/netdev_wrapper.
+ wpa_gui which being in /usr/sbin may not be in the PATH
 Author: Kel Modderman <kel@otaku42.de>
 ---
 --- a/wpa_supplicant/wpa_gui-qt4/wpa_gui.desktop
@@ -9,7 +9,7 @@ Author: Kel Modderman <kel@otaku42.de>
  Name=wpa_gui
  Comment=Graphical user interface for wpa_supplicant
 -Exec=wpa_gui
-+Exec=/usr/share/wpagui/netdev_wrapper
++Exec=/usr/sbin/wpa_gui
  Icon=wpa_gui
  GenericName=wpa_supplicant user interface
  Terminal=false

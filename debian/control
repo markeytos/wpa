@@ -17,7 +17,8 @@ Build-Depends: debhelper (>> 8),
  libpcap-dev [kfreebsd-any],
  libbsd-dev [kfreebsd-any],
  pkg-config,
- qt4-qmake
+ qt4-qmake,
+ docbook-utils
 Build-Conflicts: libqt3-dev
 Standards-Version: 3.9.3
 Vcs-Svn: svn://anonscm.debian.org/svn/pkg-wpa/wpa/trunk/

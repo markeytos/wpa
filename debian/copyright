@@ -48,7 +48,7 @@ License: BSD or GPL-2
 
 Files: src/common/ieee802_11_defs.h
 Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-           2007-2008 Intel Corporation
+           2007-2008, Intel Corporation
 License: BSD or GPL-2
 
 Files: src/common/wireless_copy.h
@@ -96,7 +96,7 @@ Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
 License: BSD or GPL-2
 
 Files: src/drivers/driver_roboswitch.c
-Copyright: 2008-2009 Jouke Witteveen
+Copyright: 2008-2009, Jouke Witteveen
 License: BSD or GPL-2
 
 Files: src/drivers/driver_wired.c
@@ -109,7 +109,7 @@ Copyright: 2006-2010, Johannes Berg <johannes@sipsolutions.net>
            2008, Michael Wu <flamingice@sourmilk.net>
            2008, Luis Carlos Cobo <luisca@cozybit.com>
            2008, Michael Buesch <m@bues.ch>
-           2008, 2009 Luis R. Rodriguez <lrodriguez@atheros.com>
+           2008-2009, Luis R. Rodriguez <lrodriguez@atheros.com>
            2008, Jouni Malinen <jouni.malinen@atheros.com>
            2008, Colin McCabe <colin@cozybit.com>
 License: ISC

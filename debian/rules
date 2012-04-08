@@ -9,14 +9,6 @@ LDFLAGS  =  $(shell dpkg-buildflags --get LDFLAGS),--as-needed
 BINDIR   = /sbin
 V = 0
 
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS   += -O0
-	CXXFLAGS += -O0
-else
-	CFLAGS   += -O2
-	CXXFLAGS += -O2
-endif
-
 export CFLAGS CPPFLAGS CXXFLAGS LDFLAGS BINDIR V
 
 DEB_HOST_ARCH_OS              ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)

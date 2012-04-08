@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian/Ubuntu wpasupplicant Maintainers <pkg-wpa-devel@lists.alioth.debian.org>
 Uploaders: Kel Modderman <kel@otaku42.de>,
  Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Build-Depends: debhelper (>> 8),
+Build-Depends: debhelper (>> 9.20120115),
  libdbus-glib-1-dev,
  libssl-dev,
  libreadline-dev,
@@ -28,6 +28,7 @@ Homepage: http://w1.fi/wpa_supplicant/
 
 Package: hostapd
 Architecture: linux-any kfreebsd-any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.2-13), initscripts (>= 2.88dsf-13.3)
 Description: user space IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticator
  Originally, hostapd was an optional user space component for Host AP
@@ -51,6 +52,7 @@ Description: user space IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticato
 
 Package: wpagui
 Architecture: linux-any kfreebsd-any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, wpasupplicant (>= 0.7.3~), libqt4-svg
 Recommends: menu
 Description: graphical user interface for wpa_supplicant
@@ -61,6 +63,7 @@ Description: graphical user interface for wpa_supplicant
 
 Package: wpasupplicant
 Architecture: linux-any kfreebsd-any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.0-6), adduser, initscripts (>= 2.88dsf-13.3)
 Suggests: wpagui, libengine-pkcs11-openssl
 Description: client support for WPA and WPA2 (IEEE 802.11i)
@@ -73,6 +76,7 @@ Package: wpasupplicant-udeb
 Section: debian-installer
 Priority: standard
 Architecture: linux-any
+Multi-Arch: foreign
 Package-Type: udeb
 Depends: ${shlibs:Depends}, ${misc:Depends}, busybox-udeb
 Description: Client support for WPA and WPA2 (IEEE 802.11i)

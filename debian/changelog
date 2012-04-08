@@ -19,6 +19,8 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * update dep-5 version to final 1.0, no changes necessary:
     - order licenses alphabetically.
   * build-depend on docbook-to-man explicitly.
+  * convert packaging to Multi-Arch, bump compat level to 9 and debhelper
+    build-dependency accordingly; all binaries are Multi-Arch=foreign.
 
   [ Kel Modderman ]
   * export BINDIR=/sbin, the build system now requires it when patching
@@ -40,7 +42,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * unfortunately, hostapd package historically added an epoch, so an epoch
     must now be added to this source package too.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 14:19:38 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 16:04:46 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

@@ -18,6 +18,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * bump standards version to 3.9.3, no changes necessary.
   * update dep-5 version to final 1.0, no changes necessary:
     - order licenses alphabetically.
+  * build-depend on docbook-to-man explicitly.
 
   [ Kel Modderman ]
   * export BINDIR=/sbin, the build system now requires it when patching
@@ -39,7 +40,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * unfortunately, hostapd package historically added an epoch, so an epoch
     must now be added to this source package too.
 
- -- Kel Modderman <kel@otaku42.de>  Sun, 08 Apr 2012 21:30:13 +1000
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Apr 2012 14:19:38 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

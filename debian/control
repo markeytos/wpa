@@ -18,6 +18,7 @@ Build-Depends: debhelper (>> 8),
  libbsd-dev [kfreebsd-any],
  pkg-config,
  qt4-qmake,
+ docbook-to-man,
  docbook-utils
 Build-Conflicts: libqt3-dev
 Standards-Version: 3.9.3

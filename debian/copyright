@@ -11,7 +11,8 @@ Files: hostapd/logwatch/*
 Copyright: 2005, Henrik Brix Andersen <brix@gentoo.org>
 License: BSD or GPL-2
 
-Files: hostapd/hostapd.8 hostapd/hostapd_cli.1
+Files: hostapd/hostapd.8
+       hostapd/hostapd_cli.1
 Copyright: 2005, Faidon Liambotis <faidon@cube.gr>
 License: BSD or GPL-2
 

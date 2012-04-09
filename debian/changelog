@@ -46,8 +46,10 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * remove DEB_BUILD_OPTIONS=noopt handling from debian/rules, no longer
     required since dpkg-buildflags honors it.
   * Add ability to set CC for cross building support (untested).
+  * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
+    his request, many thanks for all past efforts Faidon.
 
- -- Kel Modderman <kel@otaku42.de>  Mon, 09 Apr 2012 18:53:38 +1000
+ -- Kel Modderman <kel@otaku42.de>  Mon, 09 Apr 2012 21:34:46 +1000
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

@@ -4,7 +4,6 @@ Priority: optional
 Maintainer: Debian/Ubuntu wpasupplicant Maintainers <pkg-wpa-devel@lists.alioth.debian.org>
 Uploaders: Kel Modderman <kel@otaku42.de>,
  Stefan Lippers-Hollmann <s.l-h@gmx.de>,
- Faidon Liambotis <paravoid@debian.org>,
  Jan Dittberner <jandd@debian.org>
 Build-Depends: debhelper (>> 9.20120115),
  libdbus-glib-1-dev,

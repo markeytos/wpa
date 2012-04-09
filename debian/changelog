@@ -45,8 +45,9 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * enable hardened build flags. (Closes: #657332)
   * remove DEB_BUILD_OPTIONS=noopt handling from debian/rules, no longer
     required since dpkg-buildflags honors it.
+  * Add ability to set CC for cross building support (untested).
 
- -- Kel Modderman <kel@otaku42.de>  Mon, 09 Apr 2012 07:56:19 +1000
+ -- Kel Modderman <kel@otaku42.de>  Mon, 09 Apr 2012 18:53:38 +1000
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

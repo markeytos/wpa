@@ -1,7 +1,7 @@
 From 03de63ceb81eed9db7506c1d124658f7f10a85d9 Mon Sep 17 00:00:00 2001
 From: Todd Previte <toddx.a.previte@intel.com>
 Date: Mon, 5 Mar 2012 17:25:08 +0200
-Subject: [PATCH 58/58] dbus: Make P2P group properties accessible
+Subject: [PATCH 58/73] dbus: Make P2P group properties accessible
  individually
 
 Group properties are now accessible individually. The function to retrieve

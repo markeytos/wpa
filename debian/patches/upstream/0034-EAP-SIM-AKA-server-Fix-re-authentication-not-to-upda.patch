@@ -1,7 +1,7 @@
 From 1f5b37fd49a6883309b2d80ea3af5528aa9162bc Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Thu, 16 Feb 2012 23:27:01 +0200
-Subject: [PATCH 34/58] EAP-SIM/AKA server: Fix re-authentication not to
+Subject: [PATCH 34/73] EAP-SIM/AKA server: Fix re-authentication not to
  update pseudonym
 
 AT_NEXT_PSEUDONYM is supposed to be included only in the Challenge

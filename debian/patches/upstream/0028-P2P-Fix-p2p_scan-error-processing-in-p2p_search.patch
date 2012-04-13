@@ -1,7 +1,7 @@
 From 495cce1dd91562964d6ececcb70e0c95f76581d3 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 9 Feb 2012 12:46:44 +0200
-Subject: [PATCH 28/58] P2P: Fix p2p_scan() error processing in p2p_search()
+Subject: [PATCH 28/73] P2P: Fix p2p_scan() error processing in p2p_search()
 
 Commit 39185dfa549f076a6be114e0149a3649d302f477 changed the p2p_scan()
 callback to return 1 in some cases, but forgot to change this p2p_scan()

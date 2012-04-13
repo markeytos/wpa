@@ -1,7 +1,7 @@
 From cb57320c7ffdc1115e06b28e1028c9ec382b3e19 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Fri, 27 Jan 2012 22:32:15 +0200
-Subject: [PATCH 03/58] WPS: Fix an interoperability issue with mixed mode and
+Subject: [PATCH 03/73] WPS: Fix an interoperability issue with mixed mode and
  AP Settings
 
 It looks like Windows 7 WPS implementation does not like multiple

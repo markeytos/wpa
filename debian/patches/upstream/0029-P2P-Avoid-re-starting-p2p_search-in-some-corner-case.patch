@@ -1,7 +1,7 @@
 From e177415c1932604ef6d5e64ce63294f85ae49417 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 9 Feb 2012 12:49:36 +0200
-Subject: [PATCH 29/58] P2P: Avoid re-starting p2p_search in some corner cases
+Subject: [PATCH 29/73] P2P: Avoid re-starting p2p_search in some corner cases
 
 Search (p2p_scan) could already have been started at the point
 remain-on-channel end event is being processed, e.g., if an Action frame

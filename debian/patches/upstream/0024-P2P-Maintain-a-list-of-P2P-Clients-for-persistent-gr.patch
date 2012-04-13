@@ -1,7 +1,7 @@
 From 2db9ac2173a89de4af2be8c01206ecd0bf26695b Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Thu, 22 Dec 2011 22:47:41 +0200
-Subject: [PATCH 24/58] P2P: Maintain a list of P2P Clients for persistent
+Subject: [PATCH 24/73] P2P: Maintain a list of P2P Clients for persistent
  group on GO
 
 Add a new persistent group network block field, p2p_client_list, to

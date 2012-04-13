@@ -1,0 +1,45 @@
+From fee70d7d7c4c488094aae3b6d3e13118b7370687 Mon Sep 17 00:00:00 2001
+From: Nirav Shah <nirav.j2.shah@intel.com>
+Date: Fri, 6 Apr 2012 18:41:06 +0300
+Subject: [PATCH 73/73] P2P: Disconnect P2P group on supplicant deinit
+
+When a supplicant is deinited and shutting, disconnect from P2P groups.
+This fixes a memory leak on variable dbus_groupobj_path on exiting
+supplicant.
+
+Signed-hostap: Nirav Shah <nirav.j2.shah@intel.com>
+Signed-hostap: Angie Chinchilla <angie.v.chinchilla@intel.com>
+(cherry picked from commit 103b8f4dea947df496080f646a8a955d24fcdb3d)
+
+Conflicts:
+
+	wpa_supplicant/p2p_supplicant.c
+---
+ wpa_supplicant/p2p_supplicant.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -2433,7 +2433,6 @@ void wpas_p2p_deinit(struct wpa_supplica
+ void wpas_p2p_deinit_global(struct wpa_global *global)
+ {
+ 	struct wpa_supplicant *wpa_s, *tmp;
+-	char *ifname;
+ 
+ 	if (global->p2p == NULL)
+ 		return;
+@@ -2454,12 +2453,9 @@ void wpas_p2p_deinit_global(struct wpa_g
+ 		}
+ 		if (tmp == NULL)
+ 			break;
+-		ifname = os_strdup(tmp->ifname);
+ 		type = wpas_p2p_if_type(tmp->p2p_group_interface);
+-		wpa_supplicant_remove_iface(global, tmp);
+-		if (ifname)
+-			wpa_drv_if_remove(wpa_s, type, ifname);
+-		os_free(ifname);
++		/* Disconnect from the P2P group and deinit the interface */
++		wpas_p2p_disconnect(tmp);
+ 	}
+ 
+ 	/*

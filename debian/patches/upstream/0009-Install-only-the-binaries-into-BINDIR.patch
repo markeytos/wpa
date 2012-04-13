@@ -1,7 +1,7 @@
 From 8dee7fb2a435b2b6f5d452bd7a7bb30f3f3ccef0 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 29 Jan 2012 14:20:41 +0200
-Subject: [PATCH 09/58] Install only the binaries into BINDIR
+Subject: [PATCH 09/73] Install only the binaries into BINDIR
 
 There is no point in installing *.service files into BINDIR.
 

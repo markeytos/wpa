@@ -1,7 +1,7 @@
 From b9ec7f810c93418171e370ed30b453a45b0dcde7 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 1 Mar 2012 22:06:03 +0200
-Subject: [PATCH 50/58] P2P: Fix provisioning info clearing after successful
+Subject: [PATCH 50/73] P2P: Fix provisioning info clearing after successful
  WPS step
 
 Previously, this provisioning info was cleared using the P2P Interface

@@ -1,7 +1,7 @@
 From 17b627e29b9f718a074781efc77323f38b52ab36 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Mon, 30 Jan 2012 17:31:06 +0200
-Subject: [PATCH 11/58] WPS: Disable AP PIN after 10 consecutive failures
+Subject: [PATCH 11/73] WPS: Disable AP PIN after 10 consecutive failures
 
 While the exponential increase in the lockout period provides an
 efficient mitigation mechanism against brute force attacks, this

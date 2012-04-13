@@ -1,7 +1,7 @@
 From 92dc94ea8a2c5bb08447c25b76c863d6483eda6d Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 4 Feb 2012 12:28:16 +0200
-Subject: [PATCH 14/58] Delay scan request on select_network if disconnecting
+Subject: [PATCH 14/73] Delay scan request on select_network if disconnecting
 
 The disconnection command results in disassociation and deauthentication
 events which were previously processed during the scan in case of

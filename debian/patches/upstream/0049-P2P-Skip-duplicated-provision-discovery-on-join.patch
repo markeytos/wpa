@@ -1,7 +1,7 @@
 From 8a5a27b668a14ae4a3b9ddef4196be4eff9193f0 Mon Sep 17 00:00:00 2001
 From: Jithu Jance <jithu@broadcom.com>
 Date: Tue, 6 Dec 2011 21:44:57 +0200
-Subject: [PATCH 49/58] P2P: Skip duplicated provision discovery on join
+Subject: [PATCH 49/73] P2P: Skip duplicated provision discovery on join
 
 If p2p_prov_disc join command is used prior to p2p_connect join,
 skip the duplicated provision discovery exchange.

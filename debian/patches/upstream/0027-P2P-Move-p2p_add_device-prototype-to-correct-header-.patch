@@ -1,7 +1,7 @@
 From 08b15c826f3bd3000cfb649ac14d2c76703a5224 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Tue, 7 Feb 2012 16:26:20 +0200
-Subject: [PATCH 27/58] P2P: Move p2p_add_device() prototype to correct header
+Subject: [PATCH 27/73] P2P: Move p2p_add_device() prototype to correct header
  file
 
 This was supposed to be an internal API to be used only within

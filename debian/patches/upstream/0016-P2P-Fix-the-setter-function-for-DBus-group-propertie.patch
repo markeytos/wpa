@@ -1,7 +1,7 @@
 From 24f1cf70b1e063b3a92ff40013818157f8ce6d4c Mon Sep 17 00:00:00 2001
 From: Todd Previte <toddx.a.previte@intel.com>
 Date: Sat, 4 Feb 2012 13:13:59 +0200
-Subject: [PATCH 16/58] P2P: Fix the setter function for DBus group properties
+Subject: [PATCH 16/73] P2P: Fix the setter function for DBus group properties
 
 The setter function uses the same hostapd_data structure as the getter
 which causes it to crash if called on a P2P client. To overcome this

@@ -1,7 +1,7 @@
 From 61d96aecb052746ee51bb4b6d22c89ff7078cbf3 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Mon, 6 Feb 2012 21:54:36 +0200
-Subject: [PATCH 25/58] P2P: Set Invitation Type to 1 for GO inviting to a
+Subject: [PATCH 25/73] P2P: Set Invitation Type to 1 for GO inviting to a
  persistent group
 
 When a GO is operating a persistent group and invites a peer that has

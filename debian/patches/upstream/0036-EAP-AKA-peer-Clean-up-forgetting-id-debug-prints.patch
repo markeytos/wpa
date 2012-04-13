@@ -1,7 +1,7 @@
 From 567d14fb23e3e40561f6ce791d6e3a330eb49985 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Thu, 16 Feb 2012 23:25:53 +0200
-Subject: [PATCH 36/58] EAP-AKA peer: Clean up forgetting-id debug prints
+Subject: [PATCH 36/73] EAP-AKA peer: Clean up forgetting-id debug prints
 
 Do not show forgetting of old id values if no value was stored.
 

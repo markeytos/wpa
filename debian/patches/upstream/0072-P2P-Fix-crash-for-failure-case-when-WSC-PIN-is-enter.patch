@@ -1,0 +1,74 @@
+From c4ac8fdc310a4bc31cf45219fcb09de09f7137dd Mon Sep 17 00:00:00 2001
+From: Angie Chinchilla <angie.v.chinchilla@intel.com>
+Date: Fri, 6 Apr 2012 18:22:03 +0300
+Subject: [PATCH 72/73] P2P: Fix crash for failure case when WSC PIN is
+ entered incorrectly
+
+When forming a P2P group using WSC PIN method, if the PIN is entered
+incorrectly the P2P client supplicant instance will crash as a result
+of cleanup happening on data that is still in use in a case where a
+separate P2P group interface is used.
+
+For example, here is the path for the first crash:
+eap_wsc_process():
+- creates struct wpabuf tmpbuf; on the stack
+- sets data->in_buf = &tmpbuf;
+- calls wps_process_msg()
+- which calls wps_process_wsc_msg()
+- which, in case WPS_M4: calls wps_fail_event()
+- which calls wps->event_cb()
+- wps->event_cb = wpa_supplicant_wps_event()
+- wpa_supplicant_wps_event()
+- wpa_supplicant_wps_event_fail()
+- which calls wpas_clear_wps()
+- which calls wpas_notify_network_removed()
+- which calls wpas_p2p_network_removed()
+- which calls wpas_p2p_group_formation_timeout()
+- which calls wpas_group_formation_completed()
+- which calls wpas_p2p_group_delete()
+- which calls wpa_supplicant_remove_iface()
+- which calls wpa_supplicant_deinit_iface()
+- which calls wpa_supplicant_cleanup()
+- which calls eapol_sm_deinit()
+- ... which eventually uses the ptr data->in_buf to free tmpbuf, our
+stack variable and then the supplicant crashes
+
+If you fix this crash, you'll hit another. Fix it and then a segfault.
+The way we're cleaning up and deleting data from under ourselves here
+just isn't safe, so make the teardown portion of this async.
+
+Signed-hostap: Angie Chinchilla <angie.v.chinchilla@intel.com>
+Signed-hostap: Nirav Shah <nirav.j2.shah@intel.com>
+intended-for: hostap-1
+(cherry picked from commit eb6f8c2bd4f944c972ff09ecb592e6dc19d3d895)
+---
+ wpa_supplicant/p2p_supplicant.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -4419,14 +4419,22 @@ int wpas_p2p_in_progress(struct wpa_supp
+ 
+ void wpas_p2p_network_removed(struct wpa_supplicant *wpa_s,
+ 			      struct wpa_ssid *ssid)
+-
+ {
+ 	if (wpa_s->p2p_in_provisioning && ssid->p2p_group &&
+ 	    eloop_cancel_timeout(wpas_p2p_group_formation_timeout,
+ 				 wpa_s->parent, NULL) > 0) {
++		/**
++		 * Remove the network by scheduling the group formation
++		 * timeout to happen immediately. The teardown code
++		 * needs to be scheduled to run asynch later so that we
++		 * don't delete data from under ourselves unexpectedly.
++		 * Calling wpas_p2p_group_formation_timeout directly
++		 * causes a series of crashes in WPS failure scenarios.
++		 */
+ 		wpa_printf(MSG_DEBUG, "P2P: Canceled group formation due to "
+ 			   "P2P group network getting removed");
+-		wpas_p2p_group_formation_timeout(wpa_s->parent, NULL);
++		eloop_register_timeout(0, 0, wpas_p2p_group_formation_timeout,
++				       wpa_s->parent, NULL);
+ 	}
+ }
+ 

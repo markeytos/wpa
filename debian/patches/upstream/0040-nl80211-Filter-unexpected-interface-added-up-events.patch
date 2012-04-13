@@ -1,7 +1,7 @@
 From f84a6203700c2600f60819ad6aad678e042d1c04 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 18 Feb 2012 13:13:23 +0200
-Subject: [PATCH 40/58] nl80211: Filter unexpected interface added/up events
+Subject: [PATCH 40/73] nl80211: Filter unexpected interface added/up events
 
 It looks like a RTM_NEWLINK event claiming the interface to be UP is
 delivered just before removing an interface after having first indicated

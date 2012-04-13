@@ -1,7 +1,7 @@
 From 9c8db36f9ff056dbc33a33ef836442e13ac8c9b3 Mon Sep 17 00:00:00 2001
 From: Piotr Nakraszewicz <Piotr.Nakraszewicz@tieto.com>
 Date: Sat, 11 Feb 2012 10:54:40 +0200
-Subject: [PATCH 30/58] P2P: Do not expire GO peer entry during group rekeying
+Subject: [PATCH 30/73] P2P: Do not expire GO peer entry during group rekeying
 
 If wpas_go_connected() is called during group rekeying the P2P GO peer
 will expire. To prevent that check if group rekeying is not in progress.

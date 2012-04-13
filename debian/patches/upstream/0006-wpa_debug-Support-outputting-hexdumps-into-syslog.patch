@@ -1,7 +1,7 @@
 From f59767ce009d8a95f71807ca3d42fd61be7a8066 Mon Sep 17 00:00:00 2001
 From: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>
 Date: Sun, 29 Jan 2012 12:13:43 +0200
-Subject: [PATCH 06/58] wpa_debug: Support outputting hexdumps into syslog
+Subject: [PATCH 06/73] wpa_debug: Support outputting hexdumps into syslog
 
 This patch allows to log hexdumps into syslog.
 

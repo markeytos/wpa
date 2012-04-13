@@ -1,7 +1,7 @@
 From f7356eced71a1884b510f8da642928f20fa3543d Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 5 Feb 2012 20:20:36 +0200
-Subject: [PATCH 19/58] P2P: Skip event notification on PD Response in
+Subject: [PATCH 19/73] P2P: Skip event notification on PD Response in
  join-group case
 
 Provision Discovery is used as a notification to the GO in the case we

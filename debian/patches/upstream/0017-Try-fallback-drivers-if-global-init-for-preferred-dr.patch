@@ -1,7 +1,7 @@
 From ba53656e8224cac7bd824673f785f66812460afa Mon Sep 17 00:00:00 2001
 From: Dan Williams <dcbw@redhat.com>
 Date: Sat, 4 Feb 2012 20:09:00 +0200
-Subject: [PATCH 17/58] Try fallback drivers if global init for preferred
+Subject: [PATCH 17/73] Try fallback drivers if global init for preferred
  drivers fails
 
 Driver global init was considered a hard failure. Thus if, for example,

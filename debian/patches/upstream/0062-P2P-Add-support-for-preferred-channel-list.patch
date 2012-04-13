@@ -1,0 +1,320 @@
+From 8ac67bc0f675ef1c2d76b3a3a615ce712a25f895 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Thu, 29 Mar 2012 21:28:34 +0300
+Subject: [PATCH 62/73] P2P: Add support for preferred channel list
+
+p2p_pref_chan configuration parameter can now be used to set the
+list of preferred channel for P2P GO Negotiation. This will be used
+in the priority order if the peer does not support the channel we
+are trying to use as the GO (configured operating channel or the
+best 2.4 GHz/5 GHz channel) for the case where a forced channel is
+not used.
+
+p2p_pref_chan=<op class:channel>,...
+
+For example:
+p2p_pref_chan=81:1,81:2,81:3,81:4,81:5,81:6
+
+This would configure 2.4 GHz channels 1-6 as the preferred ones with
+channel 1 the most preferred option.
+
+These configuration parameters can be set in wpa_supplicant.conf and
+dynamically updated with "wpa_cli set <param> <value>".
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+(cherry picked from commit 21d996f775a2131bb0c73d6e18ca9b382f017057)
+
+Conflicts:
+
+	wpa_supplicant/config.c
+---
+ src/p2p/p2p.c                   |   33 +++++++++++++++++++++++++
+ src/p2p/p2p.h                   |   25 +++++++++++++++++++
+ src/p2p/p2p_go_neg.c            |   16 ++++++++++++
+ wpa_supplicant/config.c         |   52 +++++++++++++++++++++++++++++++++++++++
+ wpa_supplicant/config.h         |    3 +++
+ wpa_supplicant/config_file.c    |   11 +++++++++
+ wpa_supplicant/p2p_supplicant.c |    8 ++++++
+ 7 files changed, 148 insertions(+)
+
+--- a/src/p2p/p2p.c
++++ b/src/p2p/p2p.c
+@@ -2206,6 +2206,16 @@ struct p2p_data * p2p_init(const struct
+ 		p2p->cfg->model_number = os_strdup(cfg->model_number);
+ 	if (cfg->serial_number)
+ 		p2p->cfg->serial_number = os_strdup(cfg->serial_number);
++	if (cfg->pref_chan) {
++		p2p->cfg->pref_chan = os_malloc(cfg->num_pref_chan *
++						sizeof(struct p2p_channel));
++		if (p2p->cfg->pref_chan) {
++			os_memcpy(p2p->cfg->pref_chan, cfg->pref_chan,
++				  cfg->num_pref_chan *
++				  sizeof(struct p2p_channel));
++		} else
++			p2p->cfg->num_pref_chan = 0;
++	}
+ 
+ 	p2p->min_disc_int = 1;
+ 	p2p->max_disc_int = 3;
+@@ -2240,6 +2250,7 @@ void p2p_deinit(struct p2p_data *p2p)
+ 	os_free(p2p->cfg->model_name);
+ 	os_free(p2p->cfg->model_number);
+ 	os_free(p2p->cfg->serial_number);
++	os_free(p2p->cfg->pref_chan);
+ 	os_free(p2p->groups);
+ 	wpabuf_free(p2p->sd_resp);
+ 	os_free(p2p->after_scan_tx);
+@@ -3694,6 +3705,28 @@ int p2p_set_oper_channel(struct p2p_data
+ 	return 0;
+ }
+ 
++
++int p2p_set_pref_chan(struct p2p_data *p2p, unsigned int num_pref_chan,
++		      const struct p2p_channel *pref_chan)
++{
++	struct p2p_channel *n;
++
++	if (pref_chan) {
++		n = os_malloc(num_pref_chan * sizeof(struct p2p_channel));
++		if (n == NULL)
++			return -1;
++		os_memcpy(n, pref_chan,
++			  num_pref_chan * sizeof(struct p2p_channel));
++	} else
++		n = NULL;
++
++	os_free(p2p->cfg->pref_chan);
++	p2p->cfg->pref_chan = n;
++	p2p->cfg->num_pref_chan = num_pref_chan;
++
++	return 0;
++}
++
+ 
+ int p2p_get_interface_addr(struct p2p_data *p2p, const u8 *dev_addr,
+ 			   u8 *iface_addr)
+--- a/src/p2p/p2p.h
++++ b/src/p2p/p2p.h
+@@ -224,6 +224,11 @@ enum p2p_prov_disc_status {
+ 	P2P_PROV_DISC_REJECTED,
+ };
+ 
++struct p2p_channel {
++	u8 op_class;
++	u8 chan;
++};
++
+ /**
+  * struct p2p_config - P2P configuration
+  *
+@@ -271,6 +276,16 @@ struct p2p_config {
+ 	struct p2p_channels channels;
+ 
+ 	/**
++	 * num_pref_chan - Number of pref_chan entries
++	 */
++	unsigned int num_pref_chan;
++
++	/**
++	 * pref_chan - Preferred channels for GO Negotiation
++	 */
++	struct p2p_channel *pref_chan;
++
++	/**
+ 	 * pri_dev_type - Primary Device Type (see WPS)
+ 	 */
+ 	u8 pri_dev_type[8];
+@@ -1614,6 +1629,16 @@ int p2p_set_oper_channel(struct p2p_data
+ 			 int cfg_op_channel);
+ 
+ /**
++ * p2p_set_pref_chan - Set P2P preferred channel list
++ * @p2p: P2P module context from p2p_init()
++ * @num_pref_chan: Number of entries in pref_chan list
++ * @pref_chan: Preferred channels or %NULL to remove preferences
++ * Returns: 0 on success, -1 on failure
++ */
++int p2p_set_pref_chan(struct p2p_data *p2p, unsigned int num_pref_chan,
++		      const struct p2p_channel *pref_chan);
++
++/**
+  * p2p_in_progress - Check whether a P2P operation is progress
+  * @p2p: P2P module context from p2p_init()
+  * Returns: 0 if P2P module is idle or 1 if an operation is in progress
+--- a/src/p2p/p2p_go_neg.c
++++ b/src/p2p/p2p_go_neg.c
+@@ -302,6 +302,7 @@ static void p2p_reselect_channel(struct
+ 	struct p2p_reg_class *cl;
+ 	int freq;
+ 	u8 op_reg_class, op_channel;
++	unsigned int i;
+ 
+ 	wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: Selected operating "
+ 		"channel (reg_class %u channel %u) not acceptable to the "
+@@ -334,6 +335,21 @@ static void p2p_reselect_channel(struct
+ 		return;
+ 	}
+ 
++	/* Select channel with highest preference if the peer supports it */
++	for (i = 0; p2p->cfg->pref_chan && i < p2p->cfg->num_pref_chan; i++) {
++		if (p2p_channels_includes(intersection,
++					  p2p->cfg->pref_chan[i].op_class,
++					  p2p->cfg->pref_chan[i].chan)) {
++			p2p->op_reg_class = p2p->cfg->pref_chan[i].op_class;
++			p2p->op_channel = p2p->cfg->pref_chan[i].chan;
++			wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: Pick "
++				"highest preferred chnnel (op_class %u "
++				"channel %u) from intersection",
++				p2p->op_reg_class, p2p->op_channel);
++			return;
++		}
++	}
++
+ 	/*
+ 	 * Fall back to whatever is included in the channel intersection since
+ 	 * no better options seems to be available.
+--- a/wpa_supplicant/config.c
++++ b/wpa_supplicant/config.c
+@@ -19,6 +19,7 @@
+ #include "crypto/sha1.h"
+ #include "rsn_supp/wpa.h"
+ #include "eap_peer/eap.h"
++#include "p2p/p2p.h"
+ #include "config.h"
+ 
+ 
+@@ -1821,6 +1822,7 @@ void wpa_config_free(struct wpa_config *
+ 	os_free(config->home_ca_cert);
+ 	os_free(config->home_imsi);
+ 	os_free(config->home_milenage);
++	os_free(config->p2p_pref_chan);
+ 	os_free(config);
+ }
+ 
+@@ -2495,6 +2497,55 @@ static int wpa_config_process_sec_device
+ 	config->num_sec_device_types++;
+ 	return 0;
+ }
++
++
++static int wpa_config_process_p2p_pref_chan(
++	const struct global_parse_data *data,
++	struct wpa_config *config, int line, const char *pos)
++{
++	struct p2p_channel *pref = NULL, *n;
++	unsigned int num = 0;
++	const char *pos2;
++	u8 op_class, chan;
++
++	/* format: class:chan,class:chan,... */
++
++	while (*pos) {
++		op_class = atoi(pos);
++		pos2 = os_strchr(pos, ':');
++		if (pos2 == NULL)
++			goto fail;
++		pos2++;
++		chan = atoi(pos2);
++
++		n = os_realloc(pref, (num + 1) * sizeof(struct p2p_channel));
++		if (n == NULL)
++			goto fail;
++		pref = n;
++		pref[num].op_class = op_class;
++		pref[num].chan = chan;
++		num++;
++
++		pos = os_strchr(pos2, ',');
++		if (pos == NULL)
++			break;
++		pos++;
++	}
++
++	os_free(config->p2p_pref_chan);
++	config->p2p_pref_chan = pref;
++	config->num_p2p_pref_chan = num;
++	wpa_hexdump(MSG_DEBUG, "P2P: Preferred class/channel pairs",
++		    (u8 *) config->p2p_pref_chan,
++		    config->num_p2p_pref_chan * sizeof(struct p2p_channel));
++
++	return 0;
++
++fail:
++	os_free(pref);
++	wpa_printf(MSG_ERROR, "Line %d: Invalid p2p_pref_chan list", line);
++	return -1;
++}
+ #endif /* CONFIG_P2P */
+ 
+ 
+@@ -2569,6 +2620,7 @@ static const struct global_parse_data gl
+ 	{ INT_RANGE(persistent_reconnect, 0, 1), 0 },
+ 	{ INT_RANGE(p2p_intra_bss, 0, 1), CFG_CHANGED_P2P_INTRA_BSS },
+ 	{ INT(p2p_group_idle), 0 },
++	{ FUNC(p2p_pref_chan), CFG_CHANGED_P2P_PREF_CHAN },
+ #endif /* CONFIG_P2P */
+ 	{ FUNC(country), CFG_CHANGED_COUNTRY },
+ 	{ INT(bss_max_count), 0 },
+--- a/wpa_supplicant/config.h
++++ b/wpa_supplicant/config.h
+@@ -47,6 +47,7 @@
+ #define CFG_CHANGED_VENDOR_EXTENSION BIT(10)
+ #define CFG_CHANGED_P2P_LISTEN_CHANNEL BIT(11)
+ #define CFG_CHANGED_P2P_OPER_CHANNEL BIT(12)
++#define CFG_CHANGED_P2P_PREF_CHAN BIT(13)
+ 
+ /**
+  * struct wpa_config - wpa_supplicant configuration data
+@@ -362,6 +363,8 @@ struct wpa_config {
+ 	char *p2p_ssid_postfix;
+ 	int persistent_reconnect;
+ 	int p2p_intra_bss;
++	unsigned int num_p2p_pref_chan;
++	struct p2p_channel *p2p_pref_chan;
+ 
+ #define MAX_WPS_VENDOR_EXT 10
+ 	/**
+--- a/wpa_supplicant/config_file.c
++++ b/wpa_supplicant/config_file.c
+@@ -22,6 +22,7 @@
+ #include "config.h"
+ #include "base64.h"
+ #include "uuid.h"
++#include "p2p/p2p.h"
+ 
+ 
+ /**
+@@ -699,6 +700,16 @@ static void wpa_config_write_global(FILE
+ 		fprintf(f, "p2p_intra_bss=%u\n", config->p2p_intra_bss);
+ 	if (config->p2p_group_idle)
+ 		fprintf(f, "p2p_group_idle=%u\n", config->p2p_group_idle);
++	if (config->p2p_pref_chan) {
++		unsigned int i;
++		fprintf(f, "p2p_pref_chan=");
++		for (i = 0; i < config->num_p2p_pref_chan; i++) {
++			fprintf(f, "%s%u:%u", i > 0 ? "," : "",
++				config->p2p_pref_chan[i].op_class,
++				config->p2p_pref_chan[i].chan);
++		}
++		fprintf(f, "\n");
++	}
+ #endif /* CONFIG_P2P */
+ 	if (config->country[0] && config->country[1]) {
+ 		fprintf(f, "country=%c%c\n",
+--- a/wpa_supplicant/p2p_supplicant.c
++++ b/wpa_supplicant/p2p_supplicant.c
+@@ -4095,6 +4095,14 @@ void wpas_p2p_update_config(struct wpa_s
+ 			wpa_printf(MSG_ERROR, "P2P: Own oper channel update "
+ 				   "failed: %d", ret);
+ 	}
++
++	if (wpa_s->conf->changed_parameters & CFG_CHANGED_P2P_PREF_CHAN) {
++		if (p2p_set_pref_chan(p2p, wpa_s->conf->num_p2p_pref_chan,
++				      wpa_s->conf->p2p_pref_chan) < 0) {
++			wpa_printf(MSG_ERROR, "P2P: Preferred channel list "
++				   "update failed");
++		}
++	}
+ }
+ 
+ 

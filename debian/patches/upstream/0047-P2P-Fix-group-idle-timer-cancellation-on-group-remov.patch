@@ -1,7 +1,7 @@
 From 791e6df3dfb605acda94732eb35214d818c4f68d Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Sun, 19 Feb 2012 18:10:20 +0200
-Subject: [PATCH 47/58] P2P: Fix group idle timer cancellation on group
+Subject: [PATCH 47/73] P2P: Fix group idle timer cancellation on group
  removal
 
 The wpas_p2p_group_idle_timeout was getting cancelled in the beginning

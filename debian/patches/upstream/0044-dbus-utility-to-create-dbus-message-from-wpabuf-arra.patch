@@ -1,7 +1,7 @@
 From db4b7c8db78d7e4f6ba1ee84bc470a8256854ed8 Mon Sep 17 00:00:00 2001
 From: Jayant Sane <jayant.sane@intel.com>
 Date: Sat, 25 Feb 2012 10:45:17 +0200
-Subject: [PATCH 44/58] dbus: utility to create dbus message from wpabuf array
+Subject: [PATCH 44/73] dbus: utility to create dbus message from wpabuf array
 
 If a wpabuf array is used to store basic typed data that we would like
 to send over D-Bus then this utility will be of help when it places the

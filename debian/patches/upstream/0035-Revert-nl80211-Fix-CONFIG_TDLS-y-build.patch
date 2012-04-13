@@ -1,7 +1,7 @@
 From 1d931b280127317a8b3513d380f772867eda0ca9 Mon Sep 17 00:00:00 2001
 From: Angie Chinchilla <angie.v.chinchilla@intel.com>
 Date: Tue, 21 Feb 2012 13:29:38 -0800
-Subject: [PATCH 35/58] Revert "nl80211: Fix CONFIG_TDLS=y build"
+Subject: [PATCH 35/73] Revert "nl80211: Fix CONFIG_TDLS=y build"
 
 This reverts commit f75709d115185c4162e29ab73c0a9420e43d3893.
 This should not have picked up due to missing dependent code in

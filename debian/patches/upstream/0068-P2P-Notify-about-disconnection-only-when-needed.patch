@@ -1,0 +1,28 @@
+From 1ddbf356ecacf60333c43589b314fde0c0966f57 Mon Sep 17 00:00:00 2001
+From: Eliad Peller <eliad@wizery.com>
+Date: Sun, 1 Apr 2012 21:49:03 +0300
+Subject: [PATCH 68/73] P2P: Notify about disconnection only when needed
+
+wpas_notify_state_changed() notified about disconnection when
+new_state < WPA_ASSOCIATED, without checking the old state. This
+results in extra processing which can be avoided by checking that
+old_state was connected.
+
+Signed-hostap: Eliad Peller <eliad@wizery.com>
+intended-for: hostap-1
+(cherry picked from commit dbe7aa222510c6f02e7813cc6ea0cdf84d3fec9c)
+---
+ wpa_supplicant/notify.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/wpa_supplicant/notify.c
++++ b/wpa_supplicant/notify.c
+@@ -88,7 +88,7 @@ void wpas_notify_state_changed(struct wp
+ #ifdef CONFIG_P2P
+ 	if (new_state == WPA_COMPLETED)
+ 		wpas_p2p_notif_connected(wpa_s);
+-	else if (new_state < WPA_ASSOCIATED)
++	else if (old_state >= WPA_ASSOCIATED && new_state < WPA_ASSOCIATED)
+ 		wpas_p2p_notif_disconnected(wpa_s);
+ #endif /* CONFIG_P2P */
+ 

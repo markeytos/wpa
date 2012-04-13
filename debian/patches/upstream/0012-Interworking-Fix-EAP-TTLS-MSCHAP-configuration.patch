@@ -1,7 +1,7 @@
 From 4e6bdb158cb2e7d600c7e1aea8dd999f0d096016 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Tue, 31 Jan 2012 16:20:43 +0200
-Subject: [PATCH 12/58] Interworking: Fix EAP-TTLS/MSCHAP configuration
+Subject: [PATCH 12/73] Interworking: Fix EAP-TTLS/MSCHAP configuration
 
 Copy-paste error ended up using CHAP when MSCHAP was supposed to be
 set.

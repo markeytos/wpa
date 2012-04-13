@@ -56,6 +56,21 @@ upstream/0055-P2P-Filter-input-parameters-in-p2p_serv_disc_externa.patch
 upstream/0056-TTLS-Fix-peer-challenge-generation-for-TTLS-MSCHAPv2.patch
 upstream/0057-BSS-Fix-use-after-realloc.patch
 upstream/0058-dbus-Make-P2P-group-properties-accessible-individual.patch
+upstream/0059-P2P-Validate-p2p_oper_channel-in-p2p_group_add.patch
+upstream/0060-P2P-Do-not-use-group-idle-timeout-during-provisionin.patch
+upstream/0061-Sync-with-include-linux-nl80211.h-from-wireless-test.patch
+upstream/0062-P2P-Add-support-for-preferred-channel-list.patch
+upstream/0063-Clear-previous-BSSID-on-explicit-disconnection-reque.patch
+upstream/0064-P2P-Use-P2P-Device-ID-attribute-if-Device-Info-not-a.patch
+upstream/0065-Fix-potential-double-free-and-use-of-freed-memory-in.patch
+upstream/0066-Fix-memory-leaks-on-radius_client_send-error-paths.patch
+upstream/0067-P2P-Add-deinit_p2p_cli-op-to-clear-P2P-client-driver.patch
+upstream/0068-P2P-Notify-about-disconnection-only-when-needed.patch
+upstream/0069-Change-reason-code-for-AP-mode-BSS-termination-to-3.patch
+upstream/0070-Save-bgscan-parameter-into-configuration-file.patch
+upstream/0071-Clarify-comment-in-wpa_supplicant-defconfig.patch
+upstream/0072-P2P-Fix-crash-for-failure-case-when-WSC-PIN-is-enter.patch
+upstream/0073-P2P-Disconnect-P2P-group-on-supplicant-deinit.patch
 
 01_use_pkg-config_for_pcsc-lite_module.patch
 02_dbus_group_policy.patch

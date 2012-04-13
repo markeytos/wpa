@@ -1,7 +1,7 @@
 From 4a7f260a0d2b9c9e9033063cdaa437866aedd7dd Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 12 Feb 2012 13:54:15 +0200
-Subject: [PATCH 32/58] WPS: Fix regression in post-WPS scan optimization
+Subject: [PATCH 32/73] WPS: Fix regression in post-WPS scan optimization
 
 Commit 3c85f144ce7aa3967f881a7584a5b125061ca436 fixed issues with P2P
 Action frame TX after disconnection by clearing wpa_s->assoc_freq.

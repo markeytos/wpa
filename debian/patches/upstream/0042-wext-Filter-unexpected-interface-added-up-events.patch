@@ -1,7 +1,7 @@
 From 6180e2d444d1d5b81ee45a35180c9d4449237b07 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 18 Feb 2012 13:28:21 +0200
-Subject: [PATCH 42/58] wext: Filter unexpected interface added/up events
+Subject: [PATCH 42/73] wext: Filter unexpected interface added/up events
 
 It looks like a RTM_NEWLINK event claiming the interface to be UP is
 delivered just before removing an interface after having first indicated

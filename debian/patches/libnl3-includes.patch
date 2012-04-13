@@ -1,11 +1,11 @@
-FIXME: this should be done more elegantly.
 --- a/src/drivers/drivers.mak
 +++ b/src/drivers/drivers.mak
-@@ -49,6 +49,7 @@ ifdef CONFIG_LIBNL32
+@@ -48,7 +48,7 @@ NEED_RFKILL=y
+ ifdef CONFIG_LIBNL32
    DRV_LIBS += -lnl-3
    DRV_LIBS += -lnl-genl-3
-   DRV_CFLAGS += -DCONFIG_LIBNL20
-+  DRV_CFLAGS += -I/usr/include/libnl3/
+-  DRV_CFLAGS += -DCONFIG_LIBNL20
++  DRV_CFLAGS += -DCONFIG_LIBNL20 `pkg-config --cflags libnl-3.0`
  else
    ifdef CONFIG_LIBNL_TINY
      DRV_LIBS += -lnl-tiny

@@ -10,7 +10,8 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
     - import git patches up to hostap_0_7_2-1519-gfee70d7.
     - temporarily disable conflicting patches.
     - rebase patches:
-      - hostap_allow-linking-with-libnl-3.2
+      - libnl3-includes
+    - update hostapd configs.
   * merge source packages for hostapd and wpasupplicant under the new name
     "wpa", which is also used by upstream.
   * restrict wpasupplicant to linux-any and kfreebsd-any, hurd lacks kernel
@@ -49,7 +50,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
     his request, many thanks for all past efforts Faidon.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 13 Apr 2012 23:31:25 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 14 Apr 2012 00:30:17 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

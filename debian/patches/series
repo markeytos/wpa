@@ -79,4 +79,4 @@ upstream/0073-P2P-Disconnect-P2P-group-on-supplicant-deinit.patch
 11_wpa_gui_ftbfs_gcc_4_7.patch
 12_wpa_gui_knotify_support.patch
 13_human_readable_signal.patch
-hostap_allow-linking-with-libnl-3.2.patch
+libnl3-includes.patch

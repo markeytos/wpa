@@ -144,7 +144,7 @@ CONFIG_IEEE80211N=y
 
 # Add support for writing debug log to a file: -f /tmp/hostapd.log
 # Disabled by default.
-#CONFIG_DEBUG_FILE=y
+CONFIG_DEBUG_FILE=y
 
 # Remove support for RADIUS accounting
 #CONFIG_NO_ACCOUNTING=y

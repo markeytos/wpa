@@ -77,7 +77,6 @@ Package: wpasupplicant-udeb
 Section: debian-installer
 Priority: standard
 Architecture: linux-any
-Multi-Arch: foreign
 Package-Type: udeb
 Depends: ${shlibs:Depends}, ${misc:Depends}, busybox-udeb
 Description: Client support for WPA and WPA2 (IEEE 802.11i)

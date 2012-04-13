@@ -64,8 +64,8 @@ override_dh_auto_clean:
 	              --buildsystem=makefile
 	dh_auto_clean --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
 	              --buildsystem=qmake
-	find wpa_supplicant/wpa_gui-qt4 -type d \
-		-name \.moc -o -name \.ui -o -name \.obj -delete
+	-find wpa_supplicant/wpa_gui-qt4 -type d \
+		-name \.moc -o -name \.ui -o -name \.obj -exec rm -rf {} \;
 	dh_auto_clean --sourcedirectory=hostapd \
 	              --buildsystem=makefile
 
@@ -73,7 +73,11 @@ override_dh_auto_install:
 	$(info Skip dh_auto_install ...)
 
 override_dh_clean:
-	dh_clean wpa_supplicant/.config hostapd/.config wpa_supplicant/wpa_supplicant-udeb
+	# make sure to remove the staging directory for the udeb
+	rm -rf debian/wpasupplicant-udeb
+	dh_clean wpa_supplicant/.config \
+		 hostapd/.config \
+		 wpa_supplicant/wpa_supplicant-udeb
 
 override_dh_install:
 	dh_install

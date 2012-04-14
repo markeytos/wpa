@@ -1,7 +1,7 @@
 From 201f339dd8f7920653ac647bdab1de6c04783542 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Mon, 5 Mar 2012 16:59:03 +0200
-Subject: [PATCH 56/73] TTLS: Fix peer challenge generation for TTLS/MSCHAPv2
+Subject: [PATCH 56/75] TTLS: Fix peer challenge generation for TTLS/MSCHAPv2
 
 Commit 30680e9332c96803533b9dae6105fd7b15b5bb52 changed the length
 of the implicit challenge result to match with the exact length used

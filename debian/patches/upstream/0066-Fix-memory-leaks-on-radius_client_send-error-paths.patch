@@ -1,7 +1,7 @@
 From 39a41530414ddd20252f4b0393396638943534e0 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 1 Apr 2012 17:55:20 +0300
-Subject: [PATCH 66/73] Fix memory leaks on radius_client_send error paths
+Subject: [PATCH 66/75] Fix memory leaks on radius_client_send error paths
 
 In case this function returns an error, the RADIUS message needs to
 freed in the caller.

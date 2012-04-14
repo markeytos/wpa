@@ -1,7 +1,7 @@
 From 69047431ec2ea167e130d3e93b0a0bae505fdcf4 Mon Sep 17 00:00:00 2001
 From: Dmitry Shmidt <dimitrysh@google.com>
 Date: Thu, 21 Jul 2011 15:19:46 -0700
-Subject: [PATCH 22/73] P2P: Send STA connected/disconnected events to parent
+Subject: [PATCH 22/75] P2P: Send STA connected/disconnected events to parent
  ctrl_iface
 
 Send the connection events from P2P group to both the group interface

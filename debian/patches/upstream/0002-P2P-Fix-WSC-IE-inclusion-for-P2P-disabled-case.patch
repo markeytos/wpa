@@ -1,7 +1,7 @@
 From d34000c61fc1db6f89e9a9de7b7b6d0dffd20d2c Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Fri, 27 Jan 2012 21:09:34 +0200
-Subject: [PATCH 02/73] P2P: Fix WSC IE inclusion for P2P disabled case
+Subject: [PATCH 02/75] P2P: Fix WSC IE inclusion for P2P disabled case
 
 wpas_wps_in_use() was forcing WPS to be enabled unconditionally if P2P
 support was included in the build. This is not really the correct

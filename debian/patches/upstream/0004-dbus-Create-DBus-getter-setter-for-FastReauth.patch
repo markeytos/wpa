@@ -1,7 +1,7 @@
 From 5045a668201f1027dbcc91bd8d092bbcee15a2e3 Mon Sep 17 00:00:00 2001
 From: Paul Stewart <pstew@chromium.org>
 Date: Sat, 28 Jan 2012 11:21:37 +0200
-Subject: [PATCH 04/73] dbus: Create DBus getter/setter for FastReauth
+Subject: [PATCH 04/75] dbus: Create DBus getter/setter for FastReauth
 
 Provide a means over DBus to set the conf->fast_reauth
 property, which controls whether TLS session resumption

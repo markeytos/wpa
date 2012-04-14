@@ -1,7 +1,7 @@
 From 7d35098683fb27dd38cc842a87536b8d17009c5f Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 5 Feb 2012 20:52:24 +0200
-Subject: [PATCH 20/73] P2P: Wait for PD-before-join response
+Subject: [PATCH 20/75] P2P: Wait for PD-before-join response
 
 Even though the Provision Discovery Response frame from PD-before-join
 does not really provide any additional information, it can be better to

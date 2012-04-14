@@ -1,7 +1,7 @@
 From c4ac8fdc310a4bc31cf45219fcb09de09f7137dd Mon Sep 17 00:00:00 2001
 From: Angie Chinchilla <angie.v.chinchilla@intel.com>
 Date: Fri, 6 Apr 2012 18:22:03 +0300
-Subject: [PATCH 72/73] P2P: Fix crash for failure case when WSC PIN is
+Subject: [PATCH 72/75] P2P: Fix crash for failure case when WSC PIN is
  entered incorrectly
 
 When forming a P2P group using WSC PIN method, if the PIN is entered

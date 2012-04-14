@@ -1,7 +1,7 @@
 From 49b1bce614776e4d1813a41e26a94c9fbf9b84db Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Fl=C3=A1vio=20Ceolin?= <flavio.ceolin@profusion.mobi>
 Date: Sat, 11 Feb 2012 11:36:50 +0200
-Subject: [PATCH 43/73] dbus: Make the P2P peer's properties accessible
+Subject: [PATCH 43/75] dbus: Make the P2P peer's properties accessible
  separately
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

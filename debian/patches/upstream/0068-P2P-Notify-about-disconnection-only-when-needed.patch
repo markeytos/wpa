@@ -1,7 +1,7 @@
 From 1ddbf356ecacf60333c43589b314fde0c0966f57 Mon Sep 17 00:00:00 2001
 From: Eliad Peller <eliad@wizery.com>
 Date: Sun, 1 Apr 2012 21:49:03 +0300
-Subject: [PATCH 68/73] P2P: Notify about disconnection only when needed
+Subject: [PATCH 68/75] P2P: Notify about disconnection only when needed
 
 wpas_notify_state_changed() notified about disconnection when
 new_state < WPA_ASSOCIATED, without checking the old state. This

@@ -1,7 +1,7 @@
 From 50ad8895b6bb3b3437105c4cc433d3a2aa3e2547 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 1 Mar 2012 01:16:06 +0200
-Subject: [PATCH 53/73] P2P: Fix p2p_cancel to return success if GO
+Subject: [PATCH 53/75] P2P: Fix p2p_cancel to return success if GO
  Negotiation is stopped
 
 If a GO Negotiation peer is found, wpas_p2p_stop_find() stops the

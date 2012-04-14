@@ -1,7 +1,7 @@
 From 0d461293a957bd86f2b722e30541cd55cb5301f6 Mon Sep 17 00:00:00 2001
 From: Simon Baatz <gmbnomis@gmail.com>
 Date: Sat, 28 Jan 2012 19:41:19 +0200
-Subject: [PATCH 37/73] EAP-AKA peer: Append realm when learning the pseudonym
+Subject: [PATCH 37/75] EAP-AKA peer: Append realm when learning the pseudonym
 
 The pseudonym identity should use a realm in environments where a realm is
 used. Thus, the realm of the permanent identity is added to the pseudonym

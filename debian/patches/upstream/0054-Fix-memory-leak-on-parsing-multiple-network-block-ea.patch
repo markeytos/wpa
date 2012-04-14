@@ -1,7 +1,7 @@
 From 4f9fca87ac436b8047b8871d2cc88778ffc7a3dc Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 4 Mar 2012 16:13:00 +0200
-Subject: [PATCH 54/73] Fix memory leak on parsing multiple network block eap
+Subject: [PATCH 54/75] Fix memory leak on parsing multiple network block eap
  entries
 
 Signed-hostap: Jouni Malinen <j@w1.fi>

@@ -1,7 +1,7 @@
 From da8ca695fc5a1e38e69d5fb65e9863a0a10a4704 Mon Sep 17 00:00:00 2001
 From: Todd Previte <toddx.a.previte@intel.com>
 Date: Sat, 4 Feb 2012 13:08:12 +0200
-Subject: [PATCH 15/73] P2P: Fix DBus crash and return additional P2P group
+Subject: [PATCH 15/75] P2P: Fix DBus crash and return additional P2P group
  properties
 
 When using DBus to get group properties, a segmentation fault is

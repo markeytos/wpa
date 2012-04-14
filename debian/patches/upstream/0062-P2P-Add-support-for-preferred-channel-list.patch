@@ -1,7 +1,7 @@
 From 8ac67bc0f675ef1c2d76b3a3a615ce712a25f895 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 29 Mar 2012 21:28:34 +0300
-Subject: [PATCH 62/73] P2P: Add support for preferred channel list
+Subject: [PATCH 62/75] P2P: Add support for preferred channel list
 
 p2p_pref_chan configuration parameter can now be used to set the
 list of preferred channel for P2P GO Negotiation. This will be used

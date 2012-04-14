@@ -1,7 +1,7 @@
 From 64abeb43501fa24c897c4c2e0185888411d68864 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Tue, 27 Mar 2012 18:04:06 +0300
-Subject: [PATCH 60/73] P2P: Do not use group idle timeout during provisioning
+Subject: [PATCH 60/75] P2P: Do not use group idle timeout during provisioning
 
 Use the normal group formation timeout during the provisioning phase to
 avoid terminating this process too early due to group idle timeout.

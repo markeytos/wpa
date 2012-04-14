@@ -1,7 +1,7 @@
 From 2c8924e2ad63f27a677f6366054f61496fbd992d Mon Sep 17 00:00:00 2001
 From: Grant Erickson <marathon96@gmail.com>
 Date: Sun, 29 Jan 2012 14:18:22 +0200
-Subject: [PATCH 08/73] build: Fix install target parent directory
+Subject: [PATCH 08/75] build: Fix install target parent directory
  prerequisites
 
 This changes the install target such that parent directories of

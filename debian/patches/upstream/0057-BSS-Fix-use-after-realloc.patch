@@ -1,7 +1,7 @@
 From ffda7cfaf1f7acdc38bed15a877c62b47f9e515c Mon Sep 17 00:00:00 2001
 From: Eliad Peller <eliad@wizery.com>
 Date: Mon, 5 Mar 2012 17:09:55 +0200
-Subject: [PATCH 57/73] BSS: Fix use-after-realloc
+Subject: [PATCH 57/75] BSS: Fix use-after-realloc
 
 After reallocation of the bss struct, current_bss wasn't updated and
 could hold an invalid pointer (which might get dereferenced later).

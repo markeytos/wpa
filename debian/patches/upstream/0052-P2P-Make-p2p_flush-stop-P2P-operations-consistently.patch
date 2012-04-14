@@ -1,7 +1,7 @@
 From 73bde309e0ad18a6af04757536721d5b9323f353 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Mon, 27 Feb 2012 19:10:04 +0200
-Subject: [PATCH 52/73] P2P: Make p2p_flush stop P2P operations consistently
+Subject: [PATCH 52/75] P2P: Make p2p_flush stop P2P operations consistently
 
 p2p_flush did not explicit stop all P2P operations, i.e., the exact
 behavior depended on the P2P module state at the time the p2p_flush

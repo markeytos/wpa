@@ -1,7 +1,7 @@
 From c3181cc428976426606ed7571b7d19947841d35b Mon Sep 17 00:00:00 2001
 From: Eliad Peller <eliad@wizery.com>
 Date: Sun, 1 Apr 2012 21:41:23 +0300
-Subject: [PATCH 67/73] P2P: Add deinit_p2p_cli op to clear P2P client driver
+Subject: [PATCH 67/75] P2P: Add deinit_p2p_cli op to clear P2P client driver
  state
 
 On P2P group removal, the GO is deinitialized correctly (and the vif

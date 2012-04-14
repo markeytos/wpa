@@ -1,7 +1,7 @@
 From c83f71a4742dcfa75cd86042f275c6eba2d15f78 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Tue, 27 Mar 2012 20:38:33 +0300
-Subject: [PATCH 61/73] Sync with include/linux/nl80211.h from
+Subject: [PATCH 61/75] Sync with include/linux/nl80211.h from
  wireless-testing.git
 
 Signed-hostap: Jouni Malinen <j@w1.fi>

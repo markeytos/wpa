@@ -1,7 +1,7 @@
 From fe1dc848aa75d567e03855cef895917f6121067e Mon Sep 17 00:00:00 2001
 From: Angie Chinchilla <angie.v.chinchilla@intel.com>
 Date: Fri, 6 Apr 2012 18:06:56 +0300
-Subject: [PATCH 71/73] Clarify comment in wpa_supplicant/defconfig
+Subject: [PATCH 71/75] Clarify comment in wpa_supplicant/defconfig
 
 I think this comment, as originally stated, says the opposite of
 what is meant. Reword to help the next guy.

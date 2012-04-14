@@ -1,7 +1,7 @@
 From 3d8748b1789531e58212390206ed64dc7040fc8c Mon Sep 17 00:00:00 2001
 From: Reinette Chatre <reinette.chatre@intel.com>
 Date: Sat, 25 Feb 2012 10:50:13 +0200
-Subject: [PATCH 45/73] dbus: revert changes to some peer properties
+Subject: [PATCH 45/75] dbus: revert changes to some peer properties
 
 Commit 3f6e50ac282bbcb4be137023316543bd232ba350 made it possible to access
 P2P peer properties using the org.freedesktop.DBus.Properties interface.

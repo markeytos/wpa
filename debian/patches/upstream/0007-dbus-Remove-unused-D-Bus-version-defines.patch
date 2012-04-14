@@ -1,7 +1,7 @@
 From 7efba08f36b18c07e06bafacf7f97b2bf98dd038 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sun, 29 Jan 2012 12:53:12 +0200
-Subject: [PATCH 07/73] dbus: Remove unused D-Bus version defines
+Subject: [PATCH 07/75] dbus: Remove unused D-Bus version defines
 
 These have not been used since commit
 8ddef94bd41747ba658ed4ed5dfa9e62b4b84cfa.

@@ -1,7 +1,7 @@
 From 449185b0e6d45fdb27537c4b9be5a4f52d5cf29a Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Thu, 1 Mar 2012 17:53:53 +0200
-Subject: [PATCH 48/73] Fix processing of channel list update events
+Subject: [PATCH 48/75] Fix processing of channel list update events
 
 Commit 6bf731e8cea4d9d41665d271b331e096c7c569e9 broke handling of
 EVENT_CHANNEL_LIST_CHANGED by introducing a cached copy of the driver

@@ -1,7 +1,7 @@
 From 7deec79beb60df7ecf031d449c99860741c4e889 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Fri, 30 Mar 2012 15:50:33 +0300
-Subject: [PATCH 64/73] P2P: Use P2P Device ID attribute if Device Info not
+Subject: [PATCH 64/75] P2P: Use P2P Device ID attribute if Device Info not
  available
 
 The "BSS p2p_dev_addr=address" command uses p2p_parse_dev_addr() to

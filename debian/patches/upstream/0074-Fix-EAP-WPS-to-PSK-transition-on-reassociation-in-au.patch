@@ -1,0 +1,51 @@
+From 4295e26e248a375556864a6c79506bd676dbce98 Mon Sep 17 00:00:00 2001
+From: Jouni Malinen <jouni@qca.qualcomm.com>
+Date: Tue, 10 Apr 2012 21:30:46 +0300
+Subject: [PATCH 74/75] Fix EAP/WPS to PSK transition on reassociation in
+ authenticator
+
+A station may move from EAP/WPS key_mgmt to PSK using re-association. In
+practice, this can happen most likely with WPS when the station runs
+through the provisioning step (EAP/WPS) followed by PSK authentication.
+If a deauthentication event is missed from the station for whatever
+reason, the EAPOL authenticator state machine could have been left
+running.
+
+This can result in various issues, including unexpected disconnection of
+the station while both the 4-way handshake and EAPOL authenticator state
+machines (EAP) are running at the same time when the supplicant is
+trying to use PSK. Fix this by explicitly clearing EAPOL authenticator
+state machine on (re)association if the new association does not use it.
+
+Signed-hostap: Jouni Malinen <jouni@qca.qualcomm.com>
+intended-for: hostap-1
+(cherry picked from commit 31b4961f02f222a5446988cd9f5f7d63acdd0508)
+---
+ src/ap/ieee802_1x.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/src/ap/ieee802_1x.c
++++ b/src/ap/ieee802_1x.c
+@@ -868,12 +868,22 @@ void ieee802_1x_new_station(struct hosta
+ 	if (!force_1x && !hapd->conf->ieee802_1x) {
+ 		wpa_printf(MSG_DEBUG, "IEEE 802.1X: Ignore STA - "
+ 			   "802.1X not enabled or forced for WPS");
++		/*
++		 * Clear any possible EAPOL authenticator state to support
++		 * reassociation change from WPS to PSK.
++		 */
++		ieee802_1x_free_station(sta);
+ 		return;
+ 	}
+ 
+ 	key_mgmt = wpa_auth_sta_key_mgmt(sta->wpa_sm);
+ 	if (key_mgmt != -1 && wpa_key_mgmt_wpa_psk(key_mgmt)) {
+ 		wpa_printf(MSG_DEBUG, "IEEE 802.1X: Ignore STA - using PSK");
++		/*
++		 * Clear any possible EAPOL authenticator state to support
++		 * reassociation change from WPA-EAP to PSK.
++		 */
++		ieee802_1x_free_station(sta);
+ 		return;
+ 	}
+ 

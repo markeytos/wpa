@@ -1,7 +1,7 @@
 From b05861bbd526830f586cc8e86dc2ab5e8651db04 Mon Sep 17 00:00:00 2001
 From: Jithu Jance <jithu@broadcom.com>
 Date: Sat, 10 Dec 2011 12:26:00 +0200
-Subject: [PATCH 23/73] P2P: Append P2P Device Address to AP-STA-DISCONNECTED
+Subject: [PATCH 23/75] P2P: Append P2P Device Address to AP-STA-DISCONNECTED
  event
 
 Append "p2p_dev_addr" parameter to AP-STA-DISCONNECTED event for P2P

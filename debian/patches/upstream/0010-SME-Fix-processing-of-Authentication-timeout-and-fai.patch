@@ -1,7 +1,7 @@
 From bcc8fb87aac9b5ffd5f9d09da606d3847ea39223 Mon Sep 17 00:00:00 2001
 From: Eyal Shapira <eyal@wizery.com>
 Date: Sun, 29 Jan 2012 17:44:31 +0200
-Subject: [PATCH 10/73] SME: Fix processing of Authentication timeout and
+Subject: [PATCH 10/75] SME: Fix processing of Authentication timeout and
  failure
 
 current_bss and pending_bssid weren't cleaned up so BSS

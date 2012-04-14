@@ -1,7 +1,7 @@
 From 42f93a9a0f1858ba8492a1349515624965a64e34 Mon Sep 17 00:00:00 2001
 From: Sylvestre Gallon <ccna.syl@gmail.com>
 Date: Sat, 28 Jan 2012 17:57:48 +0200
-Subject: [PATCH 05/73] dbus: Fix endianness bug in Frequency and Signal
+Subject: [PATCH 05/75] dbus: Fix endianness bug in Frequency and Signal
  properties
 
 These properties did not work on big endian PowerPC (always 100% for

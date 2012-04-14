@@ -1,7 +1,7 @@
 From 4027891cf0b6f6bc16d55d37fa87e5d309fa8fcf Mon Sep 17 00:00:00 2001
 From: Johannes Berg <johannes.berg@intel.com>
 Date: Sun, 5 Feb 2012 19:05:45 +0200
-Subject: [PATCH 18/73] P2P: Remove unneeded go_neg_peer check from PD
+Subject: [PATCH 18/75] P2P: Remove unneeded go_neg_peer check from PD
 
 When the GO negotiation peer is assigned, the state also cannot be IDLE,
 SEARCH, or LISTEN_ONLY.

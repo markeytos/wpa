@@ -1,7 +1,7 @@
 From 49de0c35be1cb775bb4cfb015caf5e64108c7f15 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Fri, 23 Mar 2012 16:12:07 -0700
-Subject: [PATCH 63/73] Clear previous BSSID on explicit disconnection request
+Subject: [PATCH 63/75] Clear previous BSSID on explicit disconnection request
 
 There is no need to use reassociation instead of association in a case
 the previous connection was explicitly disconnected.

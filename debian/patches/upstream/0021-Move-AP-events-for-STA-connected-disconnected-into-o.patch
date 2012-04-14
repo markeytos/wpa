@@ -1,7 +1,7 @@
 From b3aff8e089006a62f0bffd361def8f5008bc75e1 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Thu, 3 Nov 2011 22:17:41 +0200
-Subject: [PATCH 21/73] Move AP events for STA connected/disconnected into one
+Subject: [PATCH 21/75] Move AP events for STA connected/disconnected into one
  function
 
 Instead of trying to remember to add wpa_msg() calls for every possible

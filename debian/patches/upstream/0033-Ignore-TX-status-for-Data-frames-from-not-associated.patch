@@ -1,7 +1,7 @@
 From 962ef491651039341583877e191ef920173d3f4c Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Tue, 14 Feb 2012 21:04:14 +0200
-Subject: [PATCH 33/73] Ignore TX status for Data frames from not associated
+Subject: [PATCH 33/75] Ignore TX status for Data frames from not associated
  STA
 
 Commit d9a38716ccf90b0ab307f570a30931684a1b8730 did this for

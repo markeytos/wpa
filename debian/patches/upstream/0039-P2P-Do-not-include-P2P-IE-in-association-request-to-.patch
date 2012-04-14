@@ -1,7 +1,7 @@
 From fdfee3fc154f36b6015e4aba1dbf3f886e5297c4 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Fri, 17 Feb 2012 11:34:56 +0200
-Subject: [PATCH 39/73] P2P: Do not include P2P IE in association request to
+Subject: [PATCH 39/75] P2P: Do not include P2P IE in association request to
  non-P2P AP
 
 This was previously fixed for most cases in commit

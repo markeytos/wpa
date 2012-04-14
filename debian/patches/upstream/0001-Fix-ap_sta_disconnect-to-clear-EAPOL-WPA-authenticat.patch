@@ -1,7 +1,7 @@
 From 22d947a783670d30e523d07e6470e840c6541bc0 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Wed, 25 Jan 2012 22:32:58 +0200
-Subject: [PATCH 01/73] Fix ap_sta_disconnect() to clear EAPOL/WPA
+Subject: [PATCH 01/75] Fix ap_sta_disconnect() to clear EAPOL/WPA
  authenticator state
 
 Number of places in hostapd use ap_sta_disconnect() instead of

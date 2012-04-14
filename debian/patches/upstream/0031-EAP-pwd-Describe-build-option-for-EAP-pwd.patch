@@ -1,7 +1,7 @@
 From 13f58940d587b74941c956456e500e18fffc980d Mon Sep 17 00:00:00 2001
 From: Dan Harkins <dharkins@lounge.org>
 Date: Sat, 11 Feb 2012 12:17:58 +0200
-Subject: [PATCH 31/73] EAP-pwd: Describe build option for EAP-pwd
+Subject: [PATCH 31/75] EAP-pwd: Describe build option for EAP-pwd
 
 Signed-hostap: Dan Harkins <dharkins@lounge.org>
 (cherry picked from commit 27c9d333d4bfab2b3ac377e5a7920e14a0fc6fe9)

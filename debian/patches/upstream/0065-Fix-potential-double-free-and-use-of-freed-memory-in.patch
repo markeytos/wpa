@@ -1,7 +1,7 @@
 From 3dc4c19aa4c72987b98d9d8237ee082b4c96c6ee Mon Sep 17 00:00:00 2001
 From: Alexander Couzens <lynxis@c-base.org>
 Date: Sun, 1 Apr 2012 13:36:52 +0300
-Subject: [PATCH 65/73] Fix potential double free and use of freed memory in
+Subject: [PATCH 65/75] Fix potential double free and use of freed memory in
  RADIUS client
 
 ieee802_1x_encapsulate_radius() frees the RADIUS message if

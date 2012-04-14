@@ -1,7 +1,7 @@
 From 717ee459a4d08b2b68b1ad22a62403a567ca3b0d Mon Sep 17 00:00:00 2001
 From: Reinette Chatre <reinette.chatre@intel.com>
 Date: Sat, 25 Feb 2012 10:54:11 +0200
-Subject: [PATCH 46/73] dbus: return NULL data for peer IEs
+Subject: [PATCH 46/75] dbus: return NULL data for peer IEs
 
 The org.freedesktop.DBus.Properties interface is now supported for peer
 properties. Ensure that GetAll will work by having the IEs property

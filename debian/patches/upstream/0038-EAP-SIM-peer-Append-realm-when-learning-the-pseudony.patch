@@ -1,7 +1,7 @@
 From e08d4320ca88464e126b219a3a2dfc690ffdf837 Mon Sep 17 00:00:00 2001
 From: Simon Baatz <gmbnomis@gmail.com>
 Date: Sat, 28 Jan 2012 19:38:46 +0200
-Subject: [PATCH 38/73] EAP-SIM peer: Append realm when learning the pseudonym
+Subject: [PATCH 38/75] EAP-SIM peer: Append realm when learning the pseudonym
 
 The pseudonym identity should use a realm in environments where a realm is
 used. Thus, the realm of the permanent identity is added to the pseudonym

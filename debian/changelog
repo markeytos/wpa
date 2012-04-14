@@ -7,7 +7,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
       - hostapd: Fails to authenticate on wpa2 password (Closes: #483924)
       - hostapd: EAPOL reauthentication/rekeying timeout loop when using WMM
         (Closes: #655129, #659059)
-    - import git patches up to hostap_0_7_2-1519-gfee70d7.
+    - import git patches up to hostap_0_7_2-1521-g1ca6871.
     - temporarily disable conflicting patches.
     - rebase patches:
       - libnl3-includes
@@ -54,7 +54,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
     his request, many thanks for all past efforts Faidon.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 14 Apr 2012 02:55:04 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 14 Apr 2012 23:52:41 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

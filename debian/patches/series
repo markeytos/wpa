@@ -71,6 +71,8 @@ upstream/0070-Save-bgscan-parameter-into-configuration-file.patch
 upstream/0071-Clarify-comment-in-wpa_supplicant-defconfig.patch
 upstream/0072-P2P-Fix-crash-for-failure-case-when-WSC-PIN-is-enter.patch
 upstream/0073-P2P-Disconnect-P2P-group-on-supplicant-deinit.patch
+upstream/0074-Fix-EAP-WPS-to-PSK-transition-on-reassociation-in-au.patch
+upstream/0075-AP-Reset-STA-timeout_next-on-driver-based-SME-associ.patch
 
 01_use_pkg-config_for_pcsc-lite_module.patch
 02_dbus_group_policy.patch

@@ -1,7 +1,7 @@
 From dcae1bb2071378eeade704295a4488a8edd03b2a Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 18 Feb 2012 13:16:17 +0200
-Subject: [PATCH 41/73] Use WPA_INTERFACE_DISABLED with interface removed
+Subject: [PATCH 41/75] Use WPA_INTERFACE_DISABLED with interface removed
  events
 
 This makes WPA_INTERFACE_DISABLED more consistent in indicating that

@@ -1,7 +1,7 @@
 From 5aa5c1b8c9a96a3c01768740d31b54d0634e4392 Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <jouni@qca.qualcomm.com>
 Date: Mon, 27 Feb 2012 17:23:41 +0200
-Subject: [PATCH 51/73] P2P: Fix remain-on-channel use with PD/Invitation
+Subject: [PATCH 51/75] P2P: Fix remain-on-channel use with PD/Invitation
  Request while in Listen
 
 If Listen state was in progress on another channel when a request to

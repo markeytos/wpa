@@ -1,7 +1,7 @@
 From 23a9b2c61e592498c9a90ddf5601fd77b25ba3c6 Mon Sep 17 00:00:00 2001
 From: Grzegorz Bajorski <grzegorz.bajorski@tieto.com>
 Date: Mon, 5 Mar 2012 16:26:19 +0200
-Subject: [PATCH 55/73] P2P: Filter input parameters in p2p_serv_disc_external
+Subject: [PATCH 55/75] P2P: Filter input parameters in p2p_serv_disc_external
 
 p2p_ctrl_serv_disc_external() can take only one parameters "0" or "1".
 

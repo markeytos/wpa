@@ -1,3 +1,9 @@
+From: Dan Williams <dcbw@redhat.com>
+
+fix for libnl3 3.3 header location.
+
+Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+
 --- a/src/drivers/drivers.mak
 +++ b/src/drivers/drivers.mak
 @@ -48,7 +48,7 @@ NEED_RFKILL=y

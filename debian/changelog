@@ -27,6 +27,10 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * fix clean target and make sure to succeed building twice in a row.
   * drop build-dependency on libreadline-dev, it's no longer needed with
     WPA_CLI_EDIT.
+  * remove watch file, there is no corresponding upstream tarballs at the
+    moment.
+  * add (temporary?) get-orig-source target to debian/rules, which fetches the
+    last tagged upstream version corresponding to debian/changelog.
 
   [ Kel Modderman ]
   * export BINDIR=/sbin, the build system now requires it when patching
@@ -54,7 +58,7 @@ wpa (1:1.0~rc2-1) UNRELEASED; urgency=low
   * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
     his request, many thanks for all past efforts Faidon.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 14 Apr 2012 23:52:41 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 16 Apr 2012 21:57:45 +0200
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

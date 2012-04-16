@@ -114,3 +114,30 @@ override_dh_installchangelogs:
 
 %:
 	dh $@
+
+get-orig-source:
+	VERSION=$$(dpkg-parsechangelog | sed -ne 's,^Version: *\([0-9]*:\)\?\(.*\)$$,\2,p'); \
+	DEB_VER=$$(echo $$VERSION | sed 's,\-[0-9a-z\~\.]*,,'); \
+	UP_VER=$$(echo $$DEB_VER | sed 's,\~,\-,g'); \
+	UP_VER_TAG=hostap_$$(echo $$UP_VER | sed -e 's,\.,_,g' -e 's,\-,_,g'); \
+	if [ -d $(CURDIR)/../tarballs ]; then \
+		ORIG_LOCATION="$(CURDIR)/../tarballs"; \
+	else \
+		ORIG_LOCATION="$(CURDIR)/.."; \
+	fi; \
+	if [ -e $$ORIG_LOCATION/wpa_$$DEB_VER.orig.tar.gz ]; then \
+		echo "ERROR: $$ORIG_LOCATION/wpa_$$DEB_VER.orig.tar.gz exists"; \
+		exit 1; \
+	fi; \
+	rm -rf orig-source; \
+	git clone git://w1.fi/srv/git/hostap-1.git orig-source; \
+	test -d orig-source || exit 1; \
+	cd orig-source && \
+		git archive \
+			--format=tar \
+			--prefix=wpa-$$UP_VER/ \
+			$$UP_VER_TAG \
+				README COPYING patches src wpa_supplicant hostapd | \
+					gzip -c9 > $$ORIG_LOCATION/wpa_$$DEB_VER.orig.tar.gz
+	rm -rf orig-source
+

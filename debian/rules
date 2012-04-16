@@ -129,7 +129,7 @@ get-orig-source:
 		echo "ERROR: $$ORIG_LOCATION/wpa_$$DEB_VER.orig.tar.gz exists"; \
 		exit 1; \
 	fi; \
-	rm -rf orig-source; \
+	test -d orig-source && exit 1 || :; \
 	git clone git://w1.fi/srv/git/hostap-1.git orig-source; \
 	test -d orig-source || exit 1; \
 	cd orig-source && \

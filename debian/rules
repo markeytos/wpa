@@ -31,7 +31,8 @@ override_dh_auto_build:
 	# build documentation
 	dh_auto_build --sourcedirectory=wpa_supplicant/doc/docbook \
 	              --buildsystem=makefile \
-		      --parallel
+		      --parallel \
+		      -- man
 	# build wpasupplicant-udeb
 	cp -v --remove-destination $(WPASUPPLICANT_UDEB_DOT_CONFIG) wpa_supplicant/.config
 	CFLAGS="$(UCFLAGS)" dh_auto_build --sourcedirectory=wpa_supplicant \

@@ -56,8 +56,10 @@ wpa (1:1.0~rc3-1) experimental; urgency=low
   * Add ability to set CC for cross building support (untested).
   * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
     his request, many thanks for all past efforts Faidon.
+  * Only build manpages from docbook source, we do not currently use the
+    html or pdf products.
 
- -- Kel Modderman <kel@otaku42.de>  Sat, 21 Apr 2012 15:43:26 +1000
+ -- Kel Modderman <kel@otaku42.de>  Sat, 21 Apr 2012 15:59:32 +1000
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

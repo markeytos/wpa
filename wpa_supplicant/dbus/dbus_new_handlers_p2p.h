@@ -94,13 +94,13 @@ DBusMessage *wpas_dbus_handler_p2p_serv_disc_external(
 /*
  * P2P Device property accessor methods.
  */
-dbus_bool_t wpas_dbus_setter_p2p_device_properties(DBusMessageIter *iter,
-						   DBusError *error,
-						   void *user_data);
+dbus_bool_t wpas_dbus_setter_p2p_device_config(DBusMessageIter *iter,
+					       DBusError *error,
+					       void *user_data);
 
-dbus_bool_t wpas_dbus_getter_p2p_device_properties(DBusMessageIter *iter,
-						   DBusError *error,
-						   void *user_data);
+dbus_bool_t wpas_dbus_getter_p2p_device_config(DBusMessageIter *iter,
+					       DBusError *error,
+					       void *user_data);
 
 dbus_bool_t wpas_dbus_getter_p2p_peers(DBusMessageIter *iter, DBusError *error,
 				       void *user_data);
@@ -118,9 +118,36 @@ dbus_bool_t wpas_dbus_getter_p2p_peergo(DBusMessageIter *iter,
 /*
  * P2P Peer properties.
  */
-dbus_bool_t wpas_dbus_getter_p2p_peer_properties(DBusMessageIter *iter,
-						 DBusError *error,
-						 void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_device_name(DBusMessageIter *iter,
+                                                  DBusError *error,
+                                                  void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_primary_device_type(
+	DBusMessageIter *iter, DBusError *error, void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_config_method(DBusMessageIter *iter,
+                                                    DBusError *error,
+                                                    void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_level(DBusMessageIter *iter,
+                                            DBusError *error,
+                                            void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_device_capability(DBusMessageIter *iter,
+                                                        DBusError *error,
+                                                        void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_group_capability(DBusMessageIter *iter,
+                                                       DBusError *error,
+                                                       void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_secondary_device_types(
+	DBusMessageIter *iter, DBusError *error, void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_peer_vendor_extension(DBusMessageIter *iter,
+                                                       DBusError *error,
+                                                       void *user_data);
 
 dbus_bool_t wpas_dbus_getter_p2p_peer_ies(DBusMessageIter *iter,
 					  DBusError *error,
@@ -134,11 +161,31 @@ dbus_bool_t wpas_dbus_getter_p2p_group_members(DBusMessageIter *iter,
 					       DBusError *error,
 					       void *user_data);
 
-dbus_bool_t wpas_dbus_getter_p2p_group_properties(DBusMessageIter *iter,
+dbus_bool_t wpas_dbus_getter_p2p_group_ssid(DBusMessageIter *iter,
+					    DBusError *error,
+					    void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_group_bssid(DBusMessageIter *iter,
+					     DBusError *error,
+					     void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_group_frequency(DBusMessageIter *iter,
+						 DBusError *error,
+						 void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_group_passphrase(DBusMessageIter *iter,
 						  DBusError *error,
 						  void *user_data);
 
-dbus_bool_t wpas_dbus_setter_p2p_group_properties(DBusMessageIter *iter,
+dbus_bool_t wpas_dbus_getter_p2p_group_psk(DBusMessageIter *iter,
+					   DBusError *error,
+					   void *user_data);
+
+dbus_bool_t wpas_dbus_getter_p2p_group_vendor_ext(DBusMessageIter *iter,
+						  DBusError *error,
+						  void *user_data);
+
+dbus_bool_t wpas_dbus_setter_p2p_group_vendor_ext(DBusMessageIter *iter,
 						  DBusError *error,
 						  void *user_data);
 

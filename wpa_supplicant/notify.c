@@ -88,7 +88,7 @@ void wpas_notify_state_changed(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_P2P
 	if (new_state == WPA_COMPLETED)
 		wpas_p2p_notif_connected(wpa_s);
-	else if (new_state < WPA_ASSOCIATED)
+	else if (old_state >= WPA_ASSOCIATED && new_state < WPA_ASSOCIATED)
 		wpas_p2p_notif_disconnected(wpa_s);
 #endif /* CONFIG_P2P */
 
@@ -525,9 +525,12 @@ void wpas_notify_p2p_wps_failed(struct wpa_supplicant *wpa_s,
 
 
 static void wpas_notify_ap_sta_authorized(struct wpa_supplicant *wpa_s,
-					  const u8 *sta)
+					  const u8 *sta,
+					  const u8 *p2p_dev_addr)
 {
 #ifdef CONFIG_P2P
+	wpas_p2p_notify_ap_sta_authorized(wpa_s, p2p_dev_addr);
+
 	/*
 	 * Register a group member object corresponding to this peer and
 	 * emit a PeerJoined signal. This will check if it really is a
@@ -564,10 +567,11 @@ static void wpas_notify_ap_sta_deauthorized(struct wpa_supplicant *wpa_s,
 
 
 void wpas_notify_sta_authorized(struct wpa_supplicant *wpa_s,
-				const u8 *mac_addr, int authorized)
+				const u8 *mac_addr, int authorized,
+				const u8 *p2p_dev_addr)
 {
 	if (authorized)
-		wpas_notify_ap_sta_authorized(wpa_s, mac_addr);
+		wpas_notify_ap_sta_authorized(wpa_s, mac_addr, p2p_dev_addr);
 	else
 		wpas_notify_ap_sta_deauthorized(wpa_s, mac_addr);
 }

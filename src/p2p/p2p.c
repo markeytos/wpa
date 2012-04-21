@@ -142,6 +142,34 @@ static const char * p2p_state_txt(int state)
 }
 
 
+u16 p2p_get_provisioning_info(struct p2p_data *p2p, const u8 *addr)
+{
+	struct p2p_device *dev = NULL;
+
+	if (!addr || !p2p)
+		return 0;
+
+	dev = p2p_get_device(p2p, addr);
+	if (dev)
+		return dev->wps_prov_info;
+	else
+		return 0;
+}
+
+
+void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr)
+{
+	struct p2p_device *dev = NULL;
+
+	if (!addr || !p2p)
+		return;
+
+	dev = p2p_get_device(p2p, addr);
+	if (dev)
+		dev->wps_prov_info = 0;
+}
+
+
 void p2p_set_state(struct p2p_data *p2p, int new_state)
 {
 	wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: State %s -> %s",
@@ -796,7 +824,7 @@ static void p2p_search(struct p2p_data *p2p)
 
 	if (p2p->cfg->p2p_scan(p2p->cfg->cb_ctx, type, freq,
 			       p2p->num_req_dev_types, p2p->req_dev_types,
-			       p2p->find_dev_id) < 0) {
+			       p2p->find_dev_id)) {
 		wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG,
 			"P2P: Scan request failed");
 		p2p_continue_find(p2p);
@@ -1002,10 +1030,20 @@ void p2p_stop_find_for_freq(struct p2p_data *p2p, int freq)
 	p2p->go_neg_peer = NULL;
 	p2p->sd_peer = NULL;
 	p2p->invite_peer = NULL;
+	p2p_stop_listen_for_freq(p2p, freq);
+}
+
+
+void p2p_stop_listen_for_freq(struct p2p_data *p2p, int freq)
+{
 	if (freq > 0 && p2p->drv_in_listen == freq && p2p->in_listen) {
 		wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: Skip stop_listen "
 			"since we are on correct channel for response");
 		return;
+	}
+	if (p2p->in_listen) {
+		p2p->in_listen = 0;
+		p2p_clear_timeout(p2p);
 	}
 	if (p2p->drv_in_listen) {
 		/*
@@ -2068,6 +2106,35 @@ int p2p_scan_result_text(const u8 *ies, size_t ies_len, char *buf, char *end)
 }
 
 
+int p2p_parse_dev_addr(const u8 *ies, size_t ies_len, u8 *dev_addr)
+{
+	struct wpabuf *p2p_ie;
+	struct p2p_message msg;
+	int ret = -1;
+
+	p2p_ie = ieee802_11_vendor_ie_concat(ies, ies_len,
+					     P2P_IE_VENDOR_TYPE);
+	if (p2p_ie == NULL)
+		return -1;
+	os_memset(&msg, 0, sizeof(msg));
+	if (p2p_parse_p2p_ie(p2p_ie, &msg)) {
+		wpabuf_free(p2p_ie);
+		return -1;
+	}
+
+	if (msg.p2p_device_addr) {
+		os_memcpy(dev_addr, msg.p2p_device_addr, ETH_ALEN);
+		ret = 0;
+	} else if (msg.device_id) {
+		os_memcpy(dev_addr, msg.device_id, ETH_ALEN);
+		ret = 0;
+	}
+
+	wpabuf_free(p2p_ie);
+	return ret;
+}
+
+
 static void p2p_clear_go_neg(struct p2p_data *p2p)
 {
 	p2p->go_neg_peer = NULL;
@@ -2142,6 +2209,16 @@ struct p2p_data * p2p_init(const struct p2p_config *cfg)
 		p2p->cfg->model_number = os_strdup(cfg->model_number);
 	if (cfg->serial_number)
 		p2p->cfg->serial_number = os_strdup(cfg->serial_number);
+	if (cfg->pref_chan) {
+		p2p->cfg->pref_chan = os_malloc(cfg->num_pref_chan *
+						sizeof(struct p2p_channel));
+		if (p2p->cfg->pref_chan) {
+			os_memcpy(p2p->cfg->pref_chan, cfg->pref_chan,
+				  cfg->num_pref_chan *
+				  sizeof(struct p2p_channel));
+		} else
+			p2p->cfg->num_pref_chan = 0;
+	}
 
 	p2p->min_disc_int = 1;
 	p2p->max_disc_int = 3;
@@ -2176,6 +2253,7 @@ void p2p_deinit(struct p2p_data *p2p)
 	os_free(p2p->cfg->model_name);
 	os_free(p2p->cfg->model_number);
 	os_free(p2p->cfg->serial_number);
+	os_free(p2p->cfg->pref_chan);
 	os_free(p2p->groups);
 	wpabuf_free(p2p->sd_resp);
 	os_free(p2p->after_scan_tx);
@@ -2187,11 +2265,7 @@ void p2p_deinit(struct p2p_data *p2p)
 void p2p_flush(struct p2p_data *p2p)
 {
 	struct p2p_device *dev, *prev;
-	p2p_clear_timeout(p2p);
-	p2p_set_state(p2p, P2P_IDLE);
-	p2p->start_after_scan = P2P_AFTER_SCAN_NOTHING;
-	p2p->go_neg_peer = NULL;
-	eloop_cancel_timeout(p2p_find_timeout, p2p, NULL);
+	p2p_stop_find(p2p);
 	dl_list_for_each_safe(dev, prev, &p2p->devices, struct p2p_device,
 			      list) {
 		dl_list_del(&dev->list);
@@ -2797,6 +2871,20 @@ int p2p_listen_end(struct p2p_data *p2p, unsigned int freq)
 		p2p_connect_send(p2p, p2p->go_neg_peer);
 		return 1;
 	} else if (p2p->state == P2P_SEARCH) {
+		if (p2p->p2p_scan_running) {
+			 /*
+			  * Search is already in progress. This can happen if
+			  * an Action frame RX is reported immediately after
+			  * the end of a remain-on-channel operation and the
+			  * response frame to that is sent using an offchannel
+			  * operation while in p2p_find. Avoid an attempt to
+			  * restart a scan here.
+			  */
+			wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: p2p_scan "
+				"already in progress - do not try to start a "
+				"new one");
+			return 1;
+		}
 		p2p_search(p2p);
 		return 1;
 	}
@@ -3617,6 +3705,28 @@ int p2p_set_oper_channel(struct p2p_data *p2p, u8 op_reg_class, u8 op_channel,
 	p2p->cfg->op_reg_class = op_reg_class;
 	p2p->cfg->op_channel = op_channel;
 	p2p->cfg->cfg_op_channel = cfg_op_channel;
+	return 0;
+}
+
+
+int p2p_set_pref_chan(struct p2p_data *p2p, unsigned int num_pref_chan,
+		      const struct p2p_channel *pref_chan)
+{
+	struct p2p_channel *n;
+
+	if (pref_chan) {
+		n = os_malloc(num_pref_chan * sizeof(struct p2p_channel));
+		if (n == NULL)
+			return -1;
+		os_memcpy(n, pref_chan,
+			  num_pref_chan * sizeof(struct p2p_channel));
+	} else
+		n = NULL;
+
+	os_free(p2p->cfg->pref_chan);
+	p2p->cfg->pref_chan = n;
+	p2p->cfg->num_pref_chan = num_pref_chan;
+
 	return 0;
 }
 

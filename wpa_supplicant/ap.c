@@ -317,9 +317,9 @@ static void ap_wps_event_cb(void *ctx, enum wps_event event,
 
 
 static void ap_sta_authorized_cb(void *ctx, const u8 *mac_addr,
-				 int authorized)
+				 int authorized, const u8 *p2p_dev_addr)
 {
-	wpas_notify_sta_authorized(ctx, mac_addr, authorized);
+	wpas_notify_sta_authorized(ctx, mac_addr, authorized, p2p_dev_addr);
 }
 
 
@@ -499,6 +499,7 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 		}
 
 		hapd_iface->bss[i]->msg_ctx = wpa_s;
+		hapd_iface->bss[i]->msg_ctx_parent = wpa_s->parent;
 		hapd_iface->bss[i]->public_action_cb = ap_public_action_rx;
 		hapd_iface->bss[i]->public_action_cb_ctx = wpa_s;
 		hapd_iface->bss[i]->vendor_action_cb = ap_vendor_action_rx;

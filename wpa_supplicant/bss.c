@@ -332,6 +332,8 @@ static void wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 		nbss = os_realloc(bss, sizeof(*bss) + res->ie_len +
 				  res->beacon_ie_len);
 		if (nbss) {
+			if (wpa_s->current_bss == bss)
+				wpa_s->current_bss = nbss;
 			bss = nbss;
 			os_memcpy(bss + 1, res + 1,
 				  res->ie_len + res->beacon_ie_len);
@@ -538,6 +540,23 @@ struct wpa_bss * wpa_bss_get_bssid(struct wpa_supplicant *wpa_s,
 	}
 	return NULL;
 }
+
+
+#ifdef CONFIG_P2P
+struct wpa_bss * wpa_bss_get_p2p_dev_addr(struct wpa_supplicant *wpa_s,
+					  const u8 *dev_addr)
+{
+	struct wpa_bss *bss;
+	dl_list_for_each_reverse(bss, &wpa_s->bss, struct wpa_bss, list) {
+		u8 addr[ETH_ALEN];
+		if (p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+				       addr) == 0 &&
+		    os_memcmp(addr, dev_addr, ETH_ALEN) == 0)
+			return bss;
+	}
+	return NULL;
+}
+#endif /* CONFIG_P2P */
 
 
 struct wpa_bss * wpa_bss_get_id(struct wpa_supplicant *wpa_s, unsigned int id)

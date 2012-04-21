@@ -1,4 +1,4 @@
-wpa (1:1.0~rc3-1) unstable; urgency=low
+wpa (1:1.0~rc3-1) experimental; urgency=low
 
   [ Stefan Lippers-Hollmann ]
   * import new upstream snapshot 1.0-rc3:
@@ -57,7 +57,7 @@ wpa (1:1.0~rc3-1) unstable; urgency=low
   * Remove Faidon Liambotis <paravoid@debian.org> from Uploaders as per
     his request, many thanks for all past efforts Faidon.
 
- -- Kel Modderman <kel@otaku42.de>  Wed, 18 Apr 2012 21:03:56 +1000
+ -- Kel Modderman <kel@otaku42.de>  Sat, 21 Apr 2012 15:43:26 +1000
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 

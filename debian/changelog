@@ -1,4 +1,4 @@
-wpa (1:1.0~rc3-1) experimental; urgency=low
+wpa (1.0~rc3-1) experimental; urgency=low
 
   [ Stefan Lippers-Hollmann ]
   * import new upstream snapshot 1.0-rc3:
@@ -30,6 +30,7 @@ wpa (1:1.0~rc3-1) experimental; urgency=low
     last tagged upstream version corresponding to debian/changelog.
     - add a lintian override for this, upstream doesn't want to release
       tarballs at the moment.
+  * use epoche only for hostapd binaries.
 
   [ Kel Modderman ]
   * export BINDIR=/sbin, the build system now requires it when patching

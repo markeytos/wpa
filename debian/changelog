@@ -58,8 +58,6 @@ wpa (1.0~rc3-1) experimental; urgency=low
     syslog and control socket support, also patch systemd service file
   * drop 09_dbus_emit_change_events.patch, applied upstream.
   * fix ftbfs with gcc/g++ 4.7 (Closes: 667416)
-  * unfortunately, hostapd package historically added an epoch, so an epoch
-    must now be added to this source package too.
   * enable hardened build flags. (Closes: #657332)
   * remove DEB_BUILD_OPTIONS=noopt handling from debian/rules, no longer
     required since dpkg-buildflags honors it.

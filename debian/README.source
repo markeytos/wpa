@@ -1,58 +1,100 @@
-This package uses quilt to manage all modifications to the upstream
-source.  Changes are stored in the source package as diffs in
-debian/patches and applied during the build.
+"wpa" sources for Debian
+------------------------
 
-To configure quilt to use debian/patches instead of patches, you want
-either to export QUILT_PATCHES=debian/patches in your environment
-or use this snippet in your ~/.quiltrc:
+This "wpa" source package merges wpa_supplicant and hostapd sources, which are
+maintained in one source repository[1] upstream and share considerable/ 
+duplicate amounts of source. Starting with the 1.x branch, both wpa_supplicant 
+and hostapd are built from this common source package for Debian, while not 
+released together as tarball by upstream, the source can be obtained from the 
+upstream git repositories.
 
-    for where in ./ ../ ../../ ../../../ ../../../../ ../../../../../; do
-        if [ -e ${where}debian/rules -a -d ${where}debian/patches ]; then
-                export QUILT_PATCHES=debian/patches
-                break
-        fi
-    done
+The preferred way to generate the orig.tar.gz is by calling
 
-To get the fully patched source after unpacking the source package, cd to
-the root level of the source package and run:
+ $ debian/rules get-orig-source
 
-    quilt push -a
+which will clone the upstream git repository under $TMPDIR, using mktemp(1), 
+and create a new tarballs based on the git tag corresponding to the top most 
+entry in debian/changelog. This newly generated tarball will be stored as
+../wpa_${VERSION}.orig.tar.gz or ../tarballs/wpa_${VERSION}.orig.tar.gz, if
+a directory called ../tarballs/ exists. Eventually existing tarballs 
+corresponding to the current version will not be overwritten.
 
-The last patch listed in debian/patches/series will become the current
-patch.
+Required dependencies to generate a new orig.tar.gz:
+- a SUSv3 compatible shell, like dash or bash
+- dpkg-parsechangelog, available from dpkg-dev
+- git
+- gzip, available from gzip or busybox
+- mktemp and rm, available from coreutils or busybox
+- sed, available from sed or busybox
+- tar, available from tar or busybox
 
-To add a new set of changes, first run quilt push -a, and then run:
+It is recommended to base tarballs for development snapshots of "wpa" on 
+according git tag from the upstream git repository, the available git tags
+can be queried by:
 
-    quilt new <patch>
+ $ git clone git://w1.fi/srv/git/hostap-1.git	# 1.x branch
 
-where <patch> is a descriptive name for the patch, used as the filename in
-debian/patches.  Then, for every file that will be modified by this patch,
-run:
+or
 
-    quilt add <file>
+ $ git clone git://w1.fi/srv/git/hostap.git	# development branch
 
-before editing those files.  You must tell quilt with quilt add what files
-will be part of the patch before making changes or quilt will not work
-properly.  After editing the files, run:
+changing into the corresponding directory (hostap-1 or hostapd) and calling 
+git tag.
 
-    quilt refresh
+ $ cd hostapd-1
+ $ git tag
+ hostap_0_6_3
+ […]
+ hostap_1_0
+ […]
+ hostap_1_0_rc3
+ […]
 
-to save the results as a patch.
+The Debian versions for these tags would be 0.6.3-1, 1.0 or 1.0~rc3 in
+debian/changelog. Intermediate states between tags or HEAD are usually best
+dealt with by creating a patch series based on the newest matching tag.
 
-Alternately, if you already have an external patch and you just want to
-add it to the build system, run quilt push -a and then:
+Exporting commits between "hostap_1_0" and the current git HEAD:
 
-    quilt import -P <patch> /path/to/patch
-    quilt push -a
+ $ git format-patch hostap_1_0..HEAD
 
-(add -p 0 to quilt import if needed). <patch> as above is the filename to
-use in debian/patches.  The last quilt push -a will apply the patch to
-make sure it works properly.
+Exporting commits between "hostap_1_0_rc3" and "hostap_1_0":
 
-To remove an existing patch from the list of patches that will be applied,
-run:
+ $ git format-patch hostap_1_0_rc3..hostap_1_0
 
-    quilt delete <patch>
+In both cases numbered patches will be dropped in the base directory of the 
+git clone. These numbered patches can be imported to the Debian package using
+standard procedures for "3.0 (quilt)" source packages.
 
-You may need to run quilt pop -a to unapply patches first before running
-this command.
+Tarballs can also be created manually from the upstream git repository:
+
+ $ git clone git://w1.fi/srv/git/hostap-1.git
+ $ cd hostap-1
+ $ git archive \
+	--format=tar \
+	--prefix="wpa-1.0/" \
+		hostap_1_0 \
+			README COPYING patches src wpa_supplicant hostapd | \
+				gzip -c9 > wpa_1.0.orig.tar.gz
+
+Arbitrary git tags or commit IDs can be used for this purpose.
+
+
+The Debian packaging for wpa_supplicant/ hostapd is maintained in a subversion
+repository at:
+
+ Vcs-Svn: svn://anonscm.debian.org/svn/pkg-wpa/wpa/trunk/
+ Vcs-Browser: http://anonscm.debian.org/viewvc/pkg-wpa/wpa/trunk/
+
+The development mailing list and its mailing list archive is located at:
+
+ http://lists.alioth.debian.org/cgi-bin/mailman/listinfo/pkg-wpa-devel
+
+Work for the wpa package can be coordinated on this mailing list through:
+
+ <pkg-wpa-devel@lists.alioth.debian.org>
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 10 May 2012 22:29:24 +0200
+
+[1]	http://hostap.epitest.fi/gitweb/gitweb.cgi?p=hostap-1.git [1.x branch]
+	http://hostap.epitest.fi/gitweb/gitweb.cgi?p=hostap.git [development]

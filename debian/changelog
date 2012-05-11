@@ -1,10 +1,15 @@
 wpa (1.0-1) unstable; urgency=low
 
+  [ Stefan Lippers-Hollmann ]
   * New upstream release, no code changes since 1.0~rc3.
   * upload to unstable, to fix FTBS with gcc-4.7.
   * update debian/README.source.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 10 May 2012 23:31:26 +0200
+  [ Kel Modderman ]
+  * No longer explicitly add --as-needed to LDFLAGS, it is no longer
+    required since wpa_cli stopped linking to libreadline (WPA_CLI_EDIT=y).
+
+ -- Kel Modderman <kel@otaku42.de>  Fri, 11 May 2012 13:58:51 +1000
 
 wpa (1.0~rc3-1) experimental; urgency=low
 

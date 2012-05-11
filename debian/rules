@@ -5,7 +5,7 @@ CFLAGS   += $(shell dpkg-buildflags --get CFLAGS)
 CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
 CXXFLAGS =  $(shell dpkg-buildflags --get CXXFLAGS)
 UCFLAGS  = -MMD -Wall -g -Os
-LDFLAGS  =  $(shell dpkg-buildflags --get LDFLAGS),--as-needed
+LDFLAGS  =  $(shell dpkg-buildflags --get LDFLAGS)
 BINDIR   = /sbin
 V = 0
 

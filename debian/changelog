@@ -1,13 +1,10 @@
-wpa (1.0-2) UNRELEASED; urgency=low
+wpa (1.0-2) unstable; urgency=low
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * Really enable hardened build flags, thanks Simon Ruderich
     <simon@ruderich.org>. (Closes: #657332)
+  * Do not suppress compilation output, set V=1.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 May 2012 13:19:41 +0200
+ -- Kel Modderman <kel@otaku42.de>  Mon, 14 May 2012 06:39:13 +1000
 
 wpa (1.0-1) unstable; urgency=low
 

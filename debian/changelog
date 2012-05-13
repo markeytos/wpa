@@ -1,6 +1,11 @@
 wpa (1.0-2) UNRELEASED; urgency=low
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
+
+  [ Kel Modderman ]
+  * Really enable hardened build flags, thanks Simon Ruderich
+    <simon@ruderich.org>. (Closes: #657332)
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 May 2012 13:19:41 +0200
 

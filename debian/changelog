@@ -1,8 +1,9 @@
-wpa (1.0-3) UNRELEASED; urgency=low
+wpa (1:1.0-3) unstable; urgency=low
 
-  * NOT RELEASED YET
+  * add epoche for the source package as well, as not having it prevents the
+    buildds from picking it up. Thanks to Julien Cristau.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 15 May 2012 02:39:30 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 22 May 2012 20:05:29 +0200
 
 wpa (1.0-2) unstable; urgency=low
 

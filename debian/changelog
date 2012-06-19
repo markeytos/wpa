@@ -1,6 +1,7 @@
 wpa (1.0-3) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * install README-P2P into the wpasupplicant package.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 15 May 2012 02:39:30 +0200
 

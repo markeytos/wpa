@@ -1,12 +1,15 @@
 wpa (1.0-3) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
-  * install README-P2P into the wpasupplicant package.
-  * enable Wi-Fi P2P
+  * enable Wi-Fi P2P, install README-P2P into the wpasupplicant package.
   * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
     (Closes: #678147).
+  * revert to GNU readline for wpa_cli, instead of using the internal readline
+    implementation added in wpa 1~. Prefer libreadline-gplv2-dev, because libnl
+    is GPL-2 (only) - switching back to the internal readline implementation is
+    targeted for wheezy+1 (Closes: #677993, #678077).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 15 May 2012 02:39:30 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 22 Jun 2012 00:42:43 +0200
 
 wpa (1.0-2) unstable; urgency=low
 

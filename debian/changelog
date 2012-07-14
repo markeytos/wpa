@@ -1,7 +1,6 @@
 wpa (1.0-3) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
-  * enable Wi-Fi P2P, install README-P2P into the wpasupplicant package.
   * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
     (Closes: #678147).
   * revert to GNU readline for wpa_cli, instead of using the internal readline

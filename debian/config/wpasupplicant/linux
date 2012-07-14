@@ -474,4 +474,9 @@ CONFIG_BGSCAN_SIMPLE=y
 CONFIG_IBSS_RSN=y
 
 # XXX: Wi-Fi P2P support
-CONFIG_P2P=y
+# keep it disabled for wheezy:
+# - kernel 3.2 has no support for Wi-Fi P2P
+# - there are still lots of (bug-)fixes going into hostapd-1.git, the P2P
+#   feature is definately not supportable with wpa 1.0 without further updates
+#   from the hostapd-1.git stable tree.
+#CONFIG_P2P=y

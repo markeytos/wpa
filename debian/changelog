@@ -6,9 +6,9 @@ wpa (1.0-3) unstable; urgency=high
     is GPL-2 (only) - switching back to the internal readline implementation is
     targeted for wheezy+1 (Closes: #677993, #678077).
   * Fix DoS via specially crafted EAP-TLS messages with longer message
-    length than TLS data length (CVE-2012-4445).
+    length than TLS data length (CVE-2012-4445, DSA 2557-1).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 08 Oct 2012 17:41:44 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 08 Oct 2012 17:48:04 +0200
 
 wpa (1.0-2) unstable; urgency=low
 

@@ -1,14 +1,15 @@
-wpa (1.0-3) UNRELEASED; urgency=low
+wpa (1.0-3) unstable; urgency=high
 
-  * NOT RELEASED YET
   * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
     (Closes: #678147).
   * revert to GNU readline for wpa_cli, instead of using the internal readline
     implementation added in wpa 1~. Prefer libreadline-gplv2-dev, because libnl
     is GPL-2 (only) - switching back to the internal readline implementation is
     targeted for wheezy+1 (Closes: #677993, #678077).
+  * Fix DoS via specially crafted EAP-TLS messages with longer message
+    length than TLS data length (CVE-2012-4445).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 22 Jun 2012 00:42:43 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 08 Oct 2012 17:30:16 +0200
 
 wpa (1.0-2) unstable; urgency=low
 

@@ -471,7 +471,6 @@ CONFIG_INTERWORKING=y
 CONFIG_BGSCAN_SIMPLE=y
 
 # XXX: Debian #678147
-# TODO: review impact
 CONFIG_IBSS_RSN=y
 
 # XXX: Wi-Fi P2P support

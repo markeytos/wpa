@@ -471,7 +471,10 @@ CONFIG_INTERWORKING=y
 CONFIG_BGSCAN_SIMPLE=y
 
 # XXX: Debian #678147
-CONFIG_IBSS_RSN=y
+# keep it disabled for wheezy:
+# - low impact, but too late in the release cycle
+#   (especially for a security update).
+#CONFIG_IBSS_RSN=y
 
 # XXX: Wi-Fi P2P support
 # keep it disabled for wheezy:

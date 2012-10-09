@@ -1,3 +1,11 @@
+wpa (1.0-4) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
+    (Closes: #678147).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 09 Oct 2012 18:59:35 +0200
+
 wpa (1.0-3) unstable; urgency=high
 
   * ship forgotten README-P2P.

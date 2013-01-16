@@ -26,7 +26,7 @@ intended-for: hostap-1
 
 --- a/src/eap_server/eap_server_tls_common.c
 +++ b/src/eap_server/eap_server_tls_common.c
-@@ -224,6 +224,14 @@ static int eap_server_tls_process_fragme
+@@ -232,6 +232,14 @@ static int eap_server_tls_process_fragme
  			return -1;
  		}
  

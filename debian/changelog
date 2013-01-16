@@ -1,10 +1,15 @@
-wpa (1.0-4) UNRELEASED; urgency=low
+wpa (1.1-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
+  * New upstream release:
+    - drop 11_wpa_gui_ftbfs_gcc_4_7, applied upstream.
   * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
     (Closes: #678147).
+  * enable simple AP support for wpasupplicant, thanks to Patrik Flykt
+    <patrik.flykt@linux.intel.com> (Closes: #690536).
+  * use the readline6, wpa_cli doesn't link to openssl.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 09 Oct 2012 18:59:35 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 
 wpa (1.0-3) unstable; urgency=high
 

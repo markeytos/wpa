@@ -15,9 +15,9 @@ UP_VER_TAG="hostap_$(echo $UP_VER | sed -e 's,\.,_,g' -e 's,\-,_,g')"
 
 # write to ../tarballs/, if it exists - ../ otherwise
 if [ -d "${CURDIR}/../tarballs" ]; then
-	ORIG_TARBALL="${CURDIR}/../tarballs/wpa_${DEB_VER}.orig.tar.gz"
+	ORIG_TARBALL="${CURDIR}/../tarballs/wpa_${DEB_VER}.orig.tar.xz"
 else
-	ORIG_TARBALL="${CURDIR}/../wpa_${DEB_VER}.orig.tar.gz"
+	ORIG_TARBALL="${CURDIR}/../wpa_${DEB_VER}.orig.tar.xz"
 fi
 
 # don't overwrite existing tarballs
@@ -47,7 +47,7 @@ cd "${TEMP_SOURCE}" && \
 		--prefix="wpa-${UP_VER}/" \
 		"${UP_VER_TAG}" \
 			README COPYING patches src wpa_supplicant hostapd | \
-				gzip -c9 > "${ORIG_TARBALL}"
+				xz -c6 > "${ORIG_TARBALL}"
 if [ "$?" -ne 0 ] || [ ! -e "${ORIG_TARBALL}" ]; then
 	echo "ERROR: failure to create ${ORIG_TARBALL}" >&2
 	rm -rf "${TEMP_SOURCE}"

@@ -9,6 +9,9 @@ wpa (1.1-1) UNRELEASED; urgency=low
     <patrik.flykt@linux.intel.com> (Closes: #690536).
   * use the readline6, wpa_cli doesn't link to openssl.
   * link with --as-needed.
+  * debian/get-orig-source: switch to xz compressed upstream tarballs.
+  * compress binaries with xz.
+  * fix hardening flags.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

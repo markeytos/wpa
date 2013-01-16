@@ -30,6 +30,7 @@ Homepage: http://w1.fi/wpa_supplicant/
 Package: hostapd
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
+Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${shlibs:Depends},
  ${misc:Depends},
  lsb-base (>= 3.2-13),
@@ -57,6 +58,7 @@ Description: user space IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticato
 Package: wpagui
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
+Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${shlibs:Depends},
  ${misc:Depends},
  wpasupplicant (>= 0.7.3~),
@@ -71,6 +73,7 @@ Description: graphical user interface for wpa_supplicant
 Package: wpasupplicant
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
+Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${shlibs:Depends},
  ${misc:Depends},
  lsb-base (>= 3.0-6),

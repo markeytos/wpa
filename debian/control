@@ -30,7 +30,10 @@ Homepage: http://w1.fi/wpa_supplicant/
 Package: hostapd
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.2-13), initscripts (>= 2.88dsf-13.3)
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ lsb-base (>= 3.2-13),
+ initscripts (>= 2.88dsf-13.3)
 Description: user space IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticator
  Originally, hostapd was an optional user space component for Host AP
  driver. It adds more features to the basic IEEE 802.11 management
@@ -54,7 +57,10 @@ Description: user space IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticato
 Package: wpagui
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}, wpasupplicant (>= 0.7.3~), libqt4-svg
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ wpasupplicant (>= 0.7.3~),
+ libqt4-svg
 Recommends: menu
 Description: graphical user interface for wpa_supplicant
  wpagui provides a Qt interface for choosing which configured network
@@ -65,7 +71,11 @@ Description: graphical user interface for wpa_supplicant
 Package: wpasupplicant
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}, lsb-base (>= 3.0-6), adduser, initscripts (>= 2.88dsf-13.3)
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ lsb-base (>= 3.0-6),
+ adduser,
+ initscripts (>= 2.88dsf-13.3)
 Suggests: wpagui, libengine-pkcs11-openssl
 Description: client support for WPA and WPA2 (IEEE 802.11i)
  WPA and WPA2 are methods for securing wireless networks, the former
@@ -78,7 +88,9 @@ Section: debian-installer
 Priority: standard
 Architecture: linux-any
 Package-Type: udeb
-Depends: ${shlibs:Depends}, ${misc:Depends}, busybox-udeb
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+ busybox-udeb
 Description: Client support for WPA and WPA2 (IEEE 802.11i)
  WPA and WPA2 are methods for securing wireless networks, the former
  using IEEE 802.1X, and the latter using IEEE 802.11i. This software

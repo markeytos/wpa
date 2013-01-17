@@ -488,5 +488,5 @@ CONFIG_IBSS_RSN=y
 # XXX: Debian #690536
 # keep it disabled for wheezy:
 # - a squeeze --> wheezy regression, but too late in the release cycle
-CONFIG_AP=Y
+CONFIG_AP=y
 

@@ -3,6 +3,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * NOT RELEASED YET
   * New upstream release:
     - drop 11_wpa_gui_ftbfs_gcc_4_7, applied upstream.
+    - drop EAP-TLS-server_fix-TLS-Message-length-validation, applied upstream.
   * enable IBSS RSN, thanks to Nicolas Cavallari <batchman@free.fr>
     (Closes: #678147).
   * enable simple AP support for wpasupplicant, thanks to Patrik Flykt

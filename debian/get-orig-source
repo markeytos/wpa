@@ -13,9 +13,17 @@ DEB_VER="$(echo ${VERSION} | sed 's,\-[0-9a-z\~\.]*,,')"
 UP_VER="$(echo ${DEB_VER} | sed 's,\~,\-,g')"
 UP_VER_TAG="hostap_$(echo $UP_VER | sed -e 's,\.,_,g' -e 's,\-,_,g')"
 
-# write to ../tarballs/, if it exists - ../ otherwise
+# set upstream (git-) Vcs
+UP_VCS="git://w1.fi/srv/git/hostap.git"
+if dpkg --compare-versions "${DEB_VER}" lt "2~"; then
+	UP_VCS="git://w1.fi/srv/git/hostap-1.git"
+fi
+
+# write to ../{,_}tarballs/, if it exists - ../ otherwise
 if [ -d "${CURDIR}/../tarballs" ]; then
 	ORIG_TARBALL="${CURDIR}/../tarballs/wpa_${DEB_VER}.orig.tar.xz"
+elif [ -d "${CURDIR}/../_tarballs" ]; then
+	ORIG_TARBALL="${CURDIR}/../_tarballs/wpa_${DEB_VER}.orig.tar.xz"
 else
 	ORIG_TARBALL="${CURDIR}/../wpa_${DEB_VER}.orig.tar.xz"
 fi
@@ -33,9 +41,10 @@ if [ "$?" -ne 0 ] || [ -z "${TEMP_SOURCE}" ] || [ ! -d "${TEMP_SOURCE}" ]; then
 fi
 
 # clone upstream git repository
-git clone git://w1.fi/srv/git/hostap-1.git "${TEMP_SOURCE}"
+echo "clone ${UP_VCS}:"
+git clone "${UP_VCS}" "${TEMP_SOURCE}"
 if [ "$?" -ne 0 ] || [ ! -d "${TEMP_SOURCE}" ]; then
-	echo "ERROR: cloning git://w1.fi/srv/git/hostap-1.git failed" >&2
+	echo "ERROR: cloning ${UP_VCS} failed" >&2
 	rm -rf "${TEMP_SOURCE}"
 	exit 4
 fi

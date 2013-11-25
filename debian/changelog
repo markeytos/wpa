@@ -11,6 +11,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * use the readline6, wpa_cli doesn't link to openssl.
   * link with --as-needed.
   * debian/get-orig-source: switch to xz compressed upstream tarballs.
+  * debian/get-orig-source: adapt for the post 1.x upstream branch.
   * compress binaries with xz.
   * fix hardening flags.
   * debian/control: fold dependencies.

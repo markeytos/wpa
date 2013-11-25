@@ -18,7 +18,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * compress binaries with xz.
   * fix hardening flags.
   * debian/control: fold dependencies.
-  * bump standards version to 3.9.4, no changes necessary.
+  * bump standards version to 3.9.5, no changes necessary.
   * reflect reality and adapt the maintainer mail address not to claim
     representing Ubuntu.
 

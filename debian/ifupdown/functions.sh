@@ -448,7 +448,7 @@ wpa_cli_do () {
 	esac
 	
 	case "$4" in
-		*-psk|*-passphrase|*-passwd*|*-wep-key*)
+		*-psk|*-passphrase|*-passwd*|*-password*|*-wep-key*)
 			WPACLISET_DESC="$4 *****"
 			;;
 		*)

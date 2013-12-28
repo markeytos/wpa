@@ -20,7 +20,8 @@ wpa (1.1-1) UNRELEASED; urgency=low
     fixes.
   * debian/README.source: drop trailing whitespace.
   * compress binaries with xz.
-  * fix hardening flags.
+  * fix hardening flags, thanks a lot to Florent Daigniere
+    <nextgens@freenetproject.org> (Closes: #725865).
   * debian/control: fold dependencies.
   * bump standards version to 3.9.5, no changes necessary.
   * reflect reality and adapt the maintainer mail address not to claim

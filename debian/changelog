@@ -12,9 +12,13 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * link with --as-needed.
   * debian/get-orig-source: switch to xz compressed upstream tarballs.
   * debian/get-orig-source: adapt for the post 1.x upstream branch.
-  * debian/get-orig-source: support named snapshots, using these semantics
-    as version code "2.0+git20131120.1+594516b-1", a unique git hash must be
-    supplied after the second '+' and before the Debian revision.
+  * debian/get-orig-source: support named snapshots, see debian/README.source
+    for detailed syntax and semantics.
+  * debian/README.source: explain fetching git snapshots by specifying their
+    git hash.
+  * debian/README.source: update to match current reality and apply grammar
+    fixes.
+  * debian/README.source: drop trailing whitespace.
   * compress binaries with xz.
   * fix hardening flags.
   * debian/control: fold dependencies.

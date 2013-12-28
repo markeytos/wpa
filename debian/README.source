@@ -86,7 +86,7 @@ correctly parsing this is:
 
  <upstream_version>+git<date>.<revision>+<git_hash>-<debian_revision>
  upstream_version := [0-9\.]*   --> 2.0
- date             := [0-9\.]*   --> 20131120 (YYYYMMDD)
+ date             := [0-9]*     --> 20131120 (YYYYMMDD)
  revision         := [0-9]*     --> 1
  git_hash         := [0-9a-f]*  --> 594516b
  debian_revision  := [0-9*]     --> 1

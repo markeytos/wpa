@@ -21,6 +21,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * bump standards version to 3.9.5, no changes necessary.
   * reflect reality and adapt the maintainer mail address not to claim
     representing Ubuntu.
+  * drop wheezy-specific comments in the configuration files.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

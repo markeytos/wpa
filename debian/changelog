@@ -32,6 +32,8 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * drop wheezy-specific comments in the configuration files.
   * glob 'wpa-password' as well and hide its debugging output, this hopefully
     closes: #728092.
+  * switch to using dh-systemd, thanks to Michael Stapelberg
+    <stapelberg@debian.org> (Closes: #715267).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

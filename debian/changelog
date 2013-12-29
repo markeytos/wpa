@@ -34,6 +34,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
     closes: #728092.
   * switch to using dh-systemd, thanks to Michael Stapelberg
     <stapelberg@debian.org> (Closes: #715267).
+  * enable EAP-FAST, openssl in Debian is now new enough (Closes: #685685).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

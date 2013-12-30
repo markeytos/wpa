@@ -10,7 +10,7 @@ DEB_CXXFLAGS_MAINT_APPEND = $(shell dpkg-buildflags --get CPPFLAGS)
 DEB_LDFLAGS_MAINT_APPEND  = -Wl,--as-needed
 export DEB_CFLAGS_MAINT_APPEND DEB_CXXFLAGS_MAINT_APPEND DEB_LDFLAGS_MAINT_APPEND
 
-UCFLAGS   = -MMD -Wall $(shell dpkg-buildflags --get CFLAGS | sed s/[\ \t]*\-O[0-9s][\ \t]*/\ \-Os\ /) -fPIC $(shell dpkg-buildflags --get CPPFLAGS)
+UCFLAGS   = -MMD -Wall -g -Os
 
 BINDIR    = /sbin
 V = 1

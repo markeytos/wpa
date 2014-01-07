@@ -147,7 +147,7 @@ wpa (1.0~rc3-1) experimental; urgency=low
 
 wpasupplicant (0.7.3-6) unstable; urgency=low
 
-  * add "hostap: Allow linking with libnl-3" from Ben Greear 
+  * add "hostap: Allow linking with libnl-3" from Ben Greear
     <greearb@candelatech.com> to allow building against libnl3 3.2.
   * raise versioned build-dependency to (>= 3.2.3-2~), we need
     libnl-genl-3-200-udeb and expect it in /lib/.
@@ -214,12 +214,12 @@ wpasupplicant (0.7.3-4) unstable; urgency=low
 wpasupplicant (0.7.3-3.1) unstable; urgency=low
 
   * Non-maintainer upload with the agreement of Kel Modderman.
-  
+
   [ Stefan Lippers-Hollmann ]
   * bump standards version to 3.9.2, no changes necessary.
 
   [ Gaudenz Steinlin ]
-  * Add wpasupplicant-udeb for debian-installer. Thanks to 
+  * Add wpasupplicant-udeb for debian-installer. Thanks to
     Mathew Palmer for providing the initial patch. (Closes: #610931)
   * Build against libnl3
 
@@ -302,7 +302,7 @@ wpasupplicant (0.7.3-1) experimental; urgency=low
   * Bump policy version to 3.9.1:
     - Include full text of the employed BSD license variant and no longer
       refer to Debian's common license template.
-  * Bump compat level to 8 and debhelper build-depends to >= 7.9.3~ 
+  * Bump compat level to 8 and debhelper build-depends to >= 7.9.3~
     accordingly, retaining backportability for squeeze (plain lenny isn't an
     option due to simplified dh7 usage).
   * Refresh patch series and merge with new upstream (0.7.3).
@@ -317,7 +317,7 @@ wpasupplicant (0.7.3-1) experimental; urgency=low
 wpasupplicant (0.6.10-2.1) unstable; urgency=low
 
   * Non-maintainer upload approved by Kel Modderman.
-  * Added patch 31_fallback_to_full_EAP_authentication.patch (closes: #582917). 
+  * Added patch 31_fallback_to_full_EAP_authentication.patch (closes: #582917).
 
  -- Micha Lenk <micha@debian.org>  Sun, 28 Nov 2010 12:22:01 +0100
 
@@ -534,7 +534,7 @@ wpasupplicant (0.6.6-1) experimental; urgency=low
 
 wpasupplicant (0.6.5-2) experimental; urgency=low
 
-  * Bugfix: "Missing -d in testing for a directory in init script". 
+  * Bugfix: "Missing -d in testing for a directory in init script".
     Thanks to Braun Gábor <braung@renyi.hu> for reporting and the patch.
     (Closes: #506328)
 
@@ -1191,7 +1191,7 @@ wpasupplicant (0.5.5-2) unstable; urgency=low
   * Strip surrounding quotes from wpa-ssid if present, instead of just whining
     about them.
   * Update email address in copyright blurb of functions.sh, ifupdown.sh and
-    wpa_action.sh.  
+    wpa_action.sh.
 
  -- Kel Modderman <kelmo@kanotixguide.org>  Thu,  5 Oct 2006 08:04:01 +1000
 
@@ -1280,7 +1280,7 @@ wpasupplicant (0.5.4-4) unstable; urgency=low
     check for this path in ifupdown.sh should now support both alternatives.
   * Move LOCKFILE and LOGFILE into WPA_ namespace. [wpa_action.sh]
   * Use semi-colon instead of comma for verbose output as that seems to be a
-    standard among many different applications. 
+    standard among many different applications.
 
  -- Kel Modderman <kelrin@tpg.com.au>  Tue,  8 Aug 2006 20:04:11 +1000
 
@@ -1454,8 +1454,8 @@ wpasupplicant (0.5.3+20060522-3) unstable; urgency=low
 
   [Reinhard Tartler]
   * review and make the warnings in debian/NEWS even more obvious.
-  * advertise the manpage wpa_action(8) and the implemented roaming solution 
-    better. 
+  * advertise the manpage wpa_action(8) and the implemented roaming solution
+    better.
 
   [Kel Modderman]
   * Bugfix: /etc/network/ifstate is not guarenteed to exist, we should grep
@@ -1707,7 +1707,7 @@ wpasupplicant (0.4.8-0ubuntu2) dapper; urgency=low
   * take the complete packaging from our experimental branch. The last upload
     did not document all changes properly (see the list above), and had still
     a lot of issues.
-  * fixing typo in the preinst 
+  * fixing typo in the preinst
 
  -- Reinhard Tartler <siretart@tauware.de>  Mon, 27 Mar 2006 15:28:22 +0200
 
@@ -1730,7 +1730,7 @@ wpasupplicant (0.5.1-1) experimental; urgency=low
   * Clean up handling of madwifi includes
     - dpatch contains description of origin
     - dpatch does not modify upstream, use CFLAGS to include madwifi headers
-  * Add wpa_background manpage provided by upstream. 
+  * Add wpa_background manpage provided by upstream.
 
  -- Kel Modderman <kelrin@tpg.com.au>  Tue, 14 Mar 2006 23:00:47 +1000
 
@@ -1824,7 +1824,7 @@ wpasupplicant (0.4.7-1) unstable; urgency=low
     without a patch to OpenSSL. (closes: #322174)
   * Comment out most of the default config file, some people kept the
     whole file verbatim, causing OpenSSL to try and load some uncommon
-    libraries people likely didn't have installed, resulting in 
+    libraries people likely didn't have installed, resulting in
     wpasupplicant segfaulting (closes: #330138, #336423)
   * Also for #336423, Suggest: libengine-pkcs11-openssl, and document why.
   * Make more noise when the daemon fails to run. (closes: #346265)
@@ -1833,7 +1833,7 @@ wpasupplicant (0.4.7-1) unstable; urgency=low
     interfaces. (closes: #322175)
   * Document typical location of config file in manpage. Note,
     wpasupplicant no longer implicitly finds a config file. (closes: #315963)
-  * Add simple WPA-PSK example to default config file. (closes: #331533)  
+  * Add simple WPA-PSK example to default config file. (closes: #331533)
   * Split up $OPTIONS in default/wpasupplicant. (closes: #331533)
 
  -- Kyle McMartin <kyle@debian.org>  Sat, 28 Jan 2006 02:30:27 -0500
@@ -1860,7 +1860,7 @@ wpasupplicant (0.4.6-0.2) unstable; urgency=low
   * Set NMU version to 0.2 for Norbert's convenience.
   * Marked /etc/init.d/wpasupplicant as a conffile (should really use
     debhelper4 to take care of this, but I'm not going to make the other
-    changes needed for this). 
+    changes needed for this).
 
  -- Drew Parsons <dparsons@debian.org>  Thu, 10 Nov 2005 20:34:35 +1100
 
@@ -1887,7 +1887,7 @@ wpasupplicant (0.4.2-1) unstable; urgency=low
 
   * New upstream release.
   * Add debhelper flag to postinst.
-	
+
  -- Kyle McMartin <kyle@debian.org>  Sat, 18 Jun 2005 19:04:02 -0400
 
 wpasupplicant (0.4.1-0) unstable; urgency=low
@@ -1974,7 +1974,7 @@ wpasupplicant (0.3.1-1) unstable; urgency=low
     must be disabled, since it requires a header file with an
     "All Rights Reserved" copyright. LinuxAnt DriverLoader is similarly
     disabled, though NDISWrapper is supported.
- 
+
  -- Kyle McMartin <kyle@debian.org>  Thu, 16 Dec 2004 12:39:01 -0500
 
 wpasupplicant (0.2.5-2) unstable; urgency=low

@@ -24,7 +24,7 @@ Build-Depends: debhelper (>> 9.20120115),
  dh-systemd (>= 1.4)
 Build-Conflicts: libqt3-dev
 Standards-Version: 3.9.5
-Vcs-Svn: svn://anonscm.debian.org/svn/pkg-wpa/wpa/trunk/
+Vcs-Svn: svn://anonscm.debian.org/pkg-wpa/wpa/trunk/
 Vcs-Browser: http://anonscm.debian.org/viewvc/pkg-wpa/wpa/trunk/
 Homepage: http://w1.fi/wpa_supplicant/
 

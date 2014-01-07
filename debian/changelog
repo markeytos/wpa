@@ -36,6 +36,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
     <stapelberg@debian.org> (Closes: #715267).
   * enable EAP-FAST, openssl in Debian is now new enough (Closes: #685685).
   * update to new alioth URIs (vcs-field-not-canonical).
+  * add Keywords entry for desktop files (desktop-entry-lacks-keywords-entry).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

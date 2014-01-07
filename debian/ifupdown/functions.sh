@@ -833,7 +833,7 @@ wpa_log_env () {
 #####################################################################
 ## hysteresis checking
 # Networking tools such as dhcp clients used with ifupdown can
-# synthesize artificial ACTION events, particuarly just after a
+# synthesize artificial ACTION events, particularly just after a
 # DISCONNECTED/CONNECTED events are experienced in quick succession.
 # This can lead to infinite event loops, and in extreme cases has the
 # potential to cause system instability.

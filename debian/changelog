@@ -39,6 +39,11 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * add Keywords entry for desktop files (desktop-entry-lacks-keywords-entry).
   * functions.sh: s/particuarly/particularly/, thanks to Vincent Lefevre
     <vincent@vinc17.net> (Closes: #734422).
+  * fix FTBS using gcc-4.8 by linking with -ldl on kfreebsd-any; the udeb
+    packages don't provide EAP support and are therefore unaffected. This is
+    already accounted for by the upstream Makefile, however wrongly depending
+    on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
+    rather than the kernel (Closes: #737465).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

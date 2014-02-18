@@ -247,3 +247,10 @@ CONFIG_TLSV11=y
 # external networks.
 CONFIG_INTERWORKING=y
 
+# XXX: Debian #737465
+# fix FTBS using gcc-4.8 by linking with -ldl on kfreebsd-any. This is
+# already accounted for by the upstream Makefile, however wrongly depending
+# on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
+# rather than the kernel.
+LIBS += -ldl
+

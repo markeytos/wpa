@@ -29,7 +29,7 @@ CONFIG_DRIVER_BSD=y
 #LIBS += -L/usr/local/lib
 #LIBS_p += -L/usr/local/lib
 #LIBS_c += -L/usr/local/lib
-LIBS += -lbsd
+#LIBS += -lbsd
 
 # Driver interface for no driver (e.g., RADIUS server only)
 CONFIG_DRIVER_NONE=y

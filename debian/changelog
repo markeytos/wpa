@@ -43,7 +43,8 @@ wpa (1.1-1) UNRELEASED; urgency=low
     packages don't provide EAP support and are therefore unaffected. This is
     already accounted for by the upstream Makefile, however wrongly depending
     on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
-    rather than the kernel (Closes: #737465).
+    rather than the kernel (Closes: #737465). Thanks to Cyril Brulebois
+    <kibi@debian.org> and Steven Chamberlain <steven@pyro.eu.org>.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
 

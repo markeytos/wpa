@@ -1,6 +1,5 @@
-wpa (1.1-1) UNRELEASED; urgency=low
+wpa (1.1-1) unstable; urgency=medium
 
-  * NOT RELEASED YET
   * New upstream release:
     - drop 11_wpa_gui_ftbfs_gcc_4_7, applied upstream.
     - drop EAP-TLS-server_fix-TLS-Message-length-validation, applied upstream.
@@ -13,6 +12,7 @@ wpa (1.1-1) UNRELEASED; urgency=low
     <patrik.flykt@linux.intel.com> (Closes: #690536).
   * use the readline6, wpa_cli doesn't link to openssl.
   * link with --as-needed.
+  * compress binaries with xz.
   * debian/get-orig-source: switch to xz compressed upstream tarballs.
   * debian/get-orig-source: adapt for the post 1.x upstream branch.
   * debian/get-orig-source: support named snapshots, see debian/README.source
@@ -22,7 +22,6 @@ wpa (1.1-1) UNRELEASED; urgency=low
   * debian/README.source: update to match current reality and apply grammar
     fixes.
   * debian/README.source: drop trailing whitespace.
-  * compress binaries with xz.
   * fix hardening flags, thanks a lot to Florent Daigniere
     <nextgens@freenetproject.org> (Closes: #725865).
   * debian/control: fold dependencies.
@@ -45,8 +44,11 @@ wpa (1.1-1) UNRELEASED; urgency=low
     on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
     rather than the kernel (Closes: #737465). Thanks to Cyril Brulebois
     <kibi@debian.org> and Steven Chamberlain <steven@pyro.eu.org>.
+  * import "hostapd: Fix WDS VLAN bridge handling" by Felix Fietkau
+    <nbd@openwrt.org> from upstream, thanks to Mark Hindley
+    <mark@hindley.org.uk> (Closes: #737109).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2013 18:48:22 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Feb 2014 03:05:24 +0100
 
 wpa (1.0-3.1) unstable; urgency=low
 

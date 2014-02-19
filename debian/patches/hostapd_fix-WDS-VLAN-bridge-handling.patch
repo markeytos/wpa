@@ -1,0 +1,53 @@
+From c34e618d473c2572bf77daedec399e823fe6a262 Mon Sep 17 00:00:00 2001
+From: Felix Fietkau <nbd@openwrt.org>
+Date: Sat, 15 Sep 2012 22:38:14 -0700
+Subject: [PATCH] hostapd: Fix WDS VLAN bridge handling
+
+This patch fixes an issue where removing a WDS VLAN interface also
+removed the main AP interface from the same bridge.
+
+Signed-hostap: Felix Fietkau <nbd@openwrt.org>
+---
+ src/drivers/driver_nl80211.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+--- a/src/drivers/driver_nl80211.c
++++ b/src/drivers/driver_nl80211.c
+@@ -6528,6 +6528,10 @@ static int i802_set_wds_sta(void *priv,
+ 		linux_set_iface_flags(drv->global->ioctl_sock, name, 1);
+ 		return i802_set_sta_vlan(priv, addr, name, 0);
+ 	} else {
++		if (bridge_ifname)
++			linux_br_del_if(drv->global->ioctl_sock, bridge_ifname,
++					name);
++
+ 		i802_set_sta_vlan(priv, addr, bss->ifname, 0);
+ 		return wpa_driver_nl80211_if_remove(priv, WPA_IF_AP_VLAN,
+ 						    name);
+@@ -6886,7 +6890,12 @@ static int wpa_driver_nl80211_if_remove(
+ 	if (ifindex <= 0)
+ 		return -1;
+ 
++	nl80211_remove_iface(drv, ifindex);
++
+ #ifdef HOSTAPD
++	if (type != WPA_IF_AP_BSS)
++		return 0;
++
+ 	if (bss->added_if_into_bridge) {
+ 		if (linux_br_del_if(drv->global->ioctl_sock, bss->brname,
+ 				    bss->ifname) < 0)
+@@ -6900,13 +6909,6 @@ static int wpa_driver_nl80211_if_remove(
+ 				   "bridge %s: %s",
+ 				   bss->brname, strerror(errno));
+ 	}
+-#endif /* HOSTAPD */
+-
+-	nl80211_remove_iface(drv, ifindex);
+-
+-#ifdef HOSTAPD
+-	if (type != WPA_IF_AP_BSS)
+-		return 0;
+ 
+ 	if (bss != &drv->first_bss) {
+ 		struct i802_bss *tbss;

@@ -19,8 +19,7 @@ Build-Depends: debhelper (>> 9.20120115),
  pkg-config,
  qt4-qmake,
  docbook-to-man,
- docbook-utils,
- dh-systemd (>= 1.4)
+ docbook-utils
 Standards-Version: 3.9.5
 Vcs-Svn: svn://anonscm.debian.org/pkg-wpa/wpa/trunk/
 Vcs-Browser: http://anonscm.debian.org/viewvc/pkg-wpa/wpa/trunk/

@@ -31,8 +31,6 @@ wpa (1.1-1) unstable; urgency=medium
   * drop wheezy-specific comments in the configuration files.
   * glob 'wpa-password' as well and hide its debugging output, this hopefully
     closes: #728092.
-  * switch to using dh-systemd, thanks to Michael Stapelberg
-    <stapelberg@debian.org> (Closes: #715267).
   * enable EAP-FAST, openssl in Debian is now new enough (Closes: #685685).
   * update to new alioth URIs (vcs-field-not-canonical).
   * add Keywords entry for desktop files (desktop-entry-lacks-keywords-entry).

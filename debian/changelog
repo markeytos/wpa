@@ -49,8 +49,11 @@ wpa (1.1-1) unstable; urgency=medium
     <mark@hindley.org.uk> (Closes: #737109).
   * drop build-conflicts with libqt3-dev as the package is no longer available
     >= lenny, thanks to Michael Biebl <biebl@debian.org>.
+  * drop pre-dependency on dpkg (>= 1.15.6~), data.tar.xz-member-without-dpkg-
+    pre-depends is no longer a problem after Ubuntu lucid is EOL. Thanks to
+    Michael Biebl for noticing.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 20 Feb 2014 20:15:44 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 20 Feb 2014 20:26:59 +0100
 
 wpa (1.0-3.1) unstable; urgency=low
 

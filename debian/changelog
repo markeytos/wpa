@@ -47,8 +47,10 @@ wpa (1.1-1) unstable; urgency=medium
   * import "hostapd: Fix WDS VLAN bridge handling" by Felix Fietkau
     <nbd@openwrt.org> from upstream, thanks to Mark Hindley
     <mark@hindley.org.uk> (Closes: #737109).
+  * drop build-conflicts with libqt3-dev as the package is no longer available
+    >= lenny, thanks to Michael Biebl <biebl@debian.org>.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Feb 2014 03:05:24 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 20 Feb 2014 20:15:44 +0100
 
 wpa (1.0-3.1) unstable; urgency=low
 

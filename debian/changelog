@@ -54,6 +54,7 @@ wpa (1.1-1) unstable; urgency=medium
     Michael Biebl for noticing.
   * drop build-dependency on libdbus-1-dev, it is no longer required for
     dbus-binding-tool, thanks to Michael Biebl.
+  * allow parallel building.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 20 Feb 2014 20:42:58 +0100
 

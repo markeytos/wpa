@@ -128,7 +128,7 @@ override_dh_builddeb:
 ### end dh overrides
 
 %:
-	dh ${@} --with=systemd
+	dh ${@} --with=systemd --parallel
 
 get-orig-source:
 	chmod +x $(CURDIR)/debian/get-orig-source

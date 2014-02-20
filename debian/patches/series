@@ -7,3 +7,4 @@
 libnl3-includes.patch
 wpa_gui_desktop_add-keywords-entry.patch
 hostapd_fix-WDS-VLAN-bridge-handling.patch
+fix-spelling-s-algorith-algorithm.patch

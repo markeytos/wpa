@@ -1,0 +1,25 @@
+From fe3e5d3dd7deebe49e47b2b757409fe5adcdae7e Mon Sep 17 00:00:00 2001
+From: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Date: Thu, 20 Feb 2014 22:09:19 +0100
+Subject: [PATCH] fix spelling s/algorith/algorithm/
+
+Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+---
+submitted upstream
+ Message-Id: <201402202119.15847.s.L-H@gmx.de>
+ http://lists.shmoo.com/pipermail/hostap/2014-February/029580.html
+
+ src/eap_peer/eap_aka.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/src/eap_peer/eap_aka.c
++++ b/src/eap_peer/eap_aka.c
+@@ -221,7 +221,7 @@ static int eap_aka_umts_auth(struct eap_
+ 
+ #else /* CONFIG_USIM_HARDCODED */
+ 
+-	wpa_printf(MSG_DEBUG, "EAP-AKA: No UMTS authentication algorith "
++	wpa_printf(MSG_DEBUG, "EAP-AKA: No UMTS authentication algorithm "
+ 		   "enabled");
+ 	return -1;
+ 

@@ -6,7 +6,7 @@ Uploaders: Kel Modderman <kel@otaku42.de>,
  Stefan Lippers-Hollmann <s.l-h@gmx.de>,
  Jan Dittberner <jandd@debian.org>
 Build-Depends: debhelper (>> 9.20120115),
- libdbus-glib-1-dev,
+ libdbus-1-dev,
  libssl-dev,
  libqt4-dev,
  libncurses5-dev,

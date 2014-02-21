@@ -50,13 +50,13 @@ wpa (1.1-1) unstable; urgency=medium
   * drop pre-dependency on dpkg (>= 1.15.6~), data.tar.xz-member-without-dpkg-
     pre-depends is no longer a problem after Ubuntu lucid is EOL. Thanks to
     Michael Biebl for noticing.
-  * drop build-dependency on libdbus-1-dev, it is no longer required for
+  * drop build-dependency on libdbus-glib-1-dev, it is no longer required for
     dbus-binding-tool, thanks to Michael Biebl.
   * allow parallel building.
   * fix spelling s/algorith/algorithm/.
   * add lintian overrides for false positive spelling complaints.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 20 Feb 2014 20:42:58 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 21 Feb 2014 01:07:28 +0100
 
 wpa (1.0-3.1) unstable; urgency=low
 

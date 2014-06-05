@@ -59,6 +59,10 @@ if [ "$?" -ne 0 ] || [ ! -d "${TEMP_SOURCE}" ]; then
 	exit 4
 fi
 
+if dpkg --compare-versions "${DEB_VER}" ge "2.2~"; then
+	CONTRIBUTIONS="CONTRIBUTIONS"
+fi
+
 # add Hotspot 2.0 OSU server for wpa 2.2~
 if dpkg --compare-versions "${DEB_VER}" ge "2.2~"; then
 	HS20="hs20"
@@ -72,7 +76,7 @@ cd "${TEMP_SOURCE}" && \
 		--format=tar \
 		--prefix="wpa-${UP_VER}/" \
 		"${UP_VER_TAG}" \
-			README COPYING patches src wpa_supplicant hostapd $HS20 | \
+			README COPYING $CONTRIBUTIONS patches src wpa_supplicant hostapd $HS20 | \
 				xz -c6 > "${ORIG_TARBALL}"
 if [ "$?" -ne 0 ] || [ ! -e "${ORIG_TARBALL}" ]; then
 	echo "ERROR: failure to create ${ORIG_TARBALL}" >&2

@@ -59,6 +59,8 @@ if [ "$?" -ne 0 ] || [ ! -d "${TEMP_SOURCE}" ]; then
 	exit 4
 fi
 
+# add CONTRIBUTIONS for wpa 2.2~
+# (it's available since 2.0~, but only gets included in 2.2~)
 if dpkg --compare-versions "${DEB_VER}" ge "2.2~"; then
 	CONTRIBUTIONS="CONTRIBUTIONS"
 fi

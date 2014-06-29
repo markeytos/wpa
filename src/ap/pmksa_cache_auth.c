@@ -1,15 +1,9 @@
 /*
  * hostapd - PMKSA cache for IEEE 802.11i RSN
- * Copyright (c) 2004-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2008, 2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "utils/includes.h"
@@ -46,6 +40,7 @@ static void _pmksa_cache_free_entry(struct rsn_pmksa_cache_entry *entry)
 	if (entry == NULL)
 		return;
 	os_free(entry->identity);
+	wpabuf_free(entry->cui);
 #ifndef CONFIG_NO_RADIUS
 	radius_free_class(&entry->radius_class);
 #endif /* CONFIG_NO_RADIUS */
@@ -53,8 +48,8 @@ static void _pmksa_cache_free_entry(struct rsn_pmksa_cache_entry *entry)
 }
 
 
-static void pmksa_cache_free_entry(struct rsn_pmksa_cache *pmksa,
-				   struct rsn_pmksa_cache_entry *entry)
+void pmksa_cache_free_entry(struct rsn_pmksa_cache *pmksa,
+			    struct rsn_pmksa_cache_entry *entry)
 {
 	struct rsn_pmksa_cache_entry *pos, *prev;
 
@@ -96,15 +91,13 @@ static void pmksa_cache_free_entry(struct rsn_pmksa_cache *pmksa,
 static void pmksa_cache_expire(void *eloop_ctx, void *timeout_ctx)
 {
 	struct rsn_pmksa_cache *pmksa = eloop_ctx;
-	struct os_time now;
+	struct os_reltime now;
 
-	os_get_time(&now);
+	os_get_reltime(&now);
 	while (pmksa->pmksa && pmksa->pmksa->expiration <= now.sec) {
-		struct rsn_pmksa_cache_entry *entry = pmksa->pmksa;
-		pmksa->pmksa = entry->next;
 		wpa_printf(MSG_DEBUG, "RSN: expired PMKSA cache entry for "
-			   MACSTR, MAC2STR(entry->spa));
-		pmksa_cache_free_entry(pmksa, entry);
+			   MACSTR, MAC2STR(pmksa->pmksa->spa));
+		pmksa_cache_free_entry(pmksa, pmksa->pmksa);
 	}
 
 	pmksa_cache_set_expiration(pmksa);
@@ -114,12 +107,12 @@ static void pmksa_cache_expire(void *eloop_ctx, void *timeout_ctx)
 static void pmksa_cache_set_expiration(struct rsn_pmksa_cache *pmksa)
 {
 	int sec;
-	struct os_time now;
+	struct os_reltime now;
 
 	eloop_cancel_timeout(pmksa_cache_expire, pmksa, NULL);
 	if (pmksa->pmksa == NULL)
 		return;
-	os_get_time(&now);
+	os_get_reltime(&now);
 	sec = pmksa->pmksa->expiration - now.sec;
 	if (sec < 0)
 		sec = 0;
@@ -141,6 +134,9 @@ static void pmksa_cache_from_eapol_data(struct rsn_pmksa_cache_entry *entry,
 				  eapol->identity_len);
 		}
 	}
+
+	if (eapol->radius_cui)
+		entry->cui = wpabuf_dup(eapol->radius_cui);
 
 #ifndef CONFIG_NO_RADIUS
 	radius_copy_class(&entry->radius_class, &eapol->radius_class);
@@ -167,6 +163,11 @@ void pmksa_cache_to_eapol_data(struct rsn_pmksa_cache_entry *entry,
 		}
 		wpa_hexdump_ascii(MSG_DEBUG, "STA identity from PMKSA",
 				  eapol->identity, eapol->identity_len);
+	}
+
+	if (entry->cui) {
+		wpabuf_free(eapol->radius_cui);
+		eapol->radius_cui = wpabuf_dup(entry->cui);
 	}
 
 #ifndef CONFIG_NO_RADIUS
@@ -208,6 +209,8 @@ static void pmksa_cache_link_entry(struct rsn_pmksa_cache *pmksa,
 	pmksa->pmkid[PMKID_HASH(entry->pmkid)] = entry;
 
 	pmksa->pmksa_count++;
+	if (prev == NULL)
+		pmksa_cache_set_expiration(pmksa);
 	wpa_printf(MSG_DEBUG, "RSN: added PMKSA cache entry for " MACSTR,
 		   MAC2STR(entry->spa));
 	wpa_hexdump(MSG_DEBUG, "RSN: added PMKID", entry->pmkid, PMKID_LEN);
@@ -238,7 +241,7 @@ pmksa_cache_auth_add(struct rsn_pmksa_cache *pmksa,
 		struct eapol_state_machine *eapol, int akmp)
 {
 	struct rsn_pmksa_cache_entry *entry, *pos;
-	struct os_time now;
+	struct os_reltime now;
 
 	if (pmk_len > PMK_LEN)
 		return NULL;
@@ -250,7 +253,7 @@ pmksa_cache_auth_add(struct rsn_pmksa_cache *pmksa,
 	entry->pmk_len = pmk_len;
 	rsn_pmkid(pmk, pmk_len, aa, spa, entry->pmkid,
 		  wpa_key_mgmt_sha256(akmp));
-	os_get_time(&now);
+	os_get_reltime(&now);
 	entry->expiration = now.sec;
 	if (session_timeout > 0)
 		entry->expiration += session_timeout;
@@ -305,6 +308,8 @@ pmksa_cache_add_okc(struct rsn_pmksa_cache *pmksa,
 				  old_entry->identity_len);
 		}
 	}
+	if (old_entry->cui)
+		entry->cui = wpabuf_dup(old_entry->cui);
 #ifndef CONFIG_NO_RADIUS
 	radius_copy_class(&entry->radius_class, &old_entry->radius_class);
 #endif /* CONFIG_NO_RADIUS */

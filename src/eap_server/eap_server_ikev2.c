@@ -2,14 +2,8 @@
  * EAP-IKEv2 server (RFC 5106)
  * Copyright (c) 2007, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -109,8 +103,11 @@ static void * eap_ikev2_init(struct eap_sm *sm)
 	data->ikev2.proposal.encr = ENCR_AES_CBC;
 	data->ikev2.proposal.dh = DH_GROUP2_1024BIT_MODP;
 
-	data->ikev2.IDi = (u8 *) os_strdup("hostapd");
-	data->ikev2.IDi_len = 7;
+	data->ikev2.IDi = os_malloc(sm->server_id_len);
+	if (data->ikev2.IDi == NULL)
+		goto failed;
+	os_memcpy(data->ikev2.IDi, sm->server_id, sm->server_id_len);
+	data->ikev2.IDi_len = sm->server_id_len;
 
 	data->ikev2.get_shared_secret = eap_ikev2_get_shared_secret;
 	data->ikev2.cb_ctx = sm;

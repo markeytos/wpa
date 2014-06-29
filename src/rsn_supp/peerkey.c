@@ -2,14 +2,8 @@
  * WPA Supplicant - PeerKey for Direct Link Setup (DLS)
  * Copyright (c) 2006-2008, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -223,20 +217,17 @@ static int wpa_supplicant_process_smk_m2(
 		return -1;
 	}
 
-	cipher = ie.pairwise_cipher & sm->allowed_pairwise_cipher;
-	if (cipher & WPA_CIPHER_CCMP) {
-		wpa_printf(MSG_DEBUG, "RSN: Using CCMP for PeerKey");
-		cipher = WPA_CIPHER_CCMP;
-	} else if (cipher & WPA_CIPHER_TKIP) {
-		wpa_printf(MSG_DEBUG, "RSN: Using TKIP for PeerKey");
-		cipher = WPA_CIPHER_TKIP;
-	} else {
+	cipher = wpa_pick_pairwise_cipher(ie.pairwise_cipher &
+					  sm->allowed_pairwise_cipher, 0);
+	if (cipher < 0) {
 		wpa_printf(MSG_INFO, "RSN: No acceptable cipher in SMK M2");
 		wpa_supplicant_send_smk_error(sm, src_addr, kde.mac_addr,
 					      STK_MUI_SMK, STK_ERR_CPHR_NS,
 					      ver);
 		return -1;
 	}
+	wpa_printf(MSG_DEBUG, "RSN: Using %s for PeerKey",
+		   wpa_cipher_txt(cipher));
 
 	/* TODO: find existing entry and if found, use that instead of adding
 	 * a new one; how to handle the case where both ends initiate at the
@@ -273,10 +264,7 @@ static int wpa_supplicant_process_smk_m2(
 	/* Include only the selected cipher in pairwise cipher suite */
 	WPA_PUT_LE16(pos, 1);
 	pos += 2;
-	if (cipher == WPA_CIPHER_CCMP)
-		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_CCMP);
-	else if (cipher == WPA_CIPHER_TKIP)
-		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_TKIP);
+	RSN_SELECTOR_PUT(pos, wpa_cipher_to_suite(WPA_PROTO_RSN, cipher));
 	pos += RSN_SELECTOR_LEN;
 
 	hdr->len = (pos - peerkey->rsnie_p) - 2;
@@ -350,7 +338,7 @@ static void wpa_supplicant_send_stk_1_of_4(struct wpa_sm *sm,
 
 	msg->type = EAPOL_KEY_TYPE_RSN;
 
-	if (peerkey->cipher == WPA_CIPHER_CCMP)
+	if (peerkey->cipher != WPA_CIPHER_TKIP)
 		ver = WPA_KEY_INFO_TYPE_HMAC_SHA1_AES;
 	else
 		ver = WPA_KEY_INFO_TYPE_HMAC_MD5_RC4;
@@ -358,7 +346,7 @@ static void wpa_supplicant_send_stk_1_of_4(struct wpa_sm *sm,
 	key_info = ver | WPA_KEY_INFO_KEY_TYPE | WPA_KEY_INFO_ACK;
 	WPA_PUT_BE16(msg->key_info, key_info);
 
-	if (peerkey->cipher == WPA_CIPHER_CCMP)
+	if (peerkey->cipher != WPA_CIPHER_TKIP)
 		WPA_PUT_BE16(msg->key_length, 16);
 	else
 		WPA_PUT_BE16(msg->key_length, 32);
@@ -409,7 +397,7 @@ static void wpa_supplicant_send_stk_3_of_4(struct wpa_sm *sm,
 
 	msg->type = EAPOL_KEY_TYPE_RSN;
 
-	if (peerkey->cipher == WPA_CIPHER_CCMP)
+	if (peerkey->cipher != WPA_CIPHER_TKIP)
 		ver = WPA_KEY_INFO_TYPE_HMAC_SHA1_AES;
 	else
 		ver = WPA_KEY_INFO_TYPE_HMAC_MD5_RC4;
@@ -418,7 +406,7 @@ static void wpa_supplicant_send_stk_3_of_4(struct wpa_sm *sm,
 		WPA_KEY_INFO_MIC | WPA_KEY_INFO_SECURE;
 	WPA_PUT_BE16(msg->key_info, key_info);
 
-	if (peerkey->cipher == WPA_CIPHER_CCMP)
+	if (peerkey->cipher != WPA_CIPHER_TKIP)
 		WPA_PUT_BE16(msg->key_length, 16);
 	else
 		WPA_PUT_BE16(msg->key_length, 32);
@@ -502,14 +490,9 @@ static int wpa_supplicant_process_smk_m5(struct wpa_sm *sm,
 	peerkey->rsnie_p_len = kde->rsn_ie_len;
 	os_memcpy(peerkey->pnonce, kde->nonce, WPA_NONCE_LEN);
 
-	cipher = ie.pairwise_cipher & sm->allowed_pairwise_cipher;
-	if (cipher & WPA_CIPHER_CCMP) {
-		wpa_printf(MSG_DEBUG, "RSN: Using CCMP for PeerKey");
-		peerkey->cipher = WPA_CIPHER_CCMP;
-	} else if (cipher & WPA_CIPHER_TKIP) {
-		wpa_printf(MSG_DEBUG, "RSN: Using TKIP for PeerKey");
-		peerkey->cipher = WPA_CIPHER_TKIP;
-	} else {
+	cipher = wpa_pick_pairwise_cipher(ie.pairwise_cipher &
+					  sm->allowed_pairwise_cipher, 0);
+	if (cipher < 0) {
 		wpa_printf(MSG_INFO, "RSN: SMK Peer STA " MACSTR " selected "
 			   "unacceptable cipher", MAC2STR(kde->mac_addr));
 		wpa_supplicant_send_smk_error(sm, src_addr, kde->mac_addr,
@@ -518,6 +501,9 @@ static int wpa_supplicant_process_smk_m5(struct wpa_sm *sm,
 		/* TODO: abort negotiation */
 		return -1;
 	}
+	wpa_printf(MSG_DEBUG, "RSN: Using %s for PeerKey",
+		   wpa_cipher_txt(cipher));
+	peerkey->cipher = cipher;
 
 	return 0;
 }
@@ -530,7 +516,6 @@ static int wpa_supplicant_process_smk_m45(
 	struct wpa_peerkey *peerkey;
 	struct wpa_eapol_ie_parse kde;
 	u32 lifetime;
-	struct os_time now;
 
 	if (!sm->peerkey_enabled || sm->proto != WPA_PROTO_RSN) {
 		wpa_printf(MSG_DEBUG, "RSN: SMK handshake not allowed for "
@@ -582,10 +567,8 @@ static int wpa_supplicant_process_smk_m45(
 	lifetime = WPA_GET_BE32(kde.lifetime);
 	wpa_printf(MSG_DEBUG, "RSN: SMK lifetime %u seconds", lifetime);
 	if (lifetime > 1000000000)
-		lifetime = 1000000000; /* avoid overflowing expiration time */
+		lifetime = 1000000000; /* avoid overflowing eloop time */
 	peerkey->lifetime = lifetime;
-	os_get_time(&now);
-	peerkey->expiration = now.sec + lifetime;
 	eloop_register_timeout(lifetime, 0, wpa_supplicant_smk_timeout,
 			       sm, peerkey);
 
@@ -750,7 +733,6 @@ static void wpa_supplicant_update_smk_lifetime(struct wpa_sm *sm,
 					       struct wpa_eapol_ie_parse *kde)
 {
 	u32 lifetime;
-	struct os_time now;
 
 	if (kde->lifetime == NULL || kde->lifetime_len < sizeof(lifetime))
 		return;
@@ -769,8 +751,6 @@ static void wpa_supplicant_update_smk_lifetime(struct wpa_sm *sm,
 		   lifetime, peerkey->lifetime);
 	peerkey->lifetime = lifetime;
 
-	os_get_time(&now);
-	peerkey->expiration = now.sec + lifetime;
 	eloop_cancel_timeout(wpa_supplicant_smk_timeout, sm, peerkey);
 	eloop_register_timeout(lifetime, 0, wpa_supplicant_smk_timeout,
 			       sm, peerkey);
@@ -1022,7 +1002,7 @@ int wpa_sm_stkstart(struct wpa_sm *sm, const u8 *peer)
 		return -1;
 	}
 
-	if (sm->pairwise_cipher == WPA_CIPHER_CCMP)
+	if (sm->pairwise_cipher != WPA_CIPHER_TKIP)
 		ver = WPA_KEY_INFO_TYPE_HMAC_SHA1_AES;
 	else
 		ver = WPA_KEY_INFO_TYPE_HMAC_MD5_RC4;
@@ -1061,17 +1041,8 @@ int wpa_sm_stkstart(struct wpa_sm *sm, const u8 *peer)
 	count_pos = pos;
 	pos += 2;
 
-	count = 0;
-	if (sm->allowed_pairwise_cipher & WPA_CIPHER_CCMP) {
-		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_CCMP);
-		pos += RSN_SELECTOR_LEN;
-		count++;
-	}
-	if (sm->allowed_pairwise_cipher & WPA_CIPHER_TKIP) {
-		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_TKIP);
-		pos += RSN_SELECTOR_LEN;
-		count++;
-	}
+	count = rsn_cipher_put_suites(pos, sm->allowed_pairwise_cipher);
+	pos += count * RSN_SELECTOR_LEN;
 	WPA_PUT_LE16(count_pos, count);
 
 	hdr->len = (pos - peerkey->rsnie_i) - 2;
@@ -1139,7 +1110,7 @@ void peerkey_deinit(struct wpa_sm *sm)
 	while (peerkey) {
 		prev = peerkey;
 		peerkey = peerkey->next;
-		os_free(prev);
+		wpa_supplicant_peerkey_free(sm, prev);
 	}
 	sm->peerkey = NULL;
 }

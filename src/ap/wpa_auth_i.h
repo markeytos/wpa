@@ -2,14 +2,8 @@
  * hostapd - IEEE 802.11i-2004 / WPA Authenticator: Internal definitions
  * Copyright (c) 2004-2007, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef WPA_AUTH_I_H
@@ -32,6 +26,7 @@ struct wpa_state_machine {
 	struct wpa_group *group;
 
 	u8 addr[ETH_ALEN];
+	u8 p2p_dev_addr[ETH_ALEN];
 
 	enum {
 		WPA_PTK_INITIALIZE, WPA_PTK_DISCONNECT, WPA_PTK_DISCONNECTED,
@@ -69,10 +64,11 @@ struct wpa_state_machine {
 	Boolean pairwise_set;
 	int keycount;
 	Boolean Pair;
-	struct {
+	struct wpa_key_replay_counter {
 		u8 counter[WPA_REPLAY_COUNTER_LEN];
 		Boolean valid;
-	} key_replay[RSNA_MAX_EAPOL_RETRIES];
+	} key_replay[RSNA_MAX_EAPOL_RETRIES],
+		prev_key_replay[RSNA_MAX_EAPOL_RETRIES];
 	Boolean PInitAKeys; /* WPA only, not in IEEE 802.11i */
 	Boolean PTKRequest; /* not in IEEE 802.11i state machine */
 	Boolean has_GTK;
@@ -87,10 +83,12 @@ struct wpa_state_machine {
 	unsigned int started:1;
 	unsigned int mgmt_frame_prot:1;
 	unsigned int rx_eapol_key_secure:1;
+	unsigned int update_snonce:1;
 #ifdef CONFIG_IEEE80211R
 	unsigned int ft_completed:1;
 	unsigned int pmk_r1_name_valid:1;
 #endif /* CONFIG_IEEE80211R */
+	unsigned int is_wnmsleep:1;
 
 	u8 req_replay_counter[WPA_REPLAY_COUNTER_LEN];
 	int req_replay_counter_used;
@@ -123,6 +121,10 @@ struct wpa_state_machine {
 #endif /* CONFIG_IEEE80211R */
 
 	int pending_1_of_4_timeout;
+
+#ifdef CONFIG_P2P
+	u8 ip_addr[4];
+#endif /* CONFIG_P2P */
 };
 
 
@@ -141,7 +143,8 @@ struct wpa_group {
 
 	enum {
 		WPA_GROUP_GTK_INIT = 0,
-		WPA_GROUP_SETKEYS, WPA_GROUP_SETKEYSDONE
+		WPA_GROUP_SETKEYS, WPA_GROUP_SETKEYSDONE,
+		WPA_GROUP_FATAL_FAILURE
 	} wpa_group_state;
 
 	u8 GMK[WPA_GMK_LEN];
@@ -186,6 +189,10 @@ struct wpa_authenticator {
 
 	struct rsn_pmksa_cache *pmksa;
 	struct wpa_ft_pmk_cache *ft_pmk_cache;
+
+#ifdef CONFIG_P2P
+	struct bitfield *ip_pool;
+#endif /* CONFIG_P2P */
 };
 
 

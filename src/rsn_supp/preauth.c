@@ -1,15 +1,9 @@
 /*
  * RSN pre-authentication (supplicant)
- * Copyright (c) 2003-2010, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -22,10 +16,9 @@
 #include "preauth.h"
 #include "pmksa_cache.h"
 #include "wpa_i.h"
-#include "common/ieee802_11_defs.h"
 
 
-#if defined(IEEE8021X_EAPOL) && !defined(CONFIG_NO_WPA2)
+#ifdef IEEE8021X_EAPOL
 
 #define PMKID_CANDIDATE_PRIO_SCAN 1000
 
@@ -77,13 +70,14 @@ static void rsn_preauth_receive(void *ctx, const u8 *src_addr,
 }
 
 
-static void rsn_preauth_eapol_cb(struct eapol_sm *eapol, int success,
+static void rsn_preauth_eapol_cb(struct eapol_sm *eapol,
+				 enum eapol_supp_result result,
 				 void *ctx)
 {
 	struct wpa_sm *sm = ctx;
 	u8 pmk[PMK_LEN];
 
-	if (success) {
+	if (result == EAPOL_SUPP_RESULT_SUCCESS) {
 		int res, pmk_len;
 		pmk_len = PMK_LEN;
 		res = eapol_sm_get_key(eapol, pmk, PMK_LEN);
@@ -107,13 +101,14 @@ static void rsn_preauth_eapol_cb(struct eapol_sm *eapol, int success,
 			wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
 				"RSN: failed to get master session key from "
 				"pre-auth EAPOL state machines");
-			success = 0;
+			result = EAPOL_SUPP_RESULT_FAILURE;
 		}
 	}
 
 	wpa_msg(sm->ctx->msg_ctx, MSG_INFO, "RSN: pre-authentication with "
 		MACSTR " %s", MAC2STR(sm->preauth_bssid),
-		success ? "completed successfully" : "failed");
+		result == EAPOL_SUPP_RESULT_SUCCESS ? "completed successfully" :
+		"failed");
 
 	rsn_preauth_deinit(sm);
 	rsn_preauth_candidate_process(sm);
@@ -312,7 +307,7 @@ void rsn_preauth_candidate_process(struct wpa_sm *sm)
 	dl_list_for_each_safe(candidate, n, &sm->pmksa_candidates,
 			      struct rsn_pmksa_candidate, list) {
 		struct rsn_pmksa_cache_entry *p = NULL;
-		p = pmksa_cache_get(sm->pmksa, candidate->bssid, NULL);
+		p = pmksa_cache_get(sm->pmksa, candidate->bssid, NULL, NULL);
 		if (os_memcmp(sm->bssid, candidate->bssid, ETH_ALEN) != 0 &&
 		    (p == NULL || p->opportunistic)) {
 			wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG, "RSN: PMKSA "
@@ -459,7 +454,7 @@ void rsn_preauth_scan_result(struct wpa_sm *sm, const u8 *bssid,
 	if (wpa_parse_wpa_ie(rsn, 2 + rsn[1], &ie))
 		return;
 
-	pmksa = pmksa_cache_get(sm->pmksa, bssid, NULL);
+	pmksa = pmksa_cache_get(sm->pmksa, bssid, NULL, NULL);
 	if (pmksa && (!pmksa->opportunistic ||
 		      !(ie.capabilities & WPA_CAPABILITY_PREAUTH)))
 		return;
@@ -515,4 +510,4 @@ int rsn_preauth_in_progress(struct wpa_sm *sm)
 	return sm->preauth_eapol != NULL;
 }
 
-#endif /* IEEE8021X_EAPOL and !CONFIG_NO_WPA2 */
+#endif /* IEEE8021X_EAPOL */

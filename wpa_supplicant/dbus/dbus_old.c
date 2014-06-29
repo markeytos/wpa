@@ -2,14 +2,8 @@
  * WPA Supplicant / dbus-based control interface
  * Copyright (c) 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -23,7 +17,6 @@
 #include "../bss.h"
 #include "dbus_old.h"
 #include "dbus_old_handlers.h"
-#include "dbus_common.h"
 #include "dbus_common_i.h"
 
 
@@ -275,10 +268,12 @@ static DBusHandlerResult wpas_iface_message_handler(DBusConnection *connection,
 			reply = wpas_dbus_iface_get_state(message, wpa_s);
 		else if (!strcmp(method, "scanning"))
 			reply = wpas_dbus_iface_get_scanning(message, wpa_s);
+#ifndef CONFIG_NO_CONFIG_BLOBS
 		else if (!strcmp(method, "setBlobs"))
 			reply = wpas_dbus_iface_set_blobs(message, wpa_s);
 		else if (!strcmp(method, "removeBlobs"))
 			reply = wpas_dbus_iface_remove_blobs(message, wpa_s);
+#endif /* CONFIG_NO_CONFIG_BLOBS */
 #ifdef CONFIG_WPS
 		else if (!os_strcmp(method, "wpsPbc"))
 			reply = wpas_dbus_iface_wps_pbc(message, wpa_s);

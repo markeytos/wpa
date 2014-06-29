@@ -3,14 +3,8 @@
  * Copyright (c) 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
  * Copyright (c) 2009, Witold Sowa <witold.sowa@gmail.com>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "utils/includes.h"
@@ -596,10 +590,10 @@ int wpa_dbus_unregister_object_per_iface(
 	if (!obj_desc) {
 		wpa_printf(MSG_ERROR, "dbus: %s: Could not obtain object's "
 			   "private data: %s", __func__, path);
-	} else {
-		eloop_cancel_timeout(flush_object_timeout_handler, con,
-				     obj_desc);
+		return 0;
 	}
+
+	eloop_cancel_timeout(flush_object_timeout_handler, con, obj_desc);
 
 	if (!dbus_connection_unregister_object_path(con, path))
 		return -1;

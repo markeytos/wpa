@@ -3,14 +3,8 @@
  * Copyright (c) 2005-2009, Jouni Malinen <j@w1.fi>
  * Copyright (c) 2004, Gunter Burchardt <tira@isx.de>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -23,6 +17,7 @@
 #endif /* __linux__ */
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__)
 #include <net/if_dl.h>
+#include <net/if_media.h>
 #endif /* defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__) */
 #ifdef __sun__
 #include <sys/sockio.h>
@@ -460,6 +455,34 @@ static int wpa_driver_wired_set_ifflags(const char *ifname, int flags)
 }
 
 
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__)
+static int wpa_driver_wired_get_ifstatus(const char *ifname, int *status)
+{
+	struct ifmediareq ifmr;
+	int s;
+
+	s = socket(PF_INET, SOCK_DGRAM, 0);
+	if (s < 0) {
+		perror("socket");
+		return -1;
+	}
+
+	os_memset(&ifmr, 0, sizeof(ifmr));
+	os_strlcpy(ifmr.ifm_name, ifname, IFNAMSIZ);
+	if (ioctl(s, SIOCGIFMEDIA, (caddr_t) &ifmr) < 0) {
+		perror("ioctl[SIOCGIFMEDIA]");
+		close(s);
+		return -1;
+	}
+	close(s);
+	*status = (ifmr.ifm_status & (IFM_ACTIVE | IFM_AVALID)) ==
+		(IFM_ACTIVE | IFM_AVALID);
+
+	return 0;
+}
+#endif /* defined(__FreeBSD__) || defined(__DragonFly__) || defined(FreeBSD_kernel__) */
+
+
 static int wpa_driver_wired_multi(const char *ifname, const u8 *addr, int add)
 {
 	struct ifreq ifr;
@@ -568,6 +591,16 @@ static void * wpa_driver_wired_init(void *ctx, const char *ifname)
 			   __func__);
 		drv->iff_allmulti = 1;
 	}
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__)
+	{
+		int status;
+		wpa_printf(MSG_DEBUG, "%s: waiting for link to become active",
+			   __func__);
+		while (wpa_driver_wired_get_ifstatus(ifname, &status) == 0 &&
+		       status == 0)
+			sleep(1);
+	}
+#endif /* defined(__FreeBSD__) || defined(__DragonFly__) || defined(FreeBSD_kernel__) */
 
 	return drv;
 }

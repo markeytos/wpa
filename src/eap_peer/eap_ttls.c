@@ -2,14 +2,8 @@
  * EAP peer method: EAP-TTLS (RFC 5281)
  * Copyright (c) 2004-2011, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -60,6 +54,8 @@ struct eap_ttls_data {
 	int resuming; /* starting a resumed session */
 	int reauth; /* reauthentication */
 	u8 *key_data;
+	u8 *session_id;
+	size_t id_len;
 
 	struct wpabuf *pending_phase2_req;
 
@@ -116,7 +112,7 @@ static void * eap_ttls_init(struct eap_sm *sm)
 		data->phase2_eap_type.method = EAP_TYPE_NONE;
 	}
 
-	if (eap_peer_tls_ssl_init(sm, &data->ssl, config)) {
+	if (eap_peer_tls_ssl_init(sm, &data->ssl, config, EAP_TYPE_TTLS)) {
 		wpa_printf(MSG_INFO, "EAP-TTLS: Failed to initialize SSL.");
 		eap_ttls_deinit(sm, data);
 		return NULL;
@@ -146,6 +142,7 @@ static void eap_ttls_deinit(struct eap_sm *sm, void *priv)
 	os_free(data->phase2_eap_types);
 	eap_peer_tls_ssl_deinit(sm, &data->ssl);
 	os_free(data->key_data);
+	os_free(data->session_id);
 	wpabuf_free(data->pending_phase2_req);
 	os_free(data);
 }
@@ -227,6 +224,17 @@ static int eap_ttls_v0_derive_key(struct eap_sm *sm,
 
 	wpa_hexdump_key(MSG_DEBUG, "EAP-TTLS: Derived key",
 			data->key_data, EAP_TLS_KEY_LEN);
+
+	os_free(data->session_id);
+	data->session_id = eap_peer_tls_derive_session_id(sm, &data->ssl,
+							  EAP_TYPE_TTLS,
+	                                                  &data->id_len);
+	if (data->session_id) {
+		wpa_hexdump(MSG_DEBUG, "EAP-TTLS: Derived Session-Id",
+			    data->session_id, data->id_len);
+	} else {
+		wpa_printf(MSG_ERROR, "EAP-TTLS: Failed to derive Session-Id");
+	}
 
 	return 0;
 }
@@ -407,6 +415,7 @@ static int eap_ttls_phase2_request_mschapv2(struct eap_sm *sm,
 					    struct eap_method_ret *ret,
 					    struct wpabuf **resp)
 {
+#ifdef EAP_MSCHAPv2
 	struct wpabuf *msg;
 	u8 *buf, *pos, *challenge, *peer_challenge;
 	const u8 *identity, *password;
@@ -494,6 +503,10 @@ static int eap_ttls_phase2_request_mschapv2(struct eap_sm *sm,
 	}
 
 	return 0;
+#else /* EAP_MSCHAPv2 */
+	wpa_printf(MSG_ERROR, "EAP-TTLS: MSCHAPv2 not included in the build");
+	return -1;
+#endif /* EAP_MSCHAPv2 */
 }
 
 
@@ -1048,6 +1061,7 @@ static int eap_ttls_process_phase2_mschapv2(struct eap_sm *sm,
 					    struct eap_method_ret *ret,
 					    struct ttls_parse_avp *parse)
 {
+#ifdef EAP_MSCHAPv2
 	if (parse->mschapv2_error) {
 		wpa_printf(MSG_DEBUG, "EAP-TTLS/MSCHAPV2: Received "
 			   "MS-CHAP-Error - failed");
@@ -1096,6 +1110,10 @@ static int eap_ttls_process_phase2_mschapv2(struct eap_sm *sm,
 	 * with EAP-Success after this.
 	 */
 	return 1;
+#else /* EAP_MSCHAPv2 */
+	wpa_printf(MSG_ERROR, "EAP-TTLS: MSCHAPv2 not included in the build");
+	return -1;
+#endif /* EAP_MSCHAPv2 */
 }
 
 
@@ -1524,6 +1542,8 @@ static void * eap_ttls_init_for_reauth(struct eap_sm *sm, void *priv)
 	struct eap_ttls_data *data = priv;
 	os_free(data->key_data);
 	data->key_data = NULL;
+	os_free(data->session_id);
+	data->session_id = NULL;
 	if (eap_peer_tls_reauth_init(sm, &data->ssl)) {
 		os_free(data);
 		return NULL;
@@ -1608,6 +1628,25 @@ static u8 * eap_ttls_getKey(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
+static u8 * eap_ttls_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
+{
+	struct eap_ttls_data *data = priv;
+	u8 *id;
+
+	if (data->session_id == NULL || !data->phase2_success)
+		return NULL;
+
+	id = os_malloc(data->id_len);
+	if (id == NULL)
+		return NULL;
+
+	*len = data->id_len;
+	os_memcpy(id, data->session_id, data->id_len);
+
+	return id;
+}
+
+
 int eap_peer_ttls_register(void)
 {
 	struct eap_method *eap;
@@ -1623,6 +1662,7 @@ int eap_peer_ttls_register(void)
 	eap->process = eap_ttls_process;
 	eap->isKeyAvailable = eap_ttls_isKeyAvailable;
 	eap->getKey = eap_ttls_getKey;
+	eap->getSessionId = eap_ttls_get_session_id;
 	eap->get_status = eap_ttls_get_status;
 	eap->has_reauth_data = eap_ttls_has_reauth_data;
 	eap->deinit_for_reauth = eap_ttls_deinit_for_reauth;

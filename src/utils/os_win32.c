@@ -2,14 +2,8 @@
  * wpa_supplicant/hostapd / OS specific functions for Win32 systems
  * Copyright (c) 2005-2006, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -50,6 +44,17 @@ int os_get_time(struct os_time *t)
 	t->usec = (os_time_t) (tt % 1000000);
 
 	return 0;
+}
+
+
+int os_get_reltime(struct os_reltime *t)
+{
+	/* consider using performance counters or so instead */
+	struct os_time now;
+	int res = os_get_time(&now);
+	t->sec = now.sec;
+	t->usec = now.usec;
+	return res;
 }
 
 

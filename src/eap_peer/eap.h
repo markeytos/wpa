@@ -1,15 +1,9 @@
 /*
  * EAP peer state machine functions (RFC 4137)
- * Copyright (c) 2004-2007, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef EAP_H
@@ -232,6 +226,23 @@ struct eapol_callbacks {
 	 */
 	void (*notify_cert)(void *ctx, int depth, const char *subject,
 			    const char *cert_hash, const struct wpabuf *cert);
+
+	/**
+	 * notify_status - Notification of the current EAP state
+	 * @ctx: eapol_ctx from eap_peer_sm_init() call
+	 * @status: Step in the process of EAP authentication
+	 * @parameter: Step-specific parameter, e.g., EAP method name
+	 */
+	void (*notify_status)(void *ctx, const char *status,
+			      const char *parameter);
+
+	/**
+	 * set_anon_id - Set or add anonymous identity
+	 * @ctx: eapol_ctx from eap_peer_sm_init() call
+	 * @id: Anonymous identity (e.g., EAP-SIM pseudonym) or %NULL to clear
+	 * @len: Length of anonymous identity in octets
+	 */
+	void (*set_anon_id)(void *ctx, const u8 *id, size_t len);
 };
 
 /**
@@ -285,6 +296,7 @@ void eap_sm_request_new_password(struct eap_sm *sm);
 void eap_sm_request_pin(struct eap_sm *sm);
 void eap_sm_request_otp(struct eap_sm *sm, const char *msg, size_t msg_len);
 void eap_sm_request_passphrase(struct eap_sm *sm);
+void eap_sm_request_sim(struct eap_sm *sm, const char *req);
 void eap_sm_notify_ctrl_attached(struct eap_sm *sm);
 u32 eap_get_phase2_type(const char *name, int *vendor);
 struct eap_method_type * eap_get_phase2_types(struct eap_peer_config *config,
@@ -292,9 +304,11 @@ struct eap_method_type * eap_get_phase2_types(struct eap_peer_config *config,
 void eap_set_fast_reauth(struct eap_sm *sm, int enabled);
 void eap_set_workaround(struct eap_sm *sm, unsigned int workaround);
 void eap_set_force_disabled(struct eap_sm *sm, int disabled);
+void eap_set_external_sim(struct eap_sm *sm, int external_sim);
 int eap_key_available(struct eap_sm *sm);
 void eap_notify_success(struct eap_sm *sm);
 void eap_notify_lower_layer_success(struct eap_sm *sm);
+const u8 * eap_get_eapSessionId(struct eap_sm *sm, size_t *len);
 const u8 * eap_get_eapKeyData(struct eap_sm *sm, size_t *len);
 struct wpabuf * eap_get_eapRespData(struct eap_sm *sm);
 void eap_register_scard_ctx(struct eap_sm *sm, void *ctx);
@@ -302,6 +316,11 @@ void eap_invalidate_cached_session(struct eap_sm *sm);
 
 int eap_is_wps_pbc_enrollee(struct eap_peer_config *conf);
 int eap_is_wps_pin_enrollee(struct eap_peer_config *conf);
+
+struct ext_password_data;
+void eap_sm_set_ext_pw_ctx(struct eap_sm *sm, struct ext_password_data *ext);
+void eap_set_anon_id(struct eap_sm *sm, const u8 *id, size_t len);
+int eap_peer_was_failure_expected(struct eap_sm *sm);
 
 #endif /* IEEE8021X_EAPOL */
 

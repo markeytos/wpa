@@ -2,14 +2,8 @@
  * Internal WPA/RSN supplicant state machine definitions
  * Copyright (c) 2004-2010, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef WPA_I_H
@@ -64,6 +58,7 @@ struct wpa_sm {
 	u8 ssid[32];
 	size_t ssid_len;
 	int wpa_ptk_rekey;
+	int p2p;
 
 	u8 own_addr[ETH_ALEN];
 	const char *ifname;
@@ -128,6 +123,10 @@ struct wpa_sm {
 	u8 *assoc_resp_ies; /* MDIE and FTIE from (Re)Association Response */
 	size_t assoc_resp_ies_len;
 #endif /* CONFIG_IEEE80211R */
+
+#ifdef CONFIG_P2P
+	u8 p2p_ip_addr[3 * 4];
+#endif /* CONFIG_P2P */
 };
 
 
@@ -147,12 +146,6 @@ static inline void wpa_sm_deauthenticate(struct wpa_sm *sm, int reason_code)
 {
 	WPA_ASSERT(sm->ctx->deauthenticate);
 	sm->ctx->deauthenticate(sm->ctx->ctx, reason_code);
-}
-
-static inline void wpa_sm_disassociate(struct wpa_sm *sm, int reason_code)
-{
-	WPA_ASSERT(sm->ctx->disassociate);
-	sm->ctx->disassociate(sm->ctx->ctx, reason_code);
 }
 
 static inline int wpa_sm_set_key(struct wpa_sm *sm, enum wpa_alg alg,
@@ -294,13 +287,25 @@ static inline int wpa_sm_tdls_oper(struct wpa_sm *sm, int oper,
 
 static inline int
 wpa_sm_tdls_peer_addset(struct wpa_sm *sm, const u8 *addr, int add,
-			u16 capability, const u8 *supp_rates,
-			size_t supp_rates_len)
+			u16 aid, u16 capability, const u8 *supp_rates,
+			size_t supp_rates_len,
+			const struct ieee80211_ht_capabilities *ht_capab,
+			const struct ieee80211_vht_capabilities *vht_capab,
+			u8 qosinfo, const u8 *ext_capab, size_t ext_capab_len,
+			const u8 *supp_channels, size_t supp_channels_len,
+			const u8 *supp_oper_classes,
+			size_t supp_oper_classes_len)
 {
 	if (sm->ctx->tdls_peer_addset)
 		return sm->ctx->tdls_peer_addset(sm->ctx->ctx, addr, add,
-						 capability, supp_rates,
-						 supp_rates_len);
+						 aid, capability, supp_rates,
+						 supp_rates_len, ht_capab,
+						 vht_capab, qosinfo,
+						 ext_capab, ext_capab_len,
+						 supp_channels,
+						 supp_channels_len,
+						 supp_oper_classes,
+						 supp_oper_classes_len);
 	return -1;
 }
 #endif /* CONFIG_TDLS */

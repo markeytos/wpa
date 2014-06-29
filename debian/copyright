@@ -1,1985 +1,244 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: hostapd
+Upstream-Name: wpa_supplicant
 Upstream-Contact: Jouni Malinen <j@w1.fi>
-Source: git://w1.fi/srv/git/hostap.git
- 
+Source: http://w1.fi/wpa_supplicant/
+
 Files: *
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
+Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
+License: BSD or GPL-2
+
+Files: hostapd/logwatch/*
+Copyright: 2005, Henrik Brix Andersen <brix@gentoo.org>
+License: BSD or GPL-2
+
+Files: hostapd/hostapd.8
+       hostapd/hostapd_cli.1
+Copyright: 2005, Faidon Liambotis <faidon@cube.gr>
+License: BSD or GPL-2
+
+Files: patches/*
+Copyright: 2005, Alexey Kobozev <akobozev@cisco.com>
+           2005-2012, Jouni Malinen <j@w1.fi>
+License: BSD or GPL-2
+
+Files: src/ap/ap_list.*
+       src/ap/ap_mlme.*
+       src/ap/beacon.*
+       src/ap/hw_features.*
+       src/ap/vlan_init.*
+       src/ap/wmm.*
+Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
+           2002-2004, Instant802 Networks, Inc.
+           2005-2006, Devicescape Software, Inc.
+License: BSD or GPL-2
+
+Files: src/ap/ieee802_11_ht.c
+Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
+           2007-2008, Intel Corporation
+License: BSD or GPL-2
+
+Files: src/ap/p2p_hostapd.*
+Copyright: 2009-2010, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/common/gas.*
+Copyright: 2009, Atheros Communications
+           2011, Qualcomm Atheros
+License: BSD or GPL-2
+
+Files: src/common/ieee802_11_defs.h
+Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
+           2007-2008, Intel Corporation
+License: BSD or GPL-2
+
+Files: src/common/wireless_copy.h
+Copyright: 1997-2007, Jean Tourrilhes <jt@hpl.hp.com>
+License: BSD or GPL-2
+
+Files: src/drivers/driver_atheros.c
+Copyright: 2004, Sam Leffler <sam@errno.com>
+           2004, Video54 Technologies
+           2005-2007, Jouni Malinen <j@w1.fi>
+           2009, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/drivers/driver_broadcom.c
+Copyright: 2004, Nikki Chumkov <nikki@gattaca.ru>
+           2004, Jouni Malinen <j@w1.fi>
+License: BSD or GPL-2
+
+Files: src/drivers/driver_bsd.c
+Copyright: 2004, Sam Leffler <sam@errno.com>
+           2004, 2Wire, Inc
+License: BSD or GPL-2
+
+Files: src/drivers/driver_madwifi.c
+Copyright: 2004, Sam Leffler <sam@errno.com>
+           2004, Video54 Technologies
+           2004-2007, Jouni Malinen <j@w1.fi>
+License: BSD or GPL-2
+
+Files: src/drivers/driver_nl80211.c
+Copyright: 2002-2010, Jouni Malinen <j@w1.fi>
+           2003-2004, Instant802 Networks, Inc.
+           2005-2006, Devicescape Software, Inc.
+           2007, Johannes Berg <johannes@sipsolutions.net>
+           2009-2010, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/drivers/driver_none.c
+Copyright: 2008, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/drivers/driver_ralink.*
+Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
+           2007, Snowpin Lee <snowpin_lee@ralinktech.com.tw>
+License: BSD or GPL-2
+
+Files: src/drivers/driver_roboswitch.c
+Copyright: 2008-2009, Jouke Witteveen
+License: BSD or GPL-2
+
+Files: src/drivers/driver_wired.c
+Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
+           2004, Gunter Burchardt <tira@isx.de>
+License: BSD or GPL-2
+
+Files: src/drivers/nl80211_copy.h
+Copyright: 2006-2010, Johannes Berg <johannes@sipsolutions.net>
+           2008, Michael Wu <flamingice@sourmilk.net>
+           2008, Luis Carlos Cobo <luisca@cozybit.com>
+           2008, Michael Buesch <m@bues.ch>
+           2008-2009, Luis R. Rodriguez <lrodriguez@atheros.com>
+           2008, Jouni Malinen <jouni.malinen@atheros.com>
+           2008, Colin McCabe <colin@cozybit.com>
+License: ISC
+
+Files: src/eap_common/eap_pwd_common.*
+       src/eap_peer/eap_pwd.c
+       src/eap_server/eap_server_pwd.c
+Copyright: 2010, Dan Harkins <dharkins@lounge.org>
+License: BSD or GPL-2
+
+Files: src/l2_packet/l2_packet_freebsd.c
+Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
+           2005, Sam Leffler <sam@errno.com>
+License: BSD or GPL-2
+
+Files: src/p2p/*
+Copyright: 2009-2010, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/rsn_supp/tdls.c
+Copyright: 2010-2011, Atheros Communications
+License: BSD or GPL-2
+
+Files: src/tls/libtommath.c
+Copyright: Tom St Denis
+License: public-domain
+
+Files: src/utils/radiotap.c
+       src/utils/radiotap_iter.h
+Copyright: 2007, Andy Green <andy@warmcat.com>
+           2007, Johannes Berg <johannes@sipsolutions.net>
+License: BSD or GPL-2
+
+Files: src/utils/radiotap.h
+Copyright: 2003-2004, David Young
 License: BSD
 
-File: hostapd/Android.mk
-Copyright: 2008, The Android Open Source Project
-
-File: hostapd/README
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi> and contributors
-
-File: hostapd/config_file.c
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: hostapd/config_file.h
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: hostapd/ctrl_iface.c
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi>
-
-File: hostapd/ctrl_iface.h
-Copyright: 2004, Jouni Malinen <j@w1.fi>
-
-File: hostapd/defconfig
-
-File: hostapd/eap_register.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: hostapd/eap_register.h
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: hostapd/hlr_auc_gw.c
-Copyright: 2005-2007, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2007, 2012-2013, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: hostapd/hostapd_cli.c
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi> and contributors";
-
-File: hostapd/logwatch/hostapd
-Copyright: 2005, Henrik Brix Andersen <brix@gentoo.org>
-
-File: hostapd/logwatch/hostapd.conf
-Copyright: 2005, Henrik Brix Andersen <brix@gentoo.org>
-
-File: hostapd/main.c
-Copyright: 2002-2011, Jouni Malinen <j@w1.fi>
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi> "
-
-File: hostapd/nt_password_hash.c
-Copyright: 2005, Jouni Malinen <j@w1.fi>
-
-File: hostapd/wps-ap-nfc.py
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/accounting.c
-Copyright: 2002-2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/accounting.h
-Copyright: 2002-2005, Jouni Malinen <j@w1.fi>
-
-File: src/ap/acs.c
-Copyright: 2011, Atheros Communications
-Copyright: 2013, Qualcomm Atheros, Inc.
-
-File: src/ap/acs.h
-Copyright: 2011, Atheros Communications
-Copyright: 2013, Qualcomm Atheros, Inc.
-
-File: src/ap/ap_config.c
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_config.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_drv_ops.c
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_drv_ops.h
-Copyright: 2009-2014, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_list.c
-Copyright: 2006, Devicescape Software, Inc.
-Copyright: 2003-2004, Instant802 Networks, Inc.
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_list.h
-Copyright: 2006, Devicescape Software, Inc.
-Copyright: 2003-2004, Instant802 Networks, Inc.
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2003, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_mlme.c
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2003-2004, Instant802 Networks, Inc.
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ap_mlme.h
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2003-2004, Instant802 Networks, Inc.
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/authsrv.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/authsrv.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/beacon.c
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2004, Instant802 Networks, Inc.
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/beacon.h
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2004, Instant802 Networks, Inc.
-
-File: src/ap/ctrl_iface_ap.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ctrl_iface_ap.h
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/dfs.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-Copyright: 2013, Qualcomm Atheros, Inc.
-
-File: src/ap/dfs.h
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-Copyright: 2013, Qualcomm Atheros, Inc.
-
-File: src/ap/doc/kerneldoc2doxygen.pl (file does not exist)
-Copyright: 2003, Jonathan Foster <jon@jon-foster.co.uk>
-Copyright: 2005, Jouni Malinen <j@w1.fi>
-
-File: src/ap/drv_callbacks.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/dump_state.c (file does not exist)
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/dump_state.h (file does not exist)
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/eap_user_db.c
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/gas_serv.c
-Copyright: 2011-2014, Qualcomm Atheros, Inc.
-
-File: src/ap/gas_serv.h
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: src/ap/hostapd.c
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi> "
-
-File: src/ap/hostapd.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/hs20.c
-Copyright: 2009, Atheros Communications, Inc.
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: src/ap/hs20.h
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: src/ap/hw_features.c
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2003, Instant802 Networks, Inc.
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/hw_features.h
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2003, Instant802 Networks, Inc.
-Copyright: 2008-2011, Jouni Malinen <j@w1.fi>
-
-File: src/ap/iapp.c
-Copyright: 2002-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/iapp.h
-Copyright: 2002-2005, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11.c
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11_auth.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11_auth.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11_ht.c
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11_shared.c
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11_vht.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11h.c (file does not exist)
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_11h.h (file does not exist)
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_1x.c
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/ieee802_1x.h
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/p2p_hostapd.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/ap/p2p_hostapd.h
-Copyright: 2009-2010, Atheros Communications
-
-File: src/ap/peerkey_auth.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/pmksa_cache_auth.c
-Copyright: 2004-2008, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/ap/pmksa_cache_auth.h
-Copyright: 2004-2008, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/ap/preauth_auth.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/preauth_auth.h
-Copyright: 2004-2005, Jouni Malinen <j@w1.fi>
-
-File: src/ap/reconfig.c (file does not exist)
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2004, Instant802 Networks, Inc.
-Copyright: 2002-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/sta_info.c
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/sta_info.h
-Copyright: 2002-2011, Jouni Malinen <j@w1.fi>
-
-File: src/ap/tkip_countermeasures.c
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/tkip_countermeasures.h
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/utils.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/vlan_init.c
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2003, Instant802 Networks, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/vlan_init.h
-Copyright: 2005, Devicescape Software, Inc.
-Copyright: 2003, Instant802 Networks, Inc.
-
-File: src/ap/vlan_util.c
-Copyright: 2012, Michael Braun <michael-dev@fami-braun.de>
-
-File: src/ap/vlan_util.h
-Copyright: 2012, Michael Braun <michael-dev@fami-braun.de>
-
-File: src/ap/wmm.c
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2003, Instant802 Networks, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wmm.h
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2002-2003, Instant802 Networks, Inc.
-
-File: src/ap/wnm_ap.c
-Copyright: 2011-2013, Qualcomm Atheros, Inc.
-
-File: src/ap/wnm_ap.h
-Copyright: 2011-2013, Qualcomm Atheros, Inc.
-
-File: src/ap/wpa_auth.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_ft.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_glue.c
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_glue.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_i.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_ie.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wpa_auth_ie.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wps_hostapd.c
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/ap/wps_hostapd.h
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/common/defs.h
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/common/eapol_common.h
-Copyright: 2002-2007, Jouni Malinen <j@w1.fi>
-
-File: src/common/gas.c
-Copyright: 2009, Atheros Communications
-Copyright: 2011-2012, Qualcomm Atheros
-
-File: src/common/gas.h
-Copyright: 2009, Atheros Communications
-Copyright: 2011-2012, Qualcomm Atheros
-
-File: src/common/ieee802_11_common.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/common/ieee802_11_common.h
-Copyright: 2002-2012, Jouni Malinen <j@w1.fi>
-
-File: src/common/ieee802_11_defs.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/common/privsep_commands.h
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/common/qca-vendor.h
-Copyright: 2014, Qualcomm Atheros, Inc.
-
-File: src/common/sae.c
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: src/common/sae.h
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: src/common/wireless_copy.h (file does not exist)
-Copyright: 1997-2005, Jean Tourrilhes, All Rights Reserved.
-
-File: src/common/wpa_common.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/common/wpa_common.h
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/common/wpa_ctrl.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/common/wpa_ctrl.h
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-cbc.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-ccm.c
-Copyright: 2010-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-ctr.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-eax.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-encblock.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-gcm.c
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-internal-dec.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-internal-enc.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-internal.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-omac1.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-unwrap.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes-wrap.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes.h
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes_i.h
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/aes_wrap.h
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto.h
-Copyright: 2004-2013,2002-2003, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_cryptoapi.c
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_gnutls.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_internal-cipher.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_internal-modexp.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_internal-rsa.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_internal.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_libtomcrypt.c
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_none.c
-Copyright: 2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_nss.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/crypto_openssl.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/des-internal.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/des_i.h
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/dh_group5.c
-Copyright: 2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/dh_group5.h
-Copyright: 2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/dh_groups.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/dh_groups.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/fips_prf_cryptoapi.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/fips_prf_gnutls.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/fips_prf_internal.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/fips_prf_nss.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/fips_prf_openssl.c
-Copyright: 2004-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md4-internal.c
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md5-internal.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md5-non-fips.c (file does not exist)
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md5.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md5.h
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/md5_i.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/milenage.c
-Copyright: 2006-2007, <j@w1.fi>
-
-File: src/crypto/milenage.h
-Copyright: 2006-2007, <j@w1.fi>
-
-File: src/crypto/ms_funcs.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/ms_funcs.h
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/random.c
-Copyright: 2010-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/random.h
-Copyright: 2010-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/rc4.c
-Copyright: 2002-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1-internal.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1-pbkdf2.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1-prf.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1-tlsprf.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1-tprf.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1.h
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha1_i.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256-internal.c
-Copyright: 2003-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256-prf.c
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256-tlsprf.c
-Copyright: 2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256.h
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/sha256_i.h
-Copyright: 2003-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls.h
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_gnutls.c
-Copyright: 2004-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_internal.c
-Copyright: 2004-2011, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_none.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_nss.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_openssl.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/crypto/tls_schannel.c
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2003-2014,2002, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_atheros.c
-Copyright: 2009, Atheros Communications
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-Copyright: 2004, Sam Leffler <sam@errno.com>
-Copyright: 2004, Video54 Technologies
-
-File: src/drivers/driver_atmel.c (file does not exist)
-Copyright: 2000-2005, ATMEL Corporation
-Copyright: 2000-2001, ATMEL Corporation.
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_broadcom.c (file does not exist)
-Copyright: 2004, Jouni Malinen <j@w1.fi>
-Copyright: 2004, Nikki Chumkov <nikki@gattaca.ru>
-
-File: src/drivers/driver_bsd.c
-Copyright: 2004, 2Wire, Inc
-Copyright: 2004, Sam Leffler <sam@errno.com>
-
-File: src/drivers/driver_common.c
-Copyright: 2003-2011, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_hostap.c
-Copyright: 2003-2005,2002,2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_hostap.h
-Copyright: 2002-2006, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_iphone.m (file does not exist)
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_ipw.c (file does not exist)
-Copyright: 2003-2004, Jouni Malinen <j@w1.fi>
-Copyright: 2004, Lubomir Gelo <lgelo@cnc.sk>
-Copyright: 2005, Zhu Yi <yi.zhu@intel.com>
-
-File: src/drivers/driver_madwifi.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-Copyright: 2004, Sam Leffler <sam@errno.com>
-Copyright: 2004, Video54 Technologies
-
-File: src/drivers/driver_ndis.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_ndis.h
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_ndis_.c
-Copyright: 2004-2005, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_ndiswrapper.c (file does not exist)
-Copyright: 2004-2006, Giridhar Pemmasani <giri@lmc.cs.sunysb.edu>
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_nl80211.c
-Copyright: 2009-2010, Atheros Communications
-Copyright: 2005-2006, Devicescape Software, Inc.
-Copyright: 2003-2004, Instant802 Networks, Inc.
-Copyright: 2007, Johannes Berg <johannes@sipsolutions.net>
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_none.c
-Copyright: 2008, Atheros Communications
-
-File: src/drivers/driver_openbsd.c
-Copyright: 2013, Mark Kettenis
-
-File: src/drivers/driver_osx.m (file does not exist)
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_prism54.c (file does not exist)
-Copyright: 2004, Bell Kin <bell_kin@pek.com.tw>
-Copyright: 2002-2007, Jouni Malinen <j@w1.fi>
-Copyright: 2004, Luis R. Rodriguez <mcgrof@ruslug.rutgers.edu>
-
-File: src/drivers/driver_privsep.c
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_ps3.c (file does not exist)
-Copyright: 2007, 2008 Sony Corporation
-
-File: src/drivers/driver_ralink.c (file does not exist)
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-Copyright: 2007, Snowpin Lee <snowpin_lee@ralinktech.com.tw>
-
-File: src/drivers/driver_ralink.h (file does not exist)
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-Copyright: 2007, Snowpin Lee <snowpin_lee@ralinktech.com.tw>
-
-File: src/drivers/driver_roboswitch.c
-Copyright: 2008-2009, Jouke Witteveen
-
-File: src/drivers/driver_test.c
-Copyright: 2004-2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_wext.c
-Copyright: 2003-2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_wext.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/driver_wired.c
-Copyright: 2004, Gunter Burchardt <tira@isx.de>
-Copyright: 2005-2009,2002-2004, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/drivers.c
-Copyright: 2004-2005,2007, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/linux_ioctl.c
-Copyright: 2002-2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/linux_ioctl.h
-Copyright: 2002-2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/linux_wext.h
-Copyright: 2003-2011, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/ndis_events.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/netlink.c
-Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/netlink.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/nl80211_copy.h
-Copyright: 2006, 2007, 2008 Johannes Berg <johannes@sipsolutions.net>
-Copyright: 2008, 2009 Luis R. Rodriguez <lrodriguez@atheros.com>
-Copyright: 2008, Colin McCabe <colin@cozybit.com>
-Copyright: 2006-2010, Johannes Berg <johannes@sipsolutions.net>
-Copyright: 2008, Jouni Malinen <jouni.malinen@atheros.com>
-Copyright: 2008, Luis Carlos Cobo <luisca@cozybit.com>
-Copyright: 2008, Luis R. Rodriguez <lrodriguez@atheros.com>
-Copyright: 2008, Michael Buesch <m@bues.ch>
-Copyright: 2008, Michael Buesch <mb@bu3sch.de>
-Copyright: 2008, Michael Wu <flamingice@sourmilk.net>
-
-File: src/drivers/priv_netlink.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/rfkill.c
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/rfkill.h
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-
-File: src/drivers/wireless_copy.h (file does not exist)
-Copyright: 1997-2007, Jean Tourrilhes, All Rights Reserved.
-
-File: src/eap_common/chap.c
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/chap.h
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_common.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_common.h
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_defs.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_eke_common.c
-Copyright: 2011-2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_eke_common.h
-Copyright: 2011-2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_fast_common.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_fast_common.h
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_gpsk_common.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_gpsk_common.h
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_ikev2_common.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_ikev2_common.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_pax_common.c
-Copyright: 2005, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_pax_common.h
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_peap_common.c
-Copyright: 2008-2011, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_peap_common.h
-Copyright: 2008-2011, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_psk_common.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_psk_common.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_pwd_common.c
-Copyright: 2010, Dan Harkins <dharkins@lounge.org>
-
-File: src/eap_common/eap_pwd_common.h
-Copyright: 2009, Dan Harkins <dharkins@lounge.org>
-
-File: src/eap_common/eap_sake_common.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_sake_common.h
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_sim_common.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_sim_common.h
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_tlv_common.h
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_ttls.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_wsc_common.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/eap_wsc_common.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/ikev2_common.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_common/ikev2_common.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap.c
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap.h
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_aka.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_config.h
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_eke.c
-Copyright: 2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_fast.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_fast_pac.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_fast_pac.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_gpsk.c
-Copyright: 2006-2014, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_gtc.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_i.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_ikev2.c
-Copyright: 2007-2014, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_leap.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_md5.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_methods.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_methods.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_mschapv2.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_otp.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_pax.c
-Copyright: 2005-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_peap.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_proxy.h
-Copyright: 2011-2013, Qualcomm Atheros, Inc.
-
-File: src/eap_peer/eap_proxy_dummy.c
-Copyright: 2013, Qualcomm Atheros, Inc.
-
-File: src/eap_peer/eap_psk.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_pwd.c
-Copyright: 2010, Dan Harkins <dharkins@lounge.org>
-
-File: src/eap_peer/eap_sake.c
-Copyright: 2006-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_sim.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_tls.c
-Copyright: 2004-2008, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_tls_common.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_tls_common.h
-Copyright: 2004-2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_tnc.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_ttls.c
-Copyright: 2004-2011, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_vendor_test.c
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/eap_wsc.c
-Copyright: 2007-2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/ikev2.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/ikev2.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/mschapv2.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/mschapv2.h
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/tncc.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_peer/tncc.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_i.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_methods.h
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_aka.c
-Copyright: 2005-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_eke.c
-Copyright: 2013, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_fast.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_gpsk.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_gtc.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_identity.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_ikev2.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_md5.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_methods.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_mschapv2.c
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_pax.c
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_peap.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_psk.c
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_pwd.c
-Copyright: 2010, Dan Harkins <dharkins@lounge.org>
-
-File: src/eap_server/eap_server_sake.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_sim.c
-Copyright: 2005-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_tls.c
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_tls_common.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_tnc.c
-Copyright: 2007-2010, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_ttls.c
-Copyright: 2004-2011, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_vendor_test.c
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_server_wsc.c
-Copyright: 2007-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_sim_db.c
-Copyright: 2005-2010, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_sim_db.h
-Copyright: 2005-2008, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/eap_tls_common.h
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/ikev2.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/ikev2.h
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/tncs.c
-Copyright: 2007-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eap_server/tncs.h
-Copyright: 2007-2008, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_auth/eapol_auth_dump.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_auth/eapol_auth_sm.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_auth/eapol_auth_sm.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_auth/eapol_auth_sm_i.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_supp/eapol_supp_sm.c
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/eapol_supp/eapol_supp_sm.h
-Copyright: 2004-2012, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet.h
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_freebsd.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-Copyright: 2005, Sam Leffler <sam@errno.com>
-
-File: src/l2_packet/l2_packet_linux.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_ndis.c
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_none.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_pcap.c
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_privsep.c
-Copyright: 2007, Jouni Malinen <j@w1.fi>
-
-File: src/l2_packet/l2_packet_winpcap.c
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/p2p/p2p.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p.h
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_build.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_dev_disc.c
-Copyright: 2010, Atheros Communications
-
-File: src/p2p/p2p_go_neg.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_group.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_i.h
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_invitation.c
-Copyright: 2010, Atheros Communications
-
-File: src/p2p/p2p_parse.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_pd.c
-Copyright: 2009-2010, Atheros Communications
-
-File: src/p2p/p2p_sd.c
-Copyright: 2009, Atheros Communications
-
-File: src/p2p/p2p_utils.c
-Copyright: 2009, Atheros Communications
-
-File: src/radius/radius.c
-Copyright: 2002-2009, 2011-2012, Jouni Malinen <j@w1.fi>
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius.h
-Copyright: 2002-2009, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_client.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_client.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_das.c
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_das.h
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_server.c
-Copyright: 2005-2009, 2011, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/radius/radius_server.h
-Copyright: 2005-2009, 2011, Jouni Malinen <j@w1.fi>
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/peerkey.c
-Copyright: 2006-2008, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/peerkey.h
-Copyright: 2006-2008, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/pmksa_cache.c
-Copyright: 2004-2009, 2011-2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2008, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/pmksa_cache.h
-Copyright: 2003-2009, 2011-2012, Jouni Malinen <j@w1.fi>
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/preauth.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/preauth.h
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/tdls.c
-Copyright: 2010-2011, Atheros Communications
-
-File: src/rsn_supp/wpa.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/wpa.h
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/wpa_ft.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/wpa_i.h
-Copyright: 2004-2010, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/wpa_ie.c
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi>
-
-File: src/rsn_supp/wpa_ie.h
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/tls/asn1.c
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/asn1.h
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/bignum.c
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/bignum.h
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs1.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs1.h
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs5.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs5.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs8.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/pkcs8.h
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/rsa.c
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/rsa.h
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_client.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_client.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_client_i.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_client_read.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_client_write.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_common.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_common.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_cred.c
-Copyright: 2006-2009, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_cred.h
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_record.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_record.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_server.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_server.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_server_i.h
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_server_read.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/tlsv1_server_write.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/x509v3.c
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/tls/x509v3.h
-Copyright: 2006-2011, Jouni Malinen <j@w1.fi>
-
-File: src/utils/base64.c
-Copyright: 2005-2011, Jouni Malinen <j@w1.fi>
-
-File: src/utils/base64.h
-Copyright: 2005, Jouni Malinen <j@w1.fi>
-
-File: src/utils/bitfield.c
-Copyright: 2013, Jouni Malinen <j@w1.fi>
-
-File: src/utils/bitfield.h
-Copyright: 2013, Jouni Malinen <j@w1.fi>
-
-File: src/utils/build_config.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/common.c
-Copyright: 2002-2007, Jouni Malinen <j@w1.fi>
-
-File: src/utils/common.h
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/edit.c
-Copyright: 2010-2011, Jouni Malinen <j@w1.fi>
-
-File: src/utils/edit.h
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-
-File: src/utils/edit_readline.c
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-
-File: src/utils/edit_simple.c
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-
-File: src/utils/eloop.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/eloop.h
-Copyright: 2002-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/eloop_none.c (file does not exist)
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/eloop_win.c
-Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ext_password.c
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ext_password.h
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ext_password_i.h
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ext_password_test.c
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: src/utils/includes.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ip_addr.c
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/ip_addr.h
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/list.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/os.h
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/os_internal.c
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/os_none.c
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/os_unix.c
-Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/os_win32.c
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/pcsc_funcs.c
-Copyright: 2004-2007, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2007, Jouni Malinen <j@w1.fi>
-
-File: src/utils/pcsc_funcs.h
-Copyright: 2004-2006, 2012, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: src/utils/radiotap.c
-Copyright: 2007, Andy Green <andy@warmcat.com>
-
-File: src/utils/radiotap.h
-Copyright: 2003, 2004 David Young.  All rights reserved.
-
-File: src/utils/radiotap_iter.h
-Copyright: 2007, Andy Green <andy@warmcat.com>
-
-File: src/utils/state_machine.h
-Copyright: 2002-2005, Jouni Malinen <j@w1.fi>
-
-File: src/utils/trace.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/trace.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/utils/uuid.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/utils/uuid.h
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/utils/wpa_debug.c
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/utils/wpa_debug.h
-Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
-
-File: src/utils/wpabuf.c
-Copyright: 2007-2012, Jouni Malinen <j@w1.fi>
-
-File: src/utils/wpabuf.h
-Copyright: 2007-2012, Jouni Malinen <j@w1.fi>
-
-File: src/wps/http.h
-Copyright: 2008-2009, Atheros Communications
+Files: src/wps/http.h
+       src/wps/upnp_xml.*
+       src/wps/wps_upnp.*
+       src/wps/wps_upnp_event.c
+       src/wps/wps_upnp_i.h
+       src/wps/wps_upnp_ssdp.c
+       src/wps/wps_upnp_web.c
 Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
+           2006-2007, Sony Corporation
+           2008-2009, Atheros Communications
+           2009, Jouni Malinen <j@w1.fi>
+License: BSD
 
-File: src/wps/http_client.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
+Files: src/wps/httpread.*
+Copyright: 2008, Ted Merrill, Atheros Communications
+License: BSD or GPL-2
 
-File: src/wps/http_client.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/http_server.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/http_server.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/httpread.c
-Copyright: 2008, Atheros Communications
-
-File: src/wps/httpread.h
-Copyright: 2008, Atheros Communications
-
-File: src/wps/ndef.c
+Files: src/wps/ndef.c
+       src/wps/wps_nfc.c
+       src/wps/wps_nfc_pn531.c
+       src/wps/wps_ufd.c
 Copyright: 2009, Masashi Honma <honma@ictec.co.jp>
-Copyright: 2009-2012, Masashi Honma <masashi.honma@gmail.com>
+License: BSD or GPL-2
 
-File: src/wps/upnp_xml.c
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/upnp_xml.h
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps.c
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps.h
-Copyright: 2007-2013, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_attr_build.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_attr_parse.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_attr_parse.h
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_attr_process.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_common.c
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_defs.h
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_dev_attr.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_dev_attr.h
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_enrollee.c
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_er.c
-Copyright: 2009-2013, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_er.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_er_ssdp.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_i.h
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_nfc.c (file does not exist)
-Copyright: 2009, Masashi Honma <honma@ictec.co.jp>
-Copyright: 2009-2012, Masashi Honma <masashi.honma@gmail.com>
-
-File: src/wps/wps_nfc_pn531.c (file does not exist)
-Copyright: 2009, Masashi Honma <honma@ictec.co.jp>
-Copyright: 2009-2012, Masashi Honma <masashi.honma@gmail.com>
-
-File: src/wps/wps_registrar.c
-Copyright: 2008-2013, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_ufd.c (file does not exist)
-Copyright: 2009, Masashi Honma <honma@ictec.co.jp>
-Copyright: 2009-2012, Masashi Honma <masashi.honma@gmail.com>
-
-File: src/wps/wps_upnp.c
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2008, Atheros Communications.
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-Copyright: 2006-2007, Sony Corporation. All Rights Reserved.
-
-File: src/wps/wps_upnp.h
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps_upnp_ap.c
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: src/wps/wps_upnp_event.c
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps_upnp_i.h
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps_upnp_ssdp.c
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009-2013, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps_upnp_web.c
-Copyright: 2008-2009, Atheros Communications
-Copyright: 2000-2003, Intel Corporation
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2006-2007, Sony Corporation
-
-File: src/wps/wps_validate.c
+Files: src/wps/wps_validate.c
 Copyright: 2010, Atheros Communications, Inc.
+License: BSD or GPL-2
 
-File: wpa_supplicant/Android.mk
-Copyright: 2008, The Android Open Source Project
-
-File: wpa_supplicant/README
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi> and contributors
-
-File: wpa_supplicant/README-Windows.txt
-Copyright: 1995-1998, Eric Young (eay@cryptsoft.com)
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi> and
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi> and contributors
-Copyright: 1998-2004, The OpenSSL Project.  All rights reserved.
-Copyright: 1994-2007, Trolltech ASA.
-
-File: wpa_supplicant/ap.c
-Copyright: 2009, Atheros Communications
-Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ap.h
-Copyright: 2009, Atheros Communications
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2003-2009,2002, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/autoscan.c
-Copyright: 2012, Intel Corporation. All rights reserved.
-
-File: wpa_supplicant/autoscan.h
-Copyright: 2012, Intel Corporation. All rights reserved.
-
-File: wpa_supplicant/autoscan_exponential.c
-Copyright: 2012, Intel Corporation. All rights reserved.
-
-File: wpa_supplicant/autoscan_periodic.c
-Copyright: 2012, Intel Corporation. All rights reserved.
-
-File: wpa_supplicant/bgscan.c
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/bgscan.h
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/bgscan_learn.c
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/bgscan_simple.c
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/blacklist.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/blacklist.h
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/bss.c
-Copyright: 2009-2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/bss.h
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config.h
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config_file.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config_none.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config_ssid.h
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/config_winreg.c
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ctrl_iface.c
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ctrl_iface.h
-Copyright: 2004-2005, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ctrl_iface_named_pipe.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ctrl_iface_udp.c
-Copyright: 2004-2005, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ctrl_iface_unix.c
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/dbus/dbus_common.c
+Files: wpa_supplicant/dbus/dbus_common.*
+       wpa_supplicant/dbus/dbus_common_i.h
+       wpa_supplicant/dbus/dbus_new.*
+       wpa_supplicant/dbus/dbus_new_handlers.*
+       wpa_supplicant/dbus/dbus_new_handlers_wps.c
+       wpa_supplicant/dbus/dbus_new_helpers.*
 Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
+           2009-2010, Witold Sowa <witold.sowa@gmail.com>
+           2009, Jouni Malinen <j@w1.fi>
+License: BSD or GPL-2
 
-File: wpa_supplicant/dbus/dbus_common.h
+Files: wpa_supplicant/dbus/dbus_dict_helpers.*
+       wpa_supplicant/dbus/dbus_old*
 Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
+License: BSD or GPL-2
 
-File: wpa_supplicant/dbus/dbus_common_i.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
+Files: wpa_supplicant/wpa_gui-qt4/icons/ap.svg
+Copyright: 2008, mystica
+License: public-domain
 
-File: wpa_supplicant/dbus/dbus_dict_helpers.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
+Files: wpa_supplicant/wpa_gui-qt4/icons/group.svg
+Copyright: 2009, Andrew Fitzsimon / Anonymous
+License: public-domain
 
-File: wpa_supplicant/dbus/dbus_dict_helpers.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
+Files: wpa_supplicant/wpa_gui-qt4/icons/invitation.svg
+Copyright: 2009, Jean Victor Balin
+License: public-domain
 
-File: wpa_supplicant/dbus/dbus_new.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2009-2010, Witold Sowa <witold.sowa@gmail.com>
+Files: wpa_supplicant/wpa_gui-qt4/icons/laptop.svg
+Copyright: 2008, metalmarious
+License: public-domain
 
-File: wpa_supplicant/dbus/dbus_new.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009-2010, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_handlers.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-Copyright: 2009-2010, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_handlers.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009-2010, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_handlers_p2p.c
-Copyright: 2011-2012, Intel Corporation
-
-File: wpa_supplicant/dbus/dbus_new_handlers_p2p.h
-Copyright: 2011-2012, Intel Corporation
-
-File: wpa_supplicant/dbus/dbus_new_handlers_wps.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_helpers.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_helpers.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_new_introspect.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-Copyright: 2010, Jouni Malinen <j@w1.fi>
-Copyright: 2009, Witold Sowa <witold.sowa@gmail.com>
-
-File: wpa_supplicant/dbus/dbus_old.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-
-File: wpa_supplicant/dbus/dbus_old.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-
-File: wpa_supplicant/dbus/dbus_old_handlers.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-
-File: wpa_supplicant/dbus/dbus_old_handlers.h
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-
-File: wpa_supplicant/dbus/dbus_old_handlers_wps.c
-Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-
-File: wpa_supplicant/doc/kerneldoc2doxygen.pl (file does not exist)
-Copyright: 2003, Jonathan Foster <jon@jon-foster.co.uk>
-Copyright: 2005-2008, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/driver_i.h
-Copyright: 2007-2008, Intel Corporation
-Copyright: 2003-2009,2002, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/eap_register.c
-Copyright: 2004-2009, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/eapol_test.c
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/events.c
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/examples/p2p-nfc.py
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/examples/wps-nfc.py
-Copyright: 2012-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/gas_query.c
-Copyright: 2009, Atheros Communications
-Copyright: 2011-2014, Jouni Malinen <j@w1.fi>
-Copyright: 2011, Qualcomm Atheros
-Copyright: 2011-2014, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/gas_query.h
-Copyright: 2009, Atheros Communications
-Copyright: 2011, Qualcomm Atheros
-
-File: wpa_supplicant/hs20_supplicant.c
-Copyright: 2009, Atheros Communications, Inc.
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/hs20_supplicant.h
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/ibss_rsn.c
-Copyright: 2009-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/ibss_rsn.h
-Copyright: 2009, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/interworking.c
-Copyright: 2011-2014, Jouni Malinen <j@w1.fi>
-Copyright: 2011, Qualcomm Atheros
-Copyright: 2011-2013, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/interworking.h
-Copyright: 2011-2012, Qualcomm Atheros
-
-File: wpa_supplicant/main.c
-Copyright: 2003-2013, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/main_none.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/main_symbian.cpp (file does not exist)
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/main_winmain.c
-Copyright: 2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/main_winsvc.c
-Copyright: 2003-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/nfc_pw_token.c
-Copyright: 2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/notify.c
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/notify.h
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/offchannel.c
-Copyright: 2009-2010, Atheros Communications
-Copyright: 2011, Qualcomm Atheros
-
-File: wpa_supplicant/offchannel.h
-Copyright: 2009-2010, Atheros Communications
-Copyright: 2011, Qualcomm Atheros
-
-File: wpa_supplicant/p2p_supplicant.c
-Copyright: 2009-2010, Atheros Communications
-Copyright: 2010-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/p2p_supplicant.h
-Copyright: 2009-2010, Atheros Communications
-
-File: wpa_supplicant/preauth_test.c
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/scan.c
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/scan.h
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/sme.c
-Copyright: 2009-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/sme.h
-Copyright: 2009-2010, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/symbian/README.symbian (file does not exist)
-Copyright: 2003-2007, Jouni Malinen <j@w1.fi> and
-
-File: wpa_supplicant/tests/test_eap_sim_common.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/tests/test_wpa.c
-Copyright: 2006-2007, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/utils/log2pcap.py
-Copyright: 2012, Intel Corporation
-
-File: wpa_supplicant/wifi_display.c
-Copyright: 2011, Atheros Communications, Inc.
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/wifi_display.h
-Copyright: 2011, Atheros Communications, Inc.
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/win_if_list.c
-Copyright: 2004-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wnm_sta.c
-Copyright: 2011-2013, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/wnm_sta.h
-Copyright: 2011-2012, Qualcomm Atheros, Inc.
-
-File: wpa_supplicant/wpa_cli.c
-Copyright: 2004-2013, Jouni Malinen <j@w1.fi>
-Copyright: 2004-2014, Jouni Malinen <j@w1.fi> and contributors";
-
-File: wpa_supplicant/wpa_gui-qt4/addinterface.cpp
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/addinterface.h
-Copyright: 2008, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/eventhistory.cpp
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/eventhistory.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/icons/README
+Files: wpa_supplicant/wpa_gui-qt4/icons/wpa_gui.svg
 Copyright: 2008, Bernard Gray <bernard.gray@gmail.com>
+License: BSD or GPL-2
 
-File: wpa_supplicant/wpa_gui-qt4/main.cpp
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/networkconfig.cpp
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/networkconfig.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/peers.cpp
+Files: wpa_supplicant/wpa_gui-qt4/peers.*
+       wpa_supplicant/wpa_gui-qt4/stringquery.*
 Copyright: 2009-2010, Atheros Communications
+License: BSD or GPL-2
 
-File: wpa_supplicant/wpa_gui-qt4/peers.h
+Files: wpa_supplicant/wpa_gui-qt4/signalbar.*
+Copyright: 2011, Kel Modderman <kel@otaku42.de>
+License: BSD or GPL-2
+
+Files: wpa_supplicant/Android.mk
+Copyright: 2008, The Android Open Source Project
+License: Apache-2.0
+
+Files: wpa_supplicant/ap.*
+Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
+           2009, Atheros Communications
+License: BSD or GPL-2
+
+Files: wpa_supplicant/gas_query.*
+       wpa_supplicant/offchannel.*
+       wpa_supplicant/p2p_supplicant.*
 Copyright: 2009-2010, Atheros Communications
+           2011, Qualcomm Atheros
+License: BSD or GPL-2
 
-File: wpa_supplicant/wpa_gui-qt4/scanresults.cpp
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/scanresults.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/signalbar.cpp
-Copyright: 2011, Kel Modderman <kel@otaku42.de>
-
-File: wpa_supplicant/wpa_gui-qt4/signalbar.h
-Copyright: 2011, Kel Modderman <kel@otaku42.de>
-
-File: wpa_supplicant/wpa_gui-qt4/stringquery.cpp
-Copyright: 2009, Atheros Communications
-
-File: wpa_supplicant/wpa_gui-qt4/stringquery.h
-Copyright: 2009, Atheros Communications
-
-File: wpa_supplicant/wpa_gui-qt4/userdatarequest.cpp
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/userdatarequest.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/wpagui.cpp
-Copyright: 2005-2011, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/wpagui.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_gui-qt4/wpamsg.h
-Copyright: 2005-2006, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_passphrase.c
-Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_priv.c
-Copyright: 2007-2009, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpa_supplicant.c
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi> and contributors";
-
-File: wpa_supplicant/wpa_supplicant_conf.mk
-Copyright: 2010, The Android Open Source Project
-
-File: wpa_supplicant/wpa_supplicant_conf.sh
-Copyright: 2010, The Android Open Source Project
-
-File: wpa_supplicant/wpa_supplicant_i.h
-Copyright: 2003-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpas_glue.c
-Copyright: 2003-2012, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wpas_glue.h
-Copyright: 2003-2008, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wps_supplicant.c
-Copyright: 2008-2014, Jouni Malinen <j@w1.fi>
-
-File: wpa_supplicant/wps_supplicant.h
-Copyright: 2008-2012, Jouni Malinen <j@w1.fi>
+Files: wpa_supplicant/interworking.*
+Copyright: 2011, Qualcomm Atheros
+License: BSD or GPL-2
 
 Files: debian/*
 Copyright: 2004-2006, Kyle McMartin <kyle@debian.org>

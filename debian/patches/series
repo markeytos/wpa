@@ -4,4 +4,3 @@
 07_dbus_service_syslog.patch
 12_wpa_gui_knotify_support.patch
 wpa_gui_desktop_add-keywords-entry.patch
-fix-spelling-s-algorith-algorithm.patch

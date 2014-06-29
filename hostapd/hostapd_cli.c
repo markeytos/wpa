@@ -743,6 +743,51 @@ static int hostapd_cli_cmd_send_qos_map_conf(struct wpa_ctrl *ctrl,
 }
 
 
+static int hostapd_cli_cmd_hs20_wnm_notif(struct wpa_ctrl *ctrl, int argc,
+					  char *argv[])
+{
+	char buf[300];
+	int res;
+
+	if (argc < 2) {
+		printf("Invalid 'hs20_wnm_notif' command - two arguments (STA "
+		       "addr and URL) are needed\n");
+		return -1;
+	}
+
+	res = os_snprintf(buf, sizeof(buf), "HS20_WNM_NOTIF %s %s",
+			  argv[0], argv[1]);
+	if (res < 0 || res >= (int) sizeof(buf))
+		return -1;
+	return wpa_ctrl_command(ctrl, buf);
+}
+
+
+static int hostapd_cli_cmd_hs20_deauth_req(struct wpa_ctrl *ctrl, int argc,
+					   char *argv[])
+{
+	char buf[300];
+	int res;
+
+	if (argc < 3) {
+		printf("Invalid 'hs20_deauth_req' command - at least three arguments (STA addr, Code, Re-auth Delay) are needed\n");
+		return -1;
+	}
+
+	if (argc > 3)
+		res = os_snprintf(buf, sizeof(buf),
+				  "HS20_DEAUTH_REQ %s %s %s %s",
+				  argv[0], argv[1], argv[2], argv[3]);
+	else
+		res = os_snprintf(buf, sizeof(buf),
+				  "HS20_DEAUTH_REQ %s %s %s",
+				  argv[0], argv[1], argv[2]);
+	if (res < 0 || res >= (int) sizeof(buf))
+		return -1;
+	return wpa_ctrl_command(ctrl, buf);
+}
+
+
 static int hostapd_cli_cmd_quit(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	hostapd_cli_quit = 1;
@@ -797,8 +842,8 @@ static int hostapd_cli_cmd_interface(struct wpa_ctrl *ctrl, int argc,
 	}
 
 	hostapd_cli_close_connection();
-	free(ctrl_ifname);
-	ctrl_ifname = strdup(argv[0]);
+	os_free(ctrl_ifname);
+	ctrl_ifname = os_strdup(argv[0]);
 
 	if (hostapd_cli_open_connection(ctrl_ifname)) {
 		printf("Connected to interface '%s.\n", ctrl_ifname);
@@ -895,6 +940,27 @@ static int hostapd_cli_cmd_chan_switch(struct wpa_ctrl *ctrl,
 }
 
 
+static int hostapd_cli_cmd_vendor(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	char cmd[256];
+	int res;
+
+	if (argc < 2 || argc > 3) {
+		printf("Invalid vendor command\n"
+		       "usage: <vendor id> <command id> [<hex formatted command argument>]\n");
+		return -1;
+	}
+
+	res = os_snprintf(cmd, sizeof(cmd), "VENDOR %s %s %s", argv[0], argv[1],
+			  argc == 3 ? argv[2] : "");
+	if (res < 0 || (size_t) res >= sizeof(cmd) - 1) {
+		printf("Too long VENDOR command.\n");
+		return -1;
+	}
+	return wpa_ctrl_command(ctrl, cmd);
+}
+
+
 struct hostapd_cli_cmd {
 	const char *cmd;
 	int (*handler)(struct wpa_ctrl *ctrl, int argc, char *argv[]);
@@ -941,6 +1007,9 @@ static struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	{ "set_qos_map_set", hostapd_cli_cmd_set_qos_map_set },
 	{ "send_qos_map_conf", hostapd_cli_cmd_send_qos_map_conf },
 	{ "chan_switch", hostapd_cli_cmd_chan_switch },
+	{ "hs20_wnm_notif", hostapd_cli_cmd_hs20_wnm_notif },
+	{ "hs20_deauth_req", hostapd_cli_cmd_hs20_deauth_req },
+	{ "vendor", hostapd_cli_cmd_vendor },
 	{ NULL, NULL }
 };
 

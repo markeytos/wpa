@@ -1,13 +1,14 @@
-wpa (2.1-0) UNRELEASED; urgency=medium
+wpa (2.2-1) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
   * DO NOT UPLOAD, work in progress.
-  * THIS TAG (2.1-1) IS JUST PROVIDED FOR REGRESSION TESTING AND NOT SUPPOSED
-    TO BE UPLOADED.
   * to-do:
   * verifiy debian/copyright
   * run (by-hand) testsuite
   * check dependencies (sqlite).
+  * FTBS on kfreebsd, caused by
+    dd10abccc86d29ee828e7548ec1c3500aa813b9e
+    MACsec: wpa_supplicant integration
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see
@@ -21,12 +22,13 @@ wpa (2.1-0) UNRELEASED; urgency=medium
     - refresh patches:
       + drop 13_human_readable_signal.patch, applied upstream.
       + drop hostapd_fix-WDS-VLAN-bridge-handling.patch, applied upstream.
+      + drop fix-spelling-s-algorith-algorithm.patch, applied upstream.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.
   * adapt get-orig-source for wpa 2.2.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 00:28:34 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 
 wpa (1.1-1) unstable; urgency=medium
 

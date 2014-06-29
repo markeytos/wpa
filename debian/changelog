@@ -6,9 +6,6 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * verifiy debian/copyright
   * run (by-hand) testsuite
   * check dependencies (sqlite).
-  * FTBS on kfreebsd, caused by
-    dd10abccc86d29ee828e7548ec1c3500aa813b9e
-    MACsec: wpa_supplicant integration
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see

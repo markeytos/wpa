@@ -2,14 +2,8 @@
  * hostapd - IEEE 802.11i-2004 / WPA Authenticator
  * Copyright (c) 2004-2007, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef WPA_AUTH_H
@@ -164,6 +158,17 @@ struct wpa_auth_config {
 	int pmk_r1_push;
 	int ft_over_ds;
 #endif /* CONFIG_IEEE80211R */
+	int disable_gtk;
+	int ap_mlme;
+#ifdef CONFIG_TESTING_OPTIONS
+	double corrupt_gtk_rekey_mic_probability;
+#endif /* CONFIG_TESTING_OPTIONS */
+#ifdef CONFIG_P2P
+	u8 ip_addr_go[4];
+	u8 ip_addr_mask[4];
+	u8 ip_addr_start[4];
+	u8 ip_addr_end[4];
+#endif /* CONFIG_P2P */
 };
 
 typedef enum {
@@ -181,11 +186,12 @@ struct wpa_auth_callbacks {
 	void (*logger)(void *ctx, const u8 *addr, logger_level level,
 		       const char *txt);
 	void (*disconnect)(void *ctx, const u8 *addr, u16 reason);
-	void (*mic_failure_report)(void *ctx, const u8 *addr);
+	int (*mic_failure_report)(void *ctx, const u8 *addr);
 	void (*set_eapol)(void *ctx, const u8 *addr, wpa_eapol_variable var,
 			  int value);
 	int (*get_eapol)(void *ctx, const u8 *addr, wpa_eapol_variable var);
-	const u8 * (*get_psk)(void *ctx, const u8 *addr, const u8 *prev_psk);
+	const u8 * (*get_psk)(void *ctx, const u8 *addr, const u8 *p2p_dev_addr,
+			      const u8 *prev_psk);
 	int (*get_msk)(void *ctx, const u8 *addr, u8 *msk, size_t *len);
 	int (*set_key)(void *ctx, int vlan_id, enum wpa_alg alg,
 		       const u8 *addr, int idx, u8 *key, size_t key_len);
@@ -202,6 +208,8 @@ struct wpa_auth_callbacks {
 	struct wpa_state_machine * (*add_sta)(void *ctx, const u8 *sta_addr);
 	int (*send_ft_action)(void *ctx, const u8 *dst,
 			      const u8 *data, size_t data_len);
+	int (*add_tspec)(void *ctx, const u8 *sta_addr, u8 *tspec_ie,
+			 size_t tspec_ielen);
 #endif /* CONFIG_IEEE80211R */
 };
 
@@ -226,7 +234,8 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 			const u8 *mdie, size_t mdie_len);
 int wpa_auth_uses_mfp(struct wpa_state_machine *sm);
 struct wpa_state_machine *
-wpa_auth_sta_init(struct wpa_authenticator *wpa_auth, const u8 *addr);
+wpa_auth_sta_init(struct wpa_authenticator *wpa_auth, const u8 *addr,
+		  const u8 *p2p_dev_addr);
 int wpa_auth_sta_associated(struct wpa_authenticator *wpa_auth,
 			    struct wpa_state_machine *sm);
 void wpa_auth_sta_no_wpa(struct wpa_state_machine *sm);
@@ -262,6 +271,8 @@ int wpa_auth_pmksa_add_preauth(struct wpa_authenticator *wpa_auth,
 			       const u8 *pmk, size_t len, const u8 *sta_addr,
 			       int session_timeout,
 			       struct eapol_state_machine *eapol);
+void wpa_auth_pmksa_remove(struct wpa_authenticator *wpa_auth,
+			   const u8 *sta_addr);
 int wpa_auth_sta_set_vlan(struct wpa_state_machine *sm, int vlan_id);
 void wpa_auth_eapol_key_tx_status(struct wpa_authenticator *wpa_auth,
 				  struct wpa_state_machine *sm, int ack);
@@ -283,5 +294,15 @@ int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 		  const u8 *data, size_t data_len);
 void wpa_ft_push_pmk_r1(struct wpa_authenticator *wpa_auth, const u8 *addr);
 #endif /* CONFIG_IEEE80211R */
+
+void wpa_wnmsleep_rekey_gtk(struct wpa_state_machine *sm);
+void wpa_set_wnmsleep(struct wpa_state_machine *sm, int flag);
+int wpa_wnmsleep_gtk_subelem(struct wpa_state_machine *sm, u8 *pos);
+int wpa_wnmsleep_igtk_subelem(struct wpa_state_machine *sm, u8 *pos);
+
+int wpa_auth_uses_sae(struct wpa_state_machine *sm);
+int wpa_auth_uses_ft_sae(struct wpa_state_machine *sm);
+
+int wpa_auth_get_ip_addr(struct wpa_state_machine *sm, u8 *addr);
 
 #endif /* WPA_AUTH_H */

@@ -2,14 +2,8 @@
  * wpa_supplicant/hostapd / Internal implementation of OS specific functions
  * Copyright (c) 2005-2006, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  *
  * This file is an example of operating system specific  wrapper functions.
  * This version implements many of the functions internally, so it can be used
@@ -37,6 +31,17 @@ void os_sleep(os_time_t sec, os_time_t usec)
 
 
 int os_get_time(struct os_time *t)
+{
+	int res;
+	struct timeval tv;
+	res = gettimeofday(&tv, NULL);
+	t->sec = tv.tv_sec;
+	t->usec = tv.tv_usec;
+	return res;
+}
+
+
+int os_get_reltime(struct os_reltime *t)
 {
 	int res;
 	struct timeval tv;

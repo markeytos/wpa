@@ -2,14 +2,8 @@
  * WPA Supplicant / dbus-based control interface
  * Copyright (c) 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -30,10 +24,6 @@
 #include "dbus_old.h"
 #include "dbus_old_handlers.h"
 #include "dbus_dict_helpers.h"
-
-extern int wpa_debug_level;
-extern int wpa_debug_show_keys;
-extern int wpa_debug_timestamp;
 
 /**
  * wpas_dbus_new_invalid_opts_error - Return a new invalid options error message
@@ -229,7 +219,7 @@ DBusMessage * wpas_dbus_global_remove_interface(DBusMessage *message,
 		goto out;
 	}
 
-	if (!wpa_supplicant_remove_iface(global, wpa_s)) {
+	if (!wpa_supplicant_remove_iface(global, wpa_s, 0)) {
 		reply = wpas_dbus_new_success_reply(message);
 	} else {
 		reply = dbus_message_new_error(message,
@@ -337,7 +327,7 @@ DBusMessage * wpas_dbus_global_set_debugparams(DBusMessage *message,
 DBusMessage * wpas_dbus_iface_scan(DBusMessage *message,
 				   struct wpa_supplicant *wpa_s)
 {
-	wpa_s->scan_req = 2;
+	wpa_s->scan_req = MANUAL_SCAN_REQ;
 	wpa_supplicant_req_scan(wpa_s, 0, 0);
 	return wpas_dbus_new_success_reply(message);
 }
@@ -545,7 +535,7 @@ DBusMessage * wpas_dbus_iface_capabilities(DBusMessage *message,
 			const char *args[] = {"CCMP", "TKIP", "NONE"};
 			if (!wpa_dbus_dict_append_string_array(
 				    &iter_dict, "pairwise", args,
-				    sizeof(args) / sizeof(char*)))
+				    ARRAY_SIZE(args)))
 				goto error;
 		}
 	} else {
@@ -588,7 +578,7 @@ DBusMessage * wpas_dbus_iface_capabilities(DBusMessage *message,
 			};
 			if (!wpa_dbus_dict_append_string_array(
 				    &iter_dict, "group", args,
-				    sizeof(args) / sizeof(char*)))
+				    ARRAY_SIZE(args)))
 				goto error;
 		}
 	} else {
@@ -638,7 +628,7 @@ DBusMessage * wpas_dbus_iface_capabilities(DBusMessage *message,
 			};
 			if (!wpa_dbus_dict_append_string_array(
 				    &iter_dict, "key_mgmt", args,
-				    sizeof(args) / sizeof(char*)))
+				    ARRAY_SIZE(args)))
 				goto error;
 		}
 	} else {
@@ -689,7 +679,7 @@ DBusMessage * wpas_dbus_iface_capabilities(DBusMessage *message,
 			const char *args[] = { "RSN", "WPA" };
 			if (!wpa_dbus_dict_append_string_array(
 				    &iter_dict, "proto", args,
-				    sizeof(args) / sizeof(char*)))
+				    ARRAY_SIZE(args)))
 				goto error;
 		}
 	} else {
@@ -726,7 +716,7 @@ DBusMessage * wpas_dbus_iface_capabilities(DBusMessage *message,
 			const char *args[] = { "OPEN", "SHARED", "LEAP" };
 			if (!wpa_dbus_dict_append_string_array(
 				    &iter_dict, "auth_alg", args,
-				    sizeof(args) / sizeof(char*)))
+				    ARRAY_SIZE(args)))
 				goto error;
 		}
 	} else {
@@ -1306,6 +1296,8 @@ DBusMessage * wpas_dbus_iface_get_scanning(DBusMessage *message,
 }
 
 
+#ifndef CONFIG_NO_CONFIG_BLOBS
+
 /**
  * wpas_dbus_iface_set_blobs - Store named binary blobs (ie, for certificates)
  * @message: Pointer to incoming dbus message
@@ -1434,6 +1426,8 @@ DBusMessage * wpas_dbus_iface_remove_blobs(DBusMessage *message,
 
 	return wpas_dbus_new_success_reply(message);
 }
+
+#endif /* CONFIG_NO_CONFIG_BLOBS */
 
 
 /**

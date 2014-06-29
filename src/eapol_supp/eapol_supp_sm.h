@@ -1,15 +1,9 @@
 /*
  * EAPOL supplicant state machines
- * Copyright (c) 2004-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef EAPOL_SUPP_SM_H
@@ -59,10 +53,21 @@ struct eapol_config {
 	 * eap_disabled - Whether EAP is disabled
 	 */
 	int eap_disabled;
+
+	/**
+	 * external_sim - Use external processing for SIM/USIM operations
+	 */
+	int external_sim;
 };
 
 struct eapol_sm;
 struct wpa_config_blob;
+
+enum eapol_supp_result {
+	EAPOL_SUPP_RESULT_FAILURE,
+	EAPOL_SUPP_RESULT_SUCCESS,
+	EAPOL_SUPP_RESULT_EXPECTED_FAILURE
+};
 
 /**
  * struct eapol_ctx - Global (for all networks) EAPOL state machine context
@@ -84,7 +89,7 @@ struct eapol_ctx {
 	/**
 	 * cb - Function to be called when EAPOL negotiation has been completed
 	 * @eapol: Pointer to EAPOL state machine data
-	 * @success: Whether the authentication was completed successfully
+	 * @result: Whether the authentication was completed successfully
 	 * @ctx: Pointer to context data (cb_ctx)
 	 *
 	 * This optional callback function will be called when the EAPOL
@@ -92,7 +97,8 @@ struct eapol_ctx {
 	 * EAPOL state machine to process the key and terminate the EAPOL state
 	 * machine. Currently, this is used only in RSN pre-authentication.
 	 */
-	void (*cb)(struct eapol_sm *eapol, int success, void *ctx);
+	void (*cb)(struct eapol_sm *eapol, enum eapol_supp_result result,
+		   void *ctx);
 
 	/**
 	 * cb_ctx - Callback context for cb()
@@ -236,10 +242,28 @@ struct eapol_ctx {
 	 * cert_in_cb - Include server certificates in callback
 	 */
 	int cert_in_cb;
+
+	/**
+	 * status_cb - Notification of a change in EAP status
+	 * @ctx: Callback context (ctx)
+	 * @status: Step in the process of EAP authentication
+	 * @parameter: Step-specific parameter, e.g., EAP method name
+	 */
+	void (*status_cb)(void *ctx, const char *status,
+			  const char *parameter);
+
+	/**
+	 * set_anon_id - Set or add anonymous identity
+	 * @ctx: eapol_ctx from eap_peer_sm_init() call
+	 * @id: Anonymous identity (e.g., EAP-SIM pseudonym)
+	 * @len: Length of anonymous identity in octets
+	 */
+	void (*set_anon_id)(void *ctx, const u8 *id, size_t len);
 };
 
 
 struct eap_peer_config;
+struct ext_password_data;
 
 #ifdef IEEE8021X_EAPOL
 struct eapol_sm *eapol_sm_init(struct eapol_ctx *ctx);
@@ -272,6 +296,10 @@ void eapol_sm_request_reauth(struct eapol_sm *sm);
 void eapol_sm_notify_lower_layer_success(struct eapol_sm *sm, int in_eapol_sm);
 void eapol_sm_invalidate_cached_session(struct eapol_sm *sm);
 const char * eapol_sm_get_method_name(struct eapol_sm *sm);
+void eapol_sm_set_ext_pw_ctx(struct eapol_sm *sm,
+			     struct ext_password_data *ext);
+int eapol_sm_failed(struct eapol_sm *sm);
+int eapol_sm_get_eap_proxy_imsi(struct eapol_sm *sm, char *imsi, size_t *len);
 #else /* IEEE8021X_EAPOL */
 static inline struct eapol_sm *eapol_sm_init(struct eapol_ctx *ctx)
 {
@@ -362,6 +390,14 @@ static inline void eapol_sm_invalidate_cached_session(struct eapol_sm *sm)
 static inline const char * eapol_sm_get_method_name(struct eapol_sm *sm)
 {
 	return NULL;
+}
+static inline void eapol_sm_set_ext_pw_ctx(struct eapol_sm *sm,
+					   struct ext_password_data *ext)
+{
+}
+static inline int eapol_sm_failed(struct eapol_sm *sm)
+{
+	return 0;
 }
 #endif /* IEEE8021X_EAPOL */
 

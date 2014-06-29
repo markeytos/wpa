@@ -14,7 +14,7 @@ submitted upstream
 
 --- a/src/eap_peer/eap_aka.c
 +++ b/src/eap_peer/eap_aka.c
-@@ -221,7 +221,7 @@ static int eap_aka_umts_auth(struct eap_
+@@ -316,7 +316,7 @@ static int eap_aka_umts_auth(struct eap_
  
  #else /* CONFIG_USIM_HARDCODED */
  

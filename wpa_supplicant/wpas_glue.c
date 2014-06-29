@@ -1,15 +1,9 @@
 /*
  * WPA Supplicant - Glue code to setup EAPOL and RSN modules
- * Copyright (c) 2003-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -222,20 +216,38 @@ static void wpa_supplicant_aborted_cached(void *ctx)
 }
 
 
-static void wpa_supplicant_eapol_cb(struct eapol_sm *eapol, int success,
+static const char * result_str(enum eapol_supp_result result)
+{
+	switch (result) {
+	case EAPOL_SUPP_RESULT_FAILURE:
+		return "FAILURE";
+	case EAPOL_SUPP_RESULT_SUCCESS:
+		return "SUCCESS";
+	case EAPOL_SUPP_RESULT_EXPECTED_FAILURE:
+		return "EXPECTED_FAILURE";
+	}
+	return "?";
+}
+
+
+static void wpa_supplicant_eapol_cb(struct eapol_sm *eapol,
+				    enum eapol_supp_result result,
 				    void *ctx)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	int res, pmk_len;
 	u8 pmk[PMK_LEN];
 
-	wpa_printf(MSG_DEBUG, "EAPOL authentication completed %ssuccessfully",
-		   success ? "" : "un");
+	wpa_printf(MSG_DEBUG, "EAPOL authentication completed - result=%s",
+		   result_str(result));
 
 	if (wpas_wps_eapol_cb(wpa_s) > 0)
 		return;
 
-	if (!success) {
+	wpa_s->eap_expected_failure = result ==
+		EAPOL_SUPP_RESULT_EXPECTED_FAILURE;
+
+	if (result != EAPOL_SUPP_RESULT_SUCCESS) {
 		/*
 		 * Make sure we do not get stuck here waiting for long EAPOL
 		 * timeout if the AP does not disconnect in case of
@@ -244,7 +256,8 @@ static void wpa_supplicant_eapol_cb(struct eapol_sm *eapol, int success,
 		wpa_supplicant_req_auth_timeout(wpa_s, 2, 0);
 	}
 
-	if (!success || !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE))
+	if (result != EAPOL_SUPP_RESULT_SUCCESS ||
+	    !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE))
 		return;
 
 	if (!wpa_key_mgmt_wpa_ieee8021x(wpa_s->key_mgmt))
@@ -412,14 +425,6 @@ static enum wpa_states _wpa_supplicant_get_state(void *wpa_s)
 }
 
 
-static void _wpa_supplicant_disassociate(void *wpa_s, int reason_code)
-{
-	wpa_supplicant_disassociate(wpa_s, reason_code);
-	/* Schedule a scan to make sure we continue looking for networks */
-	wpa_supplicant_req_scan(wpa_s, 5, 0);
-}
-
-
 static void _wpa_supplicant_deauthenticate(void *wpa_s, int reason_code)
 {
 	wpa_supplicant_deauthenticate(wpa_s, reason_code);
@@ -451,6 +456,13 @@ static int wpa_supplicant_set_key(void *_wpa_s, enum wpa_alg alg,
 		/* Clear the MIC error counter when setting a new PTK. */
 		wpa_s->mic_errors_seen = 0;
 	}
+#ifdef CONFIG_TESTING_GET_GTK
+	if (key_idx > 0 && addr && is_broadcast_ether_addr(addr) &&
+	    alg != WPA_ALG_NONE && key_len <= sizeof(wpa_s->last_gtk)) {
+		os_memcpy(wpa_s->last_gtk, key, key_len);
+		wpa_s->last_gtk_len = key_len;
+	}
+#endif /* CONFIG_TESTING_GET_GTK */
 	return wpa_drv_set_key(wpa_s, alg, addr, key_idx, set_tx, seq, seq_len,
 			       key, key_len);
 }
@@ -520,8 +532,6 @@ static int wpa_supplicant_mark_authenticated(void *ctx, const u8 *target_ap)
 }
 #endif /* CONFIG_IEEE80211R */
 
-#endif /* CONFIG_NO_WPA */
-
 
 #ifdef CONFIG_TDLS
 
@@ -565,26 +575,51 @@ static int wpa_supplicant_tdls_oper(void *ctx, int oper, const u8 *peer)
 
 
 static int wpa_supplicant_tdls_peer_addset(
-	void *ctx, const u8 *peer, int add, u16 capability,
-	const u8 *supp_rates, size_t supp_rates_len)
+	void *ctx, const u8 *peer, int add, u16 aid, u16 capability,
+	const u8 *supp_rates, size_t supp_rates_len,
+	const struct ieee80211_ht_capabilities *ht_capab,
+	const struct ieee80211_vht_capabilities *vht_capab,
+	u8 qosinfo, const u8 *ext_capab, size_t ext_capab_len,
+	const u8 *supp_channels, size_t supp_channels_len,
+	const u8 *supp_oper_classes, size_t supp_oper_classes_len)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	struct hostapd_sta_add_params params;
 
+	os_memset(&params, 0, sizeof(params));
+
 	params.addr = peer;
-	params.aid = 1;
+	params.aid = aid;
 	params.capability = capability;
 	params.flags = WPA_STA_TDLS_PEER | WPA_STA_AUTHORIZED;
-	params.ht_capabilities = NULL;
+
+	/*
+	 * TDLS Setup frames do not contain WMM IEs, hence need to depend on
+	 * qosinfo to check if the peer is WMM capable.
+	 */
+	if (qosinfo)
+		params.flags |= WPA_STA_WMM;
+
+	params.ht_capabilities = ht_capab;
+	params.vht_capabilities = vht_capab;
+	params.qosinfo = qosinfo;
 	params.listen_interval = 0;
 	params.supp_rates = supp_rates;
 	params.supp_rates_len = supp_rates_len;
 	params.set = !add;
+	params.ext_capab = ext_capab;
+	params.ext_capab_len = ext_capab_len;
+	params.supp_channels = supp_channels;
+	params.supp_channels_len = supp_channels_len;
+	params.supp_oper_classes = supp_oper_classes;
+	params.supp_oper_classes_len = supp_oper_classes_len;
 
 	return wpa_drv_sta_add(wpa_s, &params);
 }
 
 #endif /* CONFIG_TDLS */
+
+#endif /* CONFIG_NO_WPA */
 
 
 enum wpa_ctrl_req_type wpa_supplicant_ctrl_req_from_string(const char *field)
@@ -601,6 +636,8 @@ enum wpa_ctrl_req_type wpa_supplicant_ctrl_req_from_string(const char *field)
 		return WPA_CTRL_REQ_EAP_OTP;
 	else if (os_strcmp(field, "PASSPHRASE") == 0)
 		return WPA_CTRL_REQ_EAP_PASSPHRASE;
+	else if (os_strcmp(field, "SIM") == 0)
+		return WPA_CTRL_REQ_SIM;
 	return WPA_CTRL_REQ_UNKNOWN;
 }
 
@@ -636,6 +673,9 @@ const char * wpa_supplicant_ctrl_req_to_string(enum wpa_ctrl_req_type field,
 	case WPA_CTRL_REQ_EAP_PASSPHRASE:
 		*txt = "Private key passphrase";
 		ret = "PASSPHRASE";
+		break;
+	case WPA_CTRL_REQ_SIM:
+		ret = "SIM";
 		break;
 	default:
 		break;
@@ -675,6 +715,8 @@ static void wpa_supplicant_eap_param_needed(void *ctx,
 			   field);
 		return;
 	}
+
+	wpas_notify_eap_status(wpa_s, "eap parameter needed", field_name);
 
 	buflen = 100 + os_strlen(txt) + ssid->ssid_len;
 	buf = os_malloc(buflen);
@@ -726,6 +768,53 @@ static void wpa_supplicant_cert_cb(void *ctx, int depth, const char *subject,
 
 	wpas_notify_certification(wpa_s, depth, subject, cert_hash, cert);
 }
+
+
+static void wpa_supplicant_status_cb(void *ctx, const char *status,
+				     const char *parameter)
+{
+	struct wpa_supplicant *wpa_s = ctx;
+
+	wpas_notify_eap_status(wpa_s, status, parameter);
+}
+
+
+static void wpa_supplicant_set_anon_id(void *ctx, const u8 *id, size_t len)
+{
+	struct wpa_supplicant *wpa_s = ctx;
+	char *str;
+	int res;
+
+	wpa_hexdump_ascii(MSG_DEBUG, "EAP method updated anonymous_identity",
+			  id, len);
+
+	if (wpa_s->current_ssid == NULL)
+		return;
+
+	if (id == NULL) {
+		if (wpa_config_set(wpa_s->current_ssid, "anonymous_identity",
+				   "NULL", 0) < 0)
+			return;
+	} else {
+		str = os_malloc(len * 2 + 1);
+		if (str == NULL)
+			return;
+		wpa_snprintf_hex(str, len * 2 + 1, id, len);
+		res = wpa_config_set(wpa_s->current_ssid, "anonymous_identity",
+				     str, 0);
+		os_free(str);
+		if (res < 0)
+			return;
+	}
+
+	if (wpa_s->conf->update_config) {
+		res = wpa_config_write(wpa_s->confname, wpa_s->conf);
+		if (res) {
+			wpa_printf(MSG_DEBUG, "Failed to update config after "
+				   "anonymous_id update");
+		}
+	}
+}
 #endif /* IEEE8021X_EAPOL */
 
 
@@ -746,8 +835,10 @@ int wpa_supplicant_init_eapol(struct wpa_supplicant *wpa_s)
 	ctx->eapol_done_cb = wpa_supplicant_notify_eapol_done;
 	ctx->eapol_send = wpa_supplicant_eapol_send;
 	ctx->set_wep_key = wpa_eapol_set_wep_key;
+#ifndef CONFIG_NO_CONFIG_BLOBS
 	ctx->set_config_blob = wpa_supplicant_set_config_blob;
 	ctx->get_config_blob = wpa_supplicant_get_config_blob;
+#endif /* CONFIG_NO_CONFIG_BLOBS */
 	ctx->aborted_cached = wpa_supplicant_aborted_cached;
 	ctx->opensc_engine_path = wpa_s->conf->opensc_engine_path;
 	ctx->pkcs11_engine_path = wpa_s->conf->pkcs11_engine_path;
@@ -757,6 +848,8 @@ int wpa_supplicant_init_eapol(struct wpa_supplicant *wpa_s)
 	ctx->port_cb = wpa_supplicant_port_cb;
 	ctx->cb = wpa_supplicant_eapol_cb;
 	ctx->cert_cb = wpa_supplicant_cert_cb;
+	ctx->status_cb = wpa_supplicant_status_cb;
+	ctx->set_anon_id = wpa_supplicant_set_anon_id;
 	ctx->cb_ctx = wpa_s;
 	wpa_s->eapol = eapol_sm_init(ctx);
 	if (wpa_s->eapol == NULL) {
@@ -771,6 +864,7 @@ int wpa_supplicant_init_eapol(struct wpa_supplicant *wpa_s)
 }
 
 
+#ifndef CONFIG_NO_WPA
 static void wpa_supplicant_set_rekey_offload(void *ctx, const u8 *kek,
 					     const u8 *kck,
 					     const u8 *replay_ctr)
@@ -779,6 +873,7 @@ static void wpa_supplicant_set_rekey_offload(void *ctx, const u8 *kek,
 
 	wpa_drv_set_rekey_info(wpa_s, kek, kck, replay_ctr);
 }
+#endif /* CONFIG_NO_WPA */
 
 
 int wpa_supplicant_init_wpa(struct wpa_supplicant *wpa_s)
@@ -796,7 +891,6 @@ int wpa_supplicant_init_wpa(struct wpa_supplicant *wpa_s)
 	ctx->set_state = _wpa_supplicant_set_state;
 	ctx->get_state = _wpa_supplicant_get_state;
 	ctx->deauthenticate = _wpa_supplicant_deauthenticate;
-	ctx->disassociate = _wpa_supplicant_disassociate;
 	ctx->set_key = wpa_supplicant_set_key;
 	ctx->get_network_ctx = wpa_supplicant_get_network_ctx;
 	ctx->get_bssid = wpa_supplicant_get_bssid;
@@ -846,13 +940,30 @@ void wpa_supplicant_rsn_supp_set_config(struct wpa_supplicant *wpa_s,
 		conf.peerkey_enabled = ssid->peerkey;
 		conf.allowed_pairwise_cipher = ssid->pairwise_cipher;
 #ifdef IEEE8021X_EAPOL
-		conf.proactive_key_caching = ssid->proactive_key_caching;
+		conf.proactive_key_caching = ssid->proactive_key_caching < 0 ?
+			wpa_s->conf->okc : ssid->proactive_key_caching;
 		conf.eap_workaround = ssid->eap_workaround;
 		conf.eap_conf_ctx = &ssid->eap;
 #endif /* IEEE8021X_EAPOL */
 		conf.ssid = ssid->ssid;
 		conf.ssid_len = ssid->ssid_len;
 		conf.wpa_ptk_rekey = ssid->wpa_ptk_rekey;
+#ifdef CONFIG_P2P
+		if (ssid->p2p_group && wpa_s->current_bss &&
+		    !wpa_s->p2p_disable_ip_addr_req) {
+			struct wpabuf *p2p;
+			p2p = wpa_bss_get_vendor_ie_multi(wpa_s->current_bss,
+							  P2P_IE_VENDOR_TYPE);
+			if (p2p) {
+				u8 group_capab;
+				group_capab = p2p_get_group_capab(p2p);
+				if (group_capab &
+				    P2P_GROUP_CAPAB_IP_ADDR_ALLOCATION)
+					conf.p2p = 1;
+				wpabuf_free(p2p);
+			}
+		}
+#endif /* CONFIG_P2P */
 	}
 	wpa_sm_set_config(wpa_s->wpa, ssid ? &conf : NULL);
 }

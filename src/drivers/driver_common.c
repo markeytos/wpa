@@ -2,14 +2,8 @@
  * Common driver-related functions
  * Copyright (c) 2003-2011, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -55,7 +49,6 @@ const char * event_to_string(enum wpa_event_type event)
 	E2S(TX_STATUS);
 	E2S(RX_FROM_UNKNOWN);
 	E2S(RX_MGMT);
-	E2S(RX_ACTION);
 	E2S(REMAIN_ON_CHANNEL);
 	E2S(CANCEL_REMAIN_ON_CHANNEL);
 	E2S(MLME_RX);
@@ -71,17 +64,21 @@ const char * event_to_string(enum wpa_event_type event)
 	E2S(UNPROT_DEAUTH);
 	E2S(UNPROT_DISASSOC);
 	E2S(STATION_LOW_ACK);
-	E2S(P2P_DEV_FOUND);
-	E2S(P2P_GO_NEG_REQ_RX);
-	E2S(P2P_GO_NEG_COMPLETED);
-	E2S(P2P_PROV_DISC_REQUEST);
-	E2S(P2P_PROV_DISC_RESPONSE);
-	E2S(P2P_SD_REQUEST);
-	E2S(P2P_SD_RESPONSE);
 	E2S(IBSS_PEER_LOST);
 	E2S(DRIVER_GTK_REKEY);
 	E2S(SCHED_SCAN_STOPPED);
 	E2S(DRIVER_CLIENT_POLL_OK);
+	E2S(EAPOL_TX_STATUS);
+	E2S(CH_SWITCH);
+	E2S(WNM);
+	E2S(CONNECT_FAILED_REASON);
+	E2S(DFS_RADAR_DETECTED);
+	E2S(DFS_CAC_FINISHED);
+	E2S(DFS_CAC_ABORTED);
+	E2S(DFS_NOP_FINISHED);
+	E2S(SURVEY);
+	E2S(SCAN_STARTED);
+	E2S(AVOID_FREQUENCIES);
 	}
 
 	return "UNKNOWN";

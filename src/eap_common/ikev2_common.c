@@ -2,14 +2,8 @@
  * IKEv2 common routines for initiator and responder
  * Copyright (c) 2007, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -27,7 +21,7 @@ static struct ikev2_integ_alg ikev2_integ_algs[] = {
 	{ AUTH_HMAC_MD5_96, 16, 12 }
 };
 
-#define NUM_INTEG_ALGS (sizeof(ikev2_integ_algs) / sizeof(ikev2_integ_algs[0]))
+#define NUM_INTEG_ALGS ARRAY_SIZE(ikev2_integ_algs)
 
 
 static struct ikev2_prf_alg ikev2_prf_algs[] = {
@@ -35,7 +29,7 @@ static struct ikev2_prf_alg ikev2_prf_algs[] = {
 	{ PRF_HMAC_MD5, 16, 16 }
 };
 
-#define NUM_PRF_ALGS (sizeof(ikev2_prf_algs) / sizeof(ikev2_prf_algs[0]))
+#define NUM_PRF_ALGS ARRAY_SIZE(ikev2_prf_algs)
 
 
 static struct ikev2_encr_alg ikev2_encr_algs[] = {
@@ -43,7 +37,7 @@ static struct ikev2_encr_alg ikev2_encr_algs[] = {
 	{ ENCR_3DES, 24, 8 }
 };
 
-#define NUM_ENCR_ALGS (sizeof(ikev2_encr_algs) / sizeof(ikev2_encr_algs[0]))
+#define NUM_ENCR_ALGS ARRAY_SIZE(ikev2_encr_algs)
 
 
 const struct ikev2_integ_alg * ikev2_get_integ(int id)

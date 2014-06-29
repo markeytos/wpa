@@ -2,18 +2,14 @@
  * Wi-Fi Direct - P2P module
  * Copyright (c) 2009-2010, Atheros Communications
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #ifndef P2P_H
 #define P2P_H
+
+#include "wps/wps_defs.h"
 
 /**
  * P2P_MAX_REG_CLASSES - Maximum number of regulatory classes
@@ -56,7 +52,7 @@ struct p2p_channels {
 };
 
 enum p2p_wps_method {
-	WPS_NOT_READY, WPS_PIN_DISPLAY, WPS_PIN_KEYPAD, WPS_PBC
+	WPS_NOT_READY, WPS_PIN_DISPLAY, WPS_PIN_KEYPAD, WPS_PBC, WPS_NFC
 };
 
 /**
@@ -81,6 +77,10 @@ struct p2p_go_neg_results {
 	 */
 	int freq;
 
+	int ht40;
+
+	int vht;
+
 	/**
 	 * ssid - SSID of the group
 	 */
@@ -90,6 +90,16 @@ struct p2p_go_neg_results {
 	 * ssid_len - Length of SSID in octets
 	 */
 	size_t ssid_len;
+
+	/**
+	 * psk - WPA pre-shared key (256 bits) (GO only)
+	 */
+	u8 psk[32];
+
+	/**
+	 * psk_set - Whether PSK field is configured (GO only)
+	 */
+	int psk_set;
 
 	/**
 	 * passphrase - WPA2-Personal passphrase for the group (GO only)
@@ -137,7 +147,6 @@ struct p2p_data;
 enum p2p_scan_type {
 	P2P_SCAN_SOCIAL,
 	P2P_SCAN_FULL,
-	P2P_SCAN_SPECIFIC,
 	P2P_SCAN_SOCIAL_PLUS_ONE
 };
 
@@ -216,12 +225,18 @@ struct p2p_peer_info {
 	size_t wps_sec_dev_type_list_len;
 
 	struct wpabuf *wps_vendor_ext[P2P_MAX_WPS_VENDOR_EXT];
+
+	/**
+	 * wfd_subelems - Wi-Fi Display subelements from WFD IE(s)
+	 */
+	struct wpabuf *wfd_subelems;
 };
 
 enum p2p_prov_disc_status {
 	P2P_PROV_DISC_SUCCESS,
 	P2P_PROV_DISC_TIMEOUT,
 	P2P_PROV_DISC_REJECTED,
+	P2P_PROV_DISC_TIMEOUT_JOIN,
 };
 
 struct p2p_channel {
@@ -274,6 +289,20 @@ struct p2p_config {
 	 * numbering of the clases depends on the configured country code.
 	 */
 	struct p2p_channels channels;
+
+	/**
+	 * cli_channels - Additional client channels
+	 *
+	 * This list of channels (if any) will be used when advertising local
+	 * channels during GO Negotiation or Invitation for the cases where the
+	 * local end may become the client. This may allow the peer to become a
+	 * GO on additional channels if it supports these options. The main use
+	 * case for this is to include passive-scan channels on devices that may
+	 * not know their current location and have configured most channels to
+	 * not allow initiation of radition (i.e., another device needs to take
+	 * master responsibilities).
+	 */
+	struct p2p_channels cli_channels;
 
 	/**
 	 * num_pref_chan - Number of pref_chan entries
@@ -355,14 +384,22 @@ struct p2p_config {
 	size_t ssid_postfix_len;
 
 	/**
-	 * msg_ctx - Context to use with wpa_msg() calls
+	 * max_listen - Maximum listen duration in ms
 	 */
-	void *msg_ctx;
+	unsigned int max_listen;
 
 	/**
 	 * cb_ctx - Context to use with callback functions
 	 */
 	void *cb_ctx;
+
+	/**
+	 * debug_print - Debug print
+	 * @ctx: Callback context from cb_ctx
+	 * @level: Debug verbosity level (MSG_*)
+	 * @msg: Debug message
+	 */
+	void (*debug_print)(void *ctx, int level, const char *msg);
 
 
 	/* Callbacks to request lower layer driver operations */
@@ -375,14 +412,14 @@ struct p2p_config {
 	 * @num_req_dev_types: Number of requested device types
 	 * @req_dev_types: Array containing requested device types
 	 * @dev_id: Device ID to search for or %NULL to find all devices
+	 * @pw_id: Device Password ID
 	 * Returns: 0 on success, -1 on failure
 	 *
 	 * This callback function is used to request a P2P scan or search
 	 * operation to be completed. Type type argument specifies which type
 	 * of scan is to be done. @P2P_SCAN_SOCIAL indicates that only the
 	 * social channels (1, 6, 11) should be scanned. @P2P_SCAN_FULL
-	 * indicates that all channels are to be scanned. @P2P_SCAN_SPECIFIC
-	 * request a scan of a single channel specified by freq.
+	 * indicates that all channels are to be scanned.
 	 * @P2P_SCAN_SOCIAL_PLUS_ONE request scan of all the social channels
 	 * plus one extra channel specified by freq.
 	 *
@@ -398,7 +435,7 @@ struct p2p_config {
 	 */
 	int (*p2p_scan)(void *ctx, enum p2p_scan_type type, int freq,
 			unsigned int num_req_dev_types,
-			const u8 *req_dev_types, const u8 *dev_id);
+			const u8 *req_dev_types, const u8 *dev_id, u16 pw_id);
 
 	/**
 	 * send_probe_resp - Transmit a Probe Response frame
@@ -527,6 +564,12 @@ struct p2p_config {
 	 * This callback is used to notify that a P2P Device has been deleted.
 	 */
 	void (*dev_lost)(void *ctx, const u8 *dev_addr);
+
+	/**
+	 * find_stopped - Notification of a p2p_find operation stopping
+	 * @ctx: Callback context from cb_ctx
+	 */
+	void (*find_stopped)(void *ctx);
 
 	/**
 	 * go_neg_req_rx - Notification of a receive GO Negotiation Request
@@ -664,6 +707,9 @@ struct p2p_config {
 	 * @persistent_group: Whether this is an invitation to reinvoke a
 	 *	persistent group (instead of invitation to join an active
 	 *	group)
+	 * @channels: Available operating channels for the group
+	 * @dev_pw_id: Device Password ID for NFC static handover or -1 if not
+	 *	used
 	 * Returns: Status code (P2P_SC_*)
 	 *
 	 * This optional callback can be used to implement persistent reconnect
@@ -684,7 +730,9 @@ struct p2p_config {
 	u8 (*invitation_process)(void *ctx, const u8 *sa, const u8 *bssid,
 				 const u8 *go_dev_addr, const u8 *ssid,
 				 size_t ssid_len, int *go, u8 *group_bssid,
-				 int *force_freq, int persistent_group);
+				 int *force_freq, int persistent_group,
+				 const struct p2p_channels *channels,
+				 int dev_pw_id);
 
 	/**
 	 * invitation_received - Callback on Invitation Request RX
@@ -713,6 +761,9 @@ struct p2p_config {
 	 * @ctx: Callback context from cb_ctx
 	 * @status: Negotiation result (Status Code)
 	 * @bssid: P2P Group BSSID or %NULL if not received
+	 * @channels: Available operating channels for the group
+	 * @addr: Peer address
+	 * @freq: Frequency (in MHz) indicated during invitation or 0
 	 *
 	 * This callback is used to indicate result of an Invitation procedure
 	 * started with a call to p2p_invite(). The indicated status code is
@@ -720,7 +771,9 @@ struct p2p_config {
 	 * (P2P_SC_SUCCESS) indicating success or -1 to indicate a timeout or a
 	 * local failure in transmitting the Invitation Request.
 	 */
-	void (*invitation_result)(void *ctx, int status, const u8 *bssid);
+	void (*invitation_result)(void *ctx, int status, const u8 *bssid,
+				  const struct p2p_channels *channels,
+				  const u8 *addr, int freq);
 
 	/**
 	 * go_connected - Check whether we are connected to a GO
@@ -730,6 +783,26 @@ struct p2p_config {
 	 * or 0 if not.
 	 */
 	int (*go_connected)(void *ctx, const u8 *dev_addr);
+
+	/**
+	 * presence_resp - Callback on Presence Response
+	 * @ctx: Callback context from cb_ctx
+	 * @src: Source address (GO's P2P Interface Address)
+	 * @status: Result of the request (P2P_SC_*)
+	 * @noa: Returned NoA value
+	 * @noa_len: Length of the NoA buffer in octets
+	 */
+	void (*presence_resp)(void *ctx, const u8 *src, u8 status,
+			      const u8 *noa, size_t noa_len);
+
+	/**
+	 * is_concurrent_session_active - Check whether concurrent session is
+	 * active on other virtual interfaces
+	 * @ctx: Callback context from cb_ctx
+	 * Returns: 1 if concurrent session is active on other virtual interface
+	 * or 0 if not.
+	 */
+	int (*is_concurrent_session_active)(void *ctx);
 };
 
 
@@ -835,12 +908,13 @@ enum p2p_discovery_type {
  *	containing num_req_dev_types * WPS_DEV_TYPE_LEN bytes; %NULL if no
  *	requested device types.
  * @dev_id: Device ID to search for or %NULL to find all devices
+ * @search_delay: Extra delay in milliseconds between search iterations
  * Returns: 0 on success, -1 on failure
  */
 int p2p_find(struct p2p_data *p2p, unsigned int timeout,
 	     enum p2p_discovery_type type,
 	     unsigned int num_req_dev_types, const u8 *req_dev_types,
-	     const u8 *dev_id);
+	     const u8 *dev_id, unsigned int search_delay);
 
 /**
  * p2p_stop_find - Stop P2P Find (Device Discovery)
@@ -872,6 +946,12 @@ void p2p_stop_find_for_freq(struct p2p_data *p2p, int freq);
 int p2p_listen(struct p2p_data *p2p, unsigned int timeout);
 
 /**
+ * p2p_stop_listen - Stop P2P Listen
+ * @p2p: P2P module context from p2p_init()
+ */
+void p2p_stop_listen(struct p2p_data *p2p);
+
+/**
  * p2p_connect - Start P2P group formation (GO negotiation)
  * @p2p: P2P module context from p2p_init()
  * @peer_addr: MAC address of the peer P2P client
@@ -882,12 +962,22 @@ int p2p_listen(struct p2p_data *p2p, unsigned int timeout);
  * @persistent_group: Whether to create a persistent group (0 = no, 1 =
  * persistent group without persistent reconnect, 2 = persistent group with
  * persistent reconnect)
+ * @force_ssid: Forced SSID for the group if we become GO or %NULL to generate
+ *	a new SSID
+ * @force_ssid_len: Length of $force_ssid buffer
+ * @pd_before_go_neg: Whether to send Provision Discovery prior to GO
+ *	Negotiation as an interoperability workaround when initiating group
+ *	formation
+ * @pref_freq: Preferred operating frequency in MHz or 0 (this is only used if
+ *	force_freq == 0)
  * Returns: 0 on success, -1 on failure
  */
 int p2p_connect(struct p2p_data *p2p, const u8 *peer_addr,
 		enum p2p_wps_method wps_method,
 		int go_intent, const u8 *own_interface_addr,
-		unsigned int force_freq, int persistent_group);
+		unsigned int force_freq, int persistent_group,
+		const u8 *force_ssid, size_t force_ssid_len,
+		int pd_before_go_neg, unsigned int pref_freq, u16 oob_pw_id);
 
 /**
  * p2p_authorize - Authorize P2P group formation (GO negotiation)
@@ -900,6 +990,11 @@ int p2p_connect(struct p2p_data *p2p, const u8 *peer_addr,
  * @persistent_group: Whether to create a persistent group (0 = no, 1 =
  * persistent group without persistent reconnect, 2 = persistent group with
  * persistent reconnect)
+ * @force_ssid: Forced SSID for the group if we become GO or %NULL to generate
+ *	a new SSID
+ * @force_ssid_len: Length of $force_ssid buffer
+ * @pref_freq: Preferred operating frequency in MHz or 0 (this is only used if
+ *	force_freq == 0)
  * Returns: 0 on success, -1 on failure
  *
  * This is like p2p_connect(), but the actual group negotiation is not
@@ -908,7 +1003,9 @@ int p2p_connect(struct p2p_data *p2p, const u8 *peer_addr,
 int p2p_authorize(struct p2p_data *p2p, const u8 *peer_addr,
 		  enum p2p_wps_method wps_method,
 		  int go_intent, const u8 *own_interface_addr,
-		  unsigned int force_freq, int persistent_group);
+		  unsigned int force_freq, int persistent_group,
+		  const u8 *force_ssid, size_t force_ssid_len,
+		  unsigned int pref_freq, u16 oob_pw_id);
 
 /**
  * p2p_reject - Reject peer device (explicitly block connection attempts)
@@ -925,6 +1022,7 @@ int p2p_reject(struct p2p_data *p2p, const u8 *peer_addr);
  * @config_methods: WPS Config Methods value (only one bit set)
  * @join: Whether this is used by a client joining an active group
  * @force_freq: Forced TX frequency for the frame (mainly for the join case)
+ * @user_initiated_pd: Flag to indicate if initiated by user or not
  * Returns: 0 on success, -1 on failure
  *
  * This function can be used to request a discovered P2P peer to display a PIN
@@ -936,7 +1034,8 @@ int p2p_reject(struct p2p_data *p2p, const u8 *peer_addr);
  * indicated with the p2p_config::prov_disc_resp() callback.
  */
 int p2p_prov_disc_req(struct p2p_data *p2p, const u8 *peer_addr,
-		      u16 config_methods, int join, int force_freq);
+		      u16 config_methods, int join, int force_freq,
+		      int user_initiated_pd);
 
 /**
  * p2p_sd_request - Schedule a service discovery query
@@ -950,6 +1049,11 @@ int p2p_prov_disc_req(struct p2p_data *p2p, const u8 *peer_addr,
  */
 void * p2p_sd_request(struct p2p_data *p2p, const u8 *dst,
 		      const struct wpabuf *tlvs);
+
+#ifdef CONFIG_WIFI_DISPLAY
+void * p2p_sd_request_wfd(struct p2p_data *p2p, const u8 *dst,
+			  const struct wpabuf *tlvs);
+#endif /* CONFIG_WIFI_DISPLAY */
 
 /**
  * p2p_sd_cancel_request - Cancel a pending service discovery query
@@ -1001,12 +1105,16 @@ enum p2p_invite_role {
  * @force_freq: The only allowed channel frequency in MHz or 0
  * @go_dev_addr: Forced GO Device Address or %NULL if none
  * @persistent_group: Whether this is to reinvoke a persistent group
+ * @pref_freq: Preferred operating frequency in MHz or 0 (this is only used if
+ *	force_freq == 0)
+ * @dev_pw_id: Device Password ID from OOB Device Password (NFC) static handover
+ *	case or -1 if not used
  * Returns: 0 on success, -1 on failure
  */
 int p2p_invite(struct p2p_data *p2p, const u8 *peer, enum p2p_invite_role role,
 	       const u8 *bssid, const u8 *ssid, size_t ssid_len,
 	       unsigned int force_freq, const u8 *go_dev_addr,
-	       int persistent_group);
+	       int persistent_group, unsigned int pref_freq, int dev_pw_id);
 
 /**
  * p2p_presence_req - Request GO presence
@@ -1092,6 +1200,23 @@ void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr);
 /* Event notifications from lower layer driver operations */
 
 /**
+ * enum p2p_probe_req_status
+ *
+ * @P2P_PREQ_MALFORMED: frame was not well-formed
+ * @P2P_PREQ_NOT_LISTEN: device isn't in listen state, frame ignored
+ * @P2P_PREQ_NOT_P2P: frame was not a P2P probe request
+ * @P2P_PREQ_P2P_NOT_PROCESSED: frame was P2P but wasn't processed
+ * @P2P_PREQ_P2P_PROCESSED: frame has been processed by P2P
+ */
+enum p2p_probe_req_status {
+	P2P_PREQ_MALFORMED,
+	P2P_PREQ_NOT_LISTEN,
+	P2P_PREQ_NOT_P2P,
+	P2P_PREQ_NOT_PROCESSED,
+	P2P_PREQ_PROCESSED
+};
+
+/**
  * p2p_probe_req_rx - Report reception of a Probe Request frame
  * @p2p: P2P module context from p2p_init()
  * @addr: Source MAC address
@@ -1099,10 +1224,11 @@ void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr);
  * @bssid: BSSID if available or %NULL
  * @ie: Information elements from the Probe Request frame body
  * @ie_len: Length of ie buffer in octets
- * Returns: 0 to indicate the frame was not processed or 1 if it was
+ * Returns: value indicating the type and status of the probe request
  */
-int p2p_probe_req_rx(struct p2p_data *p2p, const u8 *addr, const u8 *dst,
-		     const u8 *bssid, const u8 *ie, size_t ie_len);
+enum p2p_probe_req_status
+p2p_probe_req_rx(struct p2p_data *p2p, const u8 *addr, const u8 *dst,
+		 const u8 *bssid, const u8 *ie, size_t ie_len);
 
 /**
  * p2p_rx_action - Report received Action frame
@@ -1124,6 +1250,7 @@ void p2p_rx_action(struct p2p_data *p2p, const u8 *da, const u8 *sa,
  * @p2p: P2P module context from p2p_init()
  * @bssid: BSSID of the scan result
  * @freq: Frequency of the channel on which the device was found in MHz
+ * @rx_time: Time when the result was received
  * @level: Signal level (signal strength of the received Beacon/Probe Response
  *	frame)
  * @ies: Pointer to IEs from the scan result
@@ -1145,7 +1272,8 @@ void p2p_rx_action(struct p2p_data *p2p, const u8 *da, const u8 *sa,
  * start of a pending operation, e.g., to start a pending GO negotiation.
  */
 int p2p_scan_res_handler(struct p2p_data *p2p, const u8 *bssid, int freq,
-			 int level, const u8 *ies, size_t ies_len);
+			 struct os_reltime *rx_time, int level, const u8 *ies,
+			 size_t ies_len);
 
 /**
  * p2p_scan_res_handled - Indicate end of scan results
@@ -1239,6 +1367,21 @@ struct p2p_group_config {
 	 * max_clients - Maximum number of clients in the group
 	 */
 	unsigned int max_clients;
+
+	/**
+	 * ssid - Group SSID
+	 */
+	u8 ssid[32];
+
+	/**
+	 * ssid_len - Length of SSID
+	 */
+	size_t ssid_len;
+
+	/**
+	 * freq - Operating channel of the group
+	 */
+	int freq;
 
 	/**
 	 * cb_ctx - Context to use with callback functions
@@ -1392,6 +1535,15 @@ int p2p_ie_text(struct wpabuf *p2p_ie, char *buf, char *end);
 int p2p_scan_result_text(const u8 *ies, size_t ies_len, char *buf, char *end);
 
 /**
+ * p2p_parse_dev_addr_in_p2p_ie - Parse P2P Device Address from a concatenated
+ * P2P IE
+ * @p2p_ie: P2P IE
+ * @dev_addr: Buffer for returning P2P Device Address
+ * Returns: 0 on success or -1 if P2P Device Address could not be parsed
+ */
+int p2p_parse_dev_addr_in_p2p_ie(struct wpabuf *p2p_ie, u8 *dev_addr);
+
+/**
  * p2p_parse_dev_addr - Parse P2P Device Address from P2P IE(s)
  * @ies: Information elements from scan results
  * @ies_len: ies buffer length in octets
@@ -1534,6 +1686,9 @@ int p2p_get_oper_freq(struct p2p_data *p2p, const u8 *iface_addr);
  */
 void p2p_set_intra_bss_dist(struct p2p_data *p2p, int enabled);
 
+int p2p_channels_includes_freq(const struct p2p_channels *channels,
+			       unsigned int freq);
+
 /**
  * p2p_supported_freq - Check whether channel is supported for P2P
  * @p2p: P2P module context from p2p_init()
@@ -1542,7 +1697,34 @@ void p2p_set_intra_bss_dist(struct p2p_data *p2p, int enabled);
  */
 int p2p_supported_freq(struct p2p_data *p2p, unsigned int freq);
 
-void p2p_update_channel_list(struct p2p_data *p2p, struct p2p_channels *chan);
+/**
+ * p2p_supported_freq_go - Check whether channel is supported for P2P GO operation
+ * @p2p: P2P module context from p2p_init()
+ * @freq: Channel frequency in MHz
+ * Returns: 0 if channel not usable for P2P, 1 if usable for P2P
+ */
+int p2p_supported_freq_go(struct p2p_data *p2p, unsigned int freq);
+
+/**
+ * p2p_supported_freq_cli - Check whether channel is supported for P2P client operation
+ * @p2p: P2P module context from p2p_init()
+ * @freq: Channel frequency in MHz
+ * Returns: 0 if channel not usable for P2P, 1 if usable for P2P
+ */
+int p2p_supported_freq_cli(struct p2p_data *p2p, unsigned int freq);
+
+/**
+ * p2p_get_pref_freq - Get channel from preferred channel list
+ * @p2p: P2P module context from p2p_init()
+ * @channels: List of channels
+ * Returns: Preferred channel
+ */
+unsigned int p2p_get_pref_freq(struct p2p_data *p2p,
+			       const struct p2p_channels *channels);
+
+void p2p_update_channel_list(struct p2p_data *p2p,
+			     const struct p2p_channels *chan,
+			     const struct p2p_channels *cli_chan);
 
 /**
  * p2p_set_best_channels - Update best channel information
@@ -1553,6 +1735,17 @@ void p2p_update_channel_list(struct p2p_data *p2p, struct p2p_channels *chan);
  */
 void p2p_set_best_channels(struct p2p_data *p2p, int freq_24, int freq_5,
 			   int freq_overall);
+
+/**
+ * p2p_set_own_freq_preference - Set own preference for channel
+ * @p2p: P2P module context from p2p_init()
+ * @freq: Frequency (MHz) of the preferred channel or 0 if no preference
+ *
+ * This function can be used to set a preference on the operating channel based
+ * on frequencies used on the other virtual interfaces that share the same
+ * radio. If non-zero, this is used to try to avoid multi-channel concurrency.
+ */
+void p2p_set_own_freq_preference(struct p2p_data *p2p, int freq);
 
 const u8 * p2p_get_go_neg_peer(struct p2p_data *p2p);
 
@@ -1639,19 +1832,113 @@ int p2p_set_pref_chan(struct p2p_data *p2p, unsigned int num_pref_chan,
 		      const struct p2p_channel *pref_chan);
 
 /**
+ * p2p_set_no_go_freq - Set no GO channel ranges
+ * @p2p: P2P module context from p2p_init()
+ * @list: Channel ranges or %NULL to remove restriction
+ * Returns: 0 on success, -1 on failure
+ */
+int p2p_set_no_go_freq(struct p2p_data *p2p,
+		       const struct wpa_freq_range_list *list);
+
+/**
  * p2p_in_progress - Check whether a P2P operation is progress
  * @p2p: P2P module context from p2p_init()
  * Returns: 0 if P2P module is idle or 1 if an operation is in progress
  */
 int p2p_in_progress(struct p2p_data *p2p);
 
-/**
- * p2p_other_scan_completed - Notify completion of non-P2P scan
- * @p2p: P2P module context from p2p_init()
- * Returns: 0 if P2P module is idle or 1 if an operation was started
- */
-int p2p_other_scan_completed(struct p2p_data *p2p);
-
 const char * p2p_wps_method_text(enum p2p_wps_method method);
+
+/**
+ * p2p_set_config_timeout - Set local config timeouts
+ * @p2p: P2P module context from p2p_init()
+ * @go_timeout: Time in 10 ms units it takes to start the GO mode
+ * @client_timeout: Time in 10 ms units it takes to start the client mode
+ */
+void p2p_set_config_timeout(struct p2p_data *p2p, u8 go_timeout,
+			    u8 client_timeout);
+
+int p2p_set_wfd_ie_beacon(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_probe_req(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_probe_resp(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_assoc_req(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_invitation(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_prov_disc_req(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_prov_disc_resp(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_ie_go_neg(struct p2p_data *p2p, struct wpabuf *ie);
+int p2p_set_wfd_dev_info(struct p2p_data *p2p, const struct wpabuf *elem);
+int p2p_set_wfd_assoc_bssid(struct p2p_data *p2p, const struct wpabuf *elem);
+int p2p_set_wfd_coupled_sink_info(struct p2p_data *p2p,
+				  const struct wpabuf *elem);
+struct wpabuf * wifi_display_encaps(struct wpabuf *subelems);
+
+/**
+ * p2p_set_disc_int - Set min/max discoverable interval for p2p_find
+ * @p2p: P2P module context from p2p_init()
+ * @min_disc_int: minDiscoverableInterval (in units of 100 TU); default 1
+ * @max_disc_int: maxDiscoverableInterval (in units of 100 TU); default 3
+ * @max_disc_tu: Maximum number of TUs (1.024 ms) for discoverable interval; or
+ *	-1 not to limit
+ * Returns: 0 on success, or -1 on failure
+ *
+ * This function can be used to configure minDiscoverableInterval and
+ * maxDiscoverableInterval parameters for the Listen state during device
+ * discovery (p2p_find). A random number of 100 TU units is picked for each
+ * Listen state iteration from [min_disc_int,max_disc_int] range.
+ *
+ * max_disc_tu can be used to futher limit the discoverable duration. However,
+ * it should be noted that use of this parameter is not recommended since it
+ * would not be compliant with the P2P specification.
+ */
+int p2p_set_disc_int(struct p2p_data *p2p, int min_disc_int, int max_disc_int,
+		     int max_disc_tu);
+
+/**
+ * p2p_get_state_txt - Get current P2P state for debug purposes
+ * @p2p: P2P module context from p2p_init()
+ * Returns: Name of the current P2P module state
+ *
+ * It should be noted that the P2P module state names are internal information
+ * and subject to change at any point, i.e., this information should be used
+ * mainly for debugging purposes.
+ */
+const char * p2p_get_state_txt(struct p2p_data *p2p);
+
+struct wpabuf * p2p_build_nfc_handover_req(struct p2p_data *p2p,
+					   int client_freq,
+					   const u8 *go_dev_addr,
+					   const u8 *ssid, size_t ssid_len);
+struct wpabuf * p2p_build_nfc_handover_sel(struct p2p_data *p2p,
+					   int client_freq,
+					   const u8 *go_dev_addr,
+					   const u8 *ssid, size_t ssid_len);
+
+struct p2p_nfc_params {
+	int sel;
+	const u8 *wsc_attr;
+	size_t wsc_len;
+	const u8 *p2p_attr;
+	size_t p2p_len;
+
+	enum {
+		NO_ACTION, JOIN_GROUP, AUTH_JOIN, INIT_GO_NEG, RESP_GO_NEG,
+		BOTH_GO, PEER_CLIENT
+	} next_step;
+	struct p2p_peer_info *peer;
+	u8 oob_dev_pw[WPS_OOB_PUBKEY_HASH_LEN + 2 +
+		      WPS_OOB_DEVICE_PASSWORD_LEN];
+	size_t oob_dev_pw_len;
+	int go_freq;
+	u8 go_dev_addr[ETH_ALEN];
+	u8 go_ssid[32];
+	size_t go_ssid_len;
+};
+
+int p2p_process_nfc_connection_handover(struct p2p_data *p2p,
+					struct p2p_nfc_params *params);
+
+void p2p_set_authorized_oob_dev_pw_id(struct p2p_data *p2p, u16 dev_pw_id,
+				      int go_intent,
+				      const u8 *own_interface_addr);
 
 #endif /* P2P_H */

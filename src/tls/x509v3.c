@@ -2,14 +2,8 @@
  * X.509v3 certificate parsing and processing (RFC 3280 profile)
  * Copyright (c) 2006-2011, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -449,17 +443,16 @@ static int x509_parse_name(const u8 *buf, size_t len, struct x509_name *name,
 			return -1;
 		}
 
-		val = os_malloc(hdr.length + 1);
+		val = dup_binstr(hdr.payload, hdr.length);
 		if (val == NULL) {
 			x509_free_name(name);
 			return -1;
 		}
-		os_memcpy(val, hdr.payload, hdr.length);
-		val[hdr.length] = '\0';
 		if (os_strlen(val) != hdr.length) {
 			wpa_printf(MSG_INFO, "X509: Reject certificate with "
 				   "embedded NUL byte in a string (%s[NUL])",
 				   val);
+			os_free(val);
 			x509_free_name(name);
 			return -1;
 		}

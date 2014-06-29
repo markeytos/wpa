@@ -2,14 +2,8 @@
  * hostapd / IEEE 802.1X-2004 Authenticator
  * Copyright (c) 2002-2012, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "utils/includes.h"
@@ -20,7 +14,6 @@
 #include "crypto/crypto.h"
 #include "crypto/random.h"
 #include "common/ieee802_11_defs.h"
-#include "common/wpa_ctrl.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
 #include "eap_server/eap.h"
@@ -36,6 +29,7 @@
 #include "pmksa_cache_auth.h"
 #include "ap_config.h"
 #include "ap_drv_ops.h"
+#include "wps_hostapd.h"
 #include "ieee802_1x.h"
 
 
@@ -73,8 +67,9 @@ static void ieee802_1x_send(struct hostapd_data *hapd, struct sta_info *sta,
 	if (sta->flags & WLAN_STA_PREAUTH) {
 		rsn_preauth_send(hapd, sta, buf, len);
 	} else {
-		hostapd_drv_hapd_send_eapol(hapd, sta->addr, buf, len,
-					    encrypt, sta->flags);
+		hostapd_drv_hapd_send_eapol(
+			hapd, sta->addr, buf, len,
+			encrypt, hostapd_sta_flags_to_drv(sta->flags));
 	}
 
 	os_free(buf);
@@ -102,12 +97,15 @@ void ieee802_1x_set_sta_authorized(struct hostapd_data *hapd,
 	}
 
 	if (res && errno != ENOENT) {
-		printf("Could not set station " MACSTR " flags for kernel "
-		       "driver (errno=%d).\n", MAC2STR(sta->addr), errno);
+		wpa_printf(MSG_DEBUG, "Could not set station " MACSTR
+			   " flags for kernel driver (errno=%d).",
+			   MAC2STR(sta->addr), errno);
 	}
 
-	if (authorized)
+	if (authorized) {
+		os_get_reltime(&sta->connected_time);
 		accounting_sta_start(hapd, sta);
+	}
 }
 
 
@@ -133,7 +131,7 @@ static void ieee802_1x_tx_key_one(struct hostapd_data *hapd,
 	hdr = (struct ieee802_1x_hdr *) buf;
 	key = (struct ieee802_1x_eapol_key *) (hdr + 1);
 	key->type = EAPOL_KEY_TYPE_RC4;
-	key->key_length = htons(key_len);
+	WPA_PUT_BE16(key->key_length, key_len);
 	wpa_get_ntp_timestamp(key->replay_counter);
 
 	if (random_get_bytes(key->key_iv, sizeof(key->key_iv))) {
@@ -190,114 +188,10 @@ static void ieee802_1x_tx_key_one(struct hostapd_data *hapd,
 }
 
 
-#ifndef CONFIG_NO_VLAN
-static struct hostapd_wep_keys *
-ieee802_1x_group_alloc(struct hostapd_data *hapd, const char *ifname)
-{
-	struct hostapd_wep_keys *key;
-
-	key = os_zalloc(sizeof(*key));
-	if (key == NULL)
-		return NULL;
-
-	key->default_len = hapd->conf->default_wep_key_len;
-
-	if (key->idx >= hapd->conf->broadcast_key_idx_max ||
-	    key->idx < hapd->conf->broadcast_key_idx_min)
-		key->idx = hapd->conf->broadcast_key_idx_min;
-	else
-		key->idx++;
-
-	if (!key->key[key->idx])
-		key->key[key->idx] = os_malloc(key->default_len);
-	if (key->key[key->idx] == NULL ||
-	    random_get_bytes(key->key[key->idx], key->default_len)) {
-		printf("Could not generate random WEP key (dynamic VLAN).\n");
-		os_free(key->key[key->idx]);
-		key->key[key->idx] = NULL;
-		os_free(key);
-		return NULL;
-	}
-	key->len[key->idx] = key->default_len;
-
-	wpa_printf(MSG_DEBUG, "%s: Default WEP idx %d for dynamic VLAN\n",
-		   ifname, key->idx);
-	wpa_hexdump_key(MSG_DEBUG, "Default WEP key (dynamic VLAN)",
-			key->key[key->idx], key->len[key->idx]);
-
-	if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_WEP,
-				broadcast_ether_addr, key->idx, 1,
-				NULL, 0, key->key[key->idx],
-				key->len[key->idx]))
-		printf("Could not set dynamic VLAN WEP encryption key.\n");
-
-	hostapd_set_drv_ieee8021x(hapd, ifname, 1);
-
-	return key;
-}
-
-
-static struct hostapd_wep_keys *
-ieee802_1x_get_group(struct hostapd_data *hapd, struct hostapd_ssid *ssid,
-		     size_t vlan_id)
-{
-	const char *ifname;
-
-	if (vlan_id == 0)
-		return &ssid->wep;
-
-	if (vlan_id <= ssid->max_dyn_vlan_keys && ssid->dyn_vlan_keys &&
-	    ssid->dyn_vlan_keys[vlan_id])
-		return ssid->dyn_vlan_keys[vlan_id];
-
-	wpa_printf(MSG_DEBUG, "IEEE 802.1X: Creating new group "
-		   "state machine for VLAN ID %lu",
-		   (unsigned long) vlan_id);
-
-	ifname = hostapd_get_vlan_id_ifname(hapd->conf->vlan, vlan_id);
-	if (ifname == NULL) {
-		wpa_printf(MSG_DEBUG, "IEEE 802.1X: Unknown VLAN ID %lu - "
-			   "cannot create group key state machine",
-			   (unsigned long) vlan_id);
-		return NULL;
-	}
-
-	if (ssid->dyn_vlan_keys == NULL) {
-		int size = (vlan_id + 1) * sizeof(ssid->dyn_vlan_keys[0]);
-		ssid->dyn_vlan_keys = os_zalloc(size);
-		if (ssid->dyn_vlan_keys == NULL)
-			return NULL;
-		ssid->max_dyn_vlan_keys = vlan_id;
-	}
-
-	if (ssid->max_dyn_vlan_keys < vlan_id) {
-		struct hostapd_wep_keys **na;
-		int size = (vlan_id + 1) * sizeof(ssid->dyn_vlan_keys[0]);
-		na = os_realloc(ssid->dyn_vlan_keys, size);
-		if (na == NULL)
-			return NULL;
-		ssid->dyn_vlan_keys = na;
-		os_memset(&ssid->dyn_vlan_keys[ssid->max_dyn_vlan_keys + 1], 0,
-			  (vlan_id - ssid->max_dyn_vlan_keys) *
-			  sizeof(ssid->dyn_vlan_keys[0]));
-		ssid->max_dyn_vlan_keys = vlan_id;
-	}
-
-	ssid->dyn_vlan_keys[vlan_id] = ieee802_1x_group_alloc(hapd, ifname);
-
-	return ssid->dyn_vlan_keys[vlan_id];
-}
-#endif /* CONFIG_NO_VLAN */
-
-
 void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 {
 	struct eapol_authenticator *eapol = hapd->eapol_auth;
 	struct eapol_state_machine *sm = sta->eapol_sm;
-#ifndef CONFIG_NO_VLAN
-	struct hostapd_wep_keys *key = NULL;
-	int vlan_id;
-#endif /* CONFIG_NO_VLAN */
 
 	if (sm == NULL || !sm->eap_if->eapKeyData)
 		return;
@@ -306,18 +200,12 @@ void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 		   MAC2STR(sta->addr));
 
 #ifndef CONFIG_NO_VLAN
-	vlan_id = sta->vlan_id;
-	if (vlan_id < 0 || vlan_id > MAX_VLAN_ID)
-		vlan_id = 0;
-
-	if (vlan_id) {
-		key = ieee802_1x_get_group(hapd, sta->ssid, vlan_id);
-		if (key && key->key[key->idx])
-			ieee802_1x_tx_key_one(hapd, sta, key->idx, 1,
-					      key->key[key->idx],
-					      key->len[key->idx]);
-	} else
+	if (sta->vlan_id > 0 && sta->vlan_id <= MAX_VLAN_ID) {
+		wpa_printf(MSG_ERROR, "Using WEP with vlans is not supported.");
+		return;
+	}
 #endif /* CONFIG_NO_VLAN */
+
 	if (eapol->default_wep_key) {
 		ieee802_1x_tx_key_one(hapd, sta, eapol->default_wep_key_idx, 1,
 				      eapol->default_wep_key,
@@ -359,6 +247,8 @@ void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 const char *radius_mode_txt(struct hostapd_data *hapd)
 {
 	switch (hapd->iface->conf->hw_mode) {
+	case HOSTAPD_MODE_IEEE80211AD:
+		return "802.11ad";
 	case HOSTAPD_MODE_IEEE80211A:
 		return "802.11a";
 	case HOSTAPD_MODE_IEEE80211G:
@@ -401,18 +291,147 @@ static void ieee802_1x_learn_identity(struct hostapd_data *hapd,
 
 	/* Save station identity for future RADIUS packets */
 	os_free(sm->identity);
-	sm->identity = os_malloc(identity_len + 1);
+	sm->identity = (u8 *) dup_binstr(identity, identity_len);
 	if (sm->identity == NULL) {
 		sm->identity_len = 0;
 		return;
 	}
 
-	os_memcpy(sm->identity, identity, identity_len);
 	sm->identity_len = identity_len;
-	sm->identity[identity_len] = '\0';
 	hostapd_logger(hapd, sm->addr, HOSTAPD_MODULE_IEEE8021X,
 		       HOSTAPD_LEVEL_DEBUG, "STA identity '%s'", sm->identity);
 	sm->dot1xAuthEapolRespIdFramesRx++;
+}
+
+
+static int add_common_radius_sta_attr(struct hostapd_data *hapd,
+				      struct hostapd_radius_attr *req_attr,
+				      struct sta_info *sta,
+				      struct radius_msg *msg)
+{
+	char buf[128];
+
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_NAS_PORT) &&
+	    !radius_msg_add_attr_int32(msg, RADIUS_ATTR_NAS_PORT, sta->aid)) {
+		wpa_printf(MSG_ERROR, "Could not add NAS-Port");
+		return -1;
+	}
+
+	os_snprintf(buf, sizeof(buf), RADIUS_802_1X_ADDR_FORMAT,
+		    MAC2STR(sta->addr));
+	buf[sizeof(buf) - 1] = '\0';
+	if (!radius_msg_add_attr(msg, RADIUS_ATTR_CALLING_STATION_ID,
+				 (u8 *) buf, os_strlen(buf))) {
+		wpa_printf(MSG_ERROR, "Could not add Calling-Station-Id");
+		return -1;
+	}
+
+	if (sta->flags & WLAN_STA_PREAUTH) {
+		os_strlcpy(buf, "IEEE 802.11i Pre-Authentication",
+			   sizeof(buf));
+	} else {
+		os_snprintf(buf, sizeof(buf), "CONNECT %d%sMbps %s",
+			    radius_sta_rate(hapd, sta) / 2,
+			    (radius_sta_rate(hapd, sta) & 1) ? ".5" : "",
+			    radius_mode_txt(hapd));
+		buf[sizeof(buf) - 1] = '\0';
+	}
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_CONNECT_INFO) &&
+	    !radius_msg_add_attr(msg, RADIUS_ATTR_CONNECT_INFO,
+				 (u8 *) buf, os_strlen(buf))) {
+		wpa_printf(MSG_ERROR, "Could not add Connect-Info");
+		return -1;
+	}
+
+	if (sta->acct_session_id_hi || sta->acct_session_id_lo) {
+		os_snprintf(buf, sizeof(buf), "%08X-%08X",
+			    sta->acct_session_id_hi, sta->acct_session_id_lo);
+		if (!radius_msg_add_attr(msg, RADIUS_ATTR_ACCT_SESSION_ID,
+					 (u8 *) buf, os_strlen(buf))) {
+			wpa_printf(MSG_ERROR, "Could not add Acct-Session-Id");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+int add_common_radius_attr(struct hostapd_data *hapd,
+			   struct hostapd_radius_attr *req_attr,
+			   struct sta_info *sta,
+			   struct radius_msg *msg)
+{
+	char buf[128];
+	struct hostapd_radius_attr *attr;
+
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_NAS_IP_ADDRESS) &&
+	    hapd->conf->own_ip_addr.af == AF_INET &&
+	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IP_ADDRESS,
+				 (u8 *) &hapd->conf->own_ip_addr.u.v4, 4)) {
+		wpa_printf(MSG_ERROR, "Could not add NAS-IP-Address");
+		return -1;
+	}
+
+#ifdef CONFIG_IPV6
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_NAS_IPV6_ADDRESS) &&
+	    hapd->conf->own_ip_addr.af == AF_INET6 &&
+	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IPV6_ADDRESS,
+				 (u8 *) &hapd->conf->own_ip_addr.u.v6, 16)) {
+		wpa_printf(MSG_ERROR, "Could not add NAS-IPv6-Address");
+		return -1;
+	}
+#endif /* CONFIG_IPV6 */
+
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_NAS_IDENTIFIER) &&
+	    hapd->conf->nas_identifier &&
+	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IDENTIFIER,
+				 (u8 *) hapd->conf->nas_identifier,
+				 os_strlen(hapd->conf->nas_identifier))) {
+		wpa_printf(MSG_ERROR, "Could not add NAS-Identifier");
+		return -1;
+	}
+
+	os_snprintf(buf, sizeof(buf), RADIUS_802_1X_ADDR_FORMAT ":%s",
+		    MAC2STR(hapd->own_addr),
+		    wpa_ssid_txt(hapd->conf->ssid.ssid,
+				 hapd->conf->ssid.ssid_len));
+	buf[sizeof(buf) - 1] = '\0';
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_CALLED_STATION_ID) &&
+	    !radius_msg_add_attr(msg, RADIUS_ATTR_CALLED_STATION_ID,
+				 (u8 *) buf, os_strlen(buf))) {
+		wpa_printf(MSG_ERROR, "Could not add Called-Station-Id");
+		return -1;
+	}
+
+	if (!hostapd_config_get_radius_attr(req_attr,
+					    RADIUS_ATTR_NAS_PORT_TYPE) &&
+	    !radius_msg_add_attr_int32(msg, RADIUS_ATTR_NAS_PORT_TYPE,
+				       RADIUS_NAS_PORT_TYPE_IEEE_802_11)) {
+		wpa_printf(MSG_ERROR, "Could not add NAS-Port-Type");
+		return -1;
+	}
+
+	if (sta && add_common_radius_sta_attr(hapd, req_attr, sta, msg) < 0)
+		return -1;
+
+	for (attr = req_attr; attr; attr = attr->next) {
+		if (!radius_msg_add_attr(msg, attr->type,
+					 wpabuf_head(attr->val),
+					 wpabuf_len(attr->val))) {
+			wpa_printf(MSG_ERROR, "Could not add RADIUS "
+				   "attribute");
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 
@@ -421,7 +440,6 @@ static void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 					  const u8 *eap, size_t len)
 {
 	struct radius_msg *msg;
-	char buf[128];
 	struct eapol_state_machine *sm = sta->eapol_sm;
 
 	if (sm == NULL)
@@ -436,7 +454,7 @@ static void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 	msg = radius_msg_new(RADIUS_CODE_ACCESS_REQUEST,
 			     sm->radius_identifier);
 	if (msg == NULL) {
-		printf("Could not create net RADIUS packet\n");
+		wpa_printf(MSG_INFO, "Could not create new RADIUS packet");
 		return;
 	}
 
@@ -445,89 +463,26 @@ static void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 	if (sm->identity &&
 	    !radius_msg_add_attr(msg, RADIUS_ATTR_USER_NAME,
 				 sm->identity, sm->identity_len)) {
-		printf("Could not add User-Name\n");
+		wpa_printf(MSG_INFO, "Could not add User-Name");
 		goto fail;
 	}
 
-	if (hapd->conf->own_ip_addr.af == AF_INET &&
-	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IP_ADDRESS,
-				 (u8 *) &hapd->conf->own_ip_addr.u.v4, 4)) {
-		printf("Could not add NAS-IP-Address\n");
+	if (add_common_radius_attr(hapd, hapd->conf->radius_auth_req_attr, sta,
+				   msg) < 0)
 		goto fail;
-	}
-
-#ifdef CONFIG_IPV6
-	if (hapd->conf->own_ip_addr.af == AF_INET6 &&
-	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IPV6_ADDRESS,
-				 (u8 *) &hapd->conf->own_ip_addr.u.v6, 16)) {
-		printf("Could not add NAS-IPv6-Address\n");
-		goto fail;
-	}
-#endif /* CONFIG_IPV6 */
-
-	if (hapd->conf->nas_identifier &&
-	    !radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IDENTIFIER,
-				 (u8 *) hapd->conf->nas_identifier,
-				 os_strlen(hapd->conf->nas_identifier))) {
-		printf("Could not add NAS-Identifier\n");
-		goto fail;
-	}
-
-	if (!radius_msg_add_attr_int32(msg, RADIUS_ATTR_NAS_PORT, sta->aid)) {
-		printf("Could not add NAS-Port\n");
-		goto fail;
-	}
-
-	os_snprintf(buf, sizeof(buf), RADIUS_802_1X_ADDR_FORMAT ":%s",
-		    MAC2STR(hapd->own_addr), hapd->conf->ssid.ssid);
-	buf[sizeof(buf) - 1] = '\0';
-	if (!radius_msg_add_attr(msg, RADIUS_ATTR_CALLED_STATION_ID,
-				 (u8 *) buf, os_strlen(buf))) {
-		printf("Could not add Called-Station-Id\n");
-		goto fail;
-	}
-
-	os_snprintf(buf, sizeof(buf), RADIUS_802_1X_ADDR_FORMAT,
-		    MAC2STR(sta->addr));
-	buf[sizeof(buf) - 1] = '\0';
-	if (!radius_msg_add_attr(msg, RADIUS_ATTR_CALLING_STATION_ID,
-				 (u8 *) buf, os_strlen(buf))) {
-		printf("Could not add Calling-Station-Id\n");
-		goto fail;
-	}
 
 	/* TODO: should probably check MTU from driver config; 2304 is max for
 	 * IEEE 802.11, but use 1400 to avoid problems with too large packets
 	 */
-	if (!radius_msg_add_attr_int32(msg, RADIUS_ATTR_FRAMED_MTU, 1400)) {
-		printf("Could not add Framed-MTU\n");
-		goto fail;
-	}
-
-	if (!radius_msg_add_attr_int32(msg, RADIUS_ATTR_NAS_PORT_TYPE,
-				       RADIUS_NAS_PORT_TYPE_IEEE_802_11)) {
-		printf("Could not add NAS-Port-Type\n");
-		goto fail;
-	}
-
-	if (sta->flags & WLAN_STA_PREAUTH) {
-		os_strlcpy(buf, "IEEE 802.11i Pre-Authentication",
-			   sizeof(buf));
-	} else {
-		os_snprintf(buf, sizeof(buf), "CONNECT %d%sMbps %s",
-			    radius_sta_rate(hapd, sta) / 2,
-			    (radius_sta_rate(hapd, sta) & 1) ? ".5" : "",
-			    radius_mode_txt(hapd));
-		buf[sizeof(buf) - 1] = '\0';
-	}
-	if (!radius_msg_add_attr(msg, RADIUS_ATTR_CONNECT_INFO,
-				 (u8 *) buf, os_strlen(buf))) {
-		printf("Could not add Connect-Info\n");
+	if (!hostapd_config_get_radius_attr(hapd->conf->radius_auth_req_attr,
+					    RADIUS_ATTR_FRAMED_MTU) &&
+	    !radius_msg_add_attr_int32(msg, RADIUS_ATTR_FRAMED_MTU, 1400)) {
+		wpa_printf(MSG_INFO, "Could not add Framed-MTU");
 		goto fail;
 	}
 
 	if (eap && !radius_msg_add_eap(msg, eap, len)) {
-		printf("Could not add EAP-Message\n");
+		wpa_printf(MSG_INFO, "Could not add EAP-Message");
 		goto fail;
 	}
 
@@ -539,12 +494,30 @@ static void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 		int res = radius_msg_copy_attr(msg, sm->last_recv_radius,
 					       RADIUS_ATTR_STATE);
 		if (res < 0) {
-			printf("Could not copy State attribute from previous "
-			       "Access-Challenge\n");
+			wpa_printf(MSG_INFO, "Could not copy State attribute from previous Access-Challenge");
 			goto fail;
 		}
 		if (res > 0) {
 			wpa_printf(MSG_DEBUG, "Copied RADIUS State Attribute");
+		}
+	}
+
+	if (hapd->conf->radius_request_cui) {
+		const u8 *cui;
+		size_t cui_len;
+		/* Add previously learned CUI or nul CUI to request CUI */
+		if (sm->radius_cui) {
+			cui = wpabuf_head(sm->radius_cui);
+			cui_len = wpabuf_len(sm->radius_cui);
+		} else {
+			cui = (const u8 *) "\0";
+			cui_len = 1;
+		}
+		if (!radius_msg_add_attr(msg,
+					 RADIUS_ATTR_CHARGEABLE_USER_IDENTITY,
+					 cui, cui_len)) {
+			wpa_printf(MSG_ERROR, "Could not add CUI");
+			goto fail;
 		}
 	}
 
@@ -571,7 +544,7 @@ static void handle_eap_response(struct hostapd_data *hapd,
 	data = (u8 *) (eap + 1);
 
 	if (len < sizeof(*eap) + 1) {
-		printf("handle_eap_response: too short response data\n");
+		wpa_printf(MSG_INFO, "handle_eap_response: too short response data");
 		return;
 	}
 
@@ -599,7 +572,7 @@ static void handle_eap(struct hostapd_data *hapd, struct sta_info *sta,
 	u16 eap_len;
 
 	if (len < sizeof(*eap)) {
-		printf("   too short EAP packet\n");
+		wpa_printf(MSG_INFO, "   too short EAP packet");
 		return;
 	}
 
@@ -653,7 +626,8 @@ ieee802_1x_alloc_eapol_sm(struct hostapd_data *hapd, struct sta_info *sta)
 			flags |= EAPOL_SM_FROM_PMKSA_CACHE;
 	}
 	return eapol_auth_alloc(hapd->eapol_auth, sta->addr, flags,
-				sta->wps_ie, sta->p2p_ie, sta);
+				sta->wps_ie, sta->p2p_ie, sta,
+				sta->identity, sta->radius_cui);
 }
 
 
@@ -691,7 +665,7 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 	}
 
 	if (len < sizeof(*hdr)) {
-		printf("   too short IEEE 802.1X packet\n");
+		wpa_printf(MSG_INFO, "   too short IEEE 802.1X packet");
 		return;
 	}
 
@@ -701,7 +675,7 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 		   hdr->version, hdr->type, datalen);
 
 	if (len - sizeof(*hdr) < datalen) {
-		printf("   frame too short for this IEEE 802.1X packet\n");
+		wpa_printf(MSG_INFO, "   frame too short for this IEEE 802.1X packet");
 		if (sta->eapol_sm)
 			sta->eapol_sm->dot1xAuthEapLengthErrorFramesRx++;
 		return;
@@ -985,6 +959,7 @@ void ieee802_1x_free_station(struct sta_info *sta)
 #ifndef CONFIG_NO_RADIUS
 	radius_msg_free(sm->last_recv_radius);
 	radius_free_class(&sm->radius_class);
+	wpabuf_free(sm->radius_cui);
 #endif /* CONFIG_NO_RADIUS */
 
 	os_free(sm->identity);
@@ -996,9 +971,8 @@ void ieee802_1x_free_station(struct sta_info *sta)
 static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 					  struct sta_info *sta)
 {
-	u8 *eap;
-	size_t len;
-	struct eap_hdr *hdr;
+	struct wpabuf *eap;
+	const struct eap_hdr *hdr;
 	int eap_type = -1;
 	char buf[64];
 	struct radius_msg *msg;
@@ -1012,7 +986,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 
 	msg = sm->last_recv_radius;
 
-	eap = radius_msg_get_eap(msg, &len);
+	eap = radius_msg_get_eap(msg);
 	if (eap == NULL) {
 		/* RFC 3579, Chap. 2.6.3:
 		 * RADIUS server SHOULD NOT send Access-Reject/no EAP-Message
@@ -1024,19 +998,19 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 		return;
 	}
 
-	if (len < sizeof(*hdr)) {
+	if (wpabuf_len(eap) < sizeof(*hdr)) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE8021X,
 			       HOSTAPD_LEVEL_WARNING, "too short EAP packet "
 			       "received from authentication server");
-		os_free(eap);
+		wpabuf_free(eap);
 		sm->eap_if->aaaEapNoReq = TRUE;
 		return;
 	}
 
-	if (len > sizeof(*hdr))
-		eap_type = eap[sizeof(*hdr)];
+	if (wpabuf_len(eap) > sizeof(*hdr))
+		eap_type = (wpabuf_head_u8(eap))[sizeof(*hdr)];
 
-	hdr = (struct eap_hdr *) eap;
+	hdr = wpabuf_head(eap);
 	switch (hdr->code) {
 	case EAP_CODE_REQUEST:
 		if (eap_type >= 0)
@@ -1071,7 +1045,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 	sm->eap_if->aaaEapReq = TRUE;
 
 	wpabuf_free(sm->eap_if->aaaEapReqData);
-	sm->eap_if->aaaEapReqData = wpabuf_alloc_ext_data(eap, len);
+	sm->eap_if->aaaEapReqData = eap;
 }
 
 
@@ -1136,7 +1110,7 @@ static void ieee802_1x_store_radius_class(struct hostapd_data *hapd,
 	if (count <= 0)
 		return;
 
-	nclass = os_zalloc(count * sizeof(struct radius_attr_data));
+	nclass = os_calloc(count, sizeof(struct radius_attr_data));
 	if (nclass == NULL)
 		return;
 
@@ -1187,12 +1161,9 @@ static void ieee802_1x_update_sta_identity(struct hostapd_data *hapd,
 				    NULL) < 0)
 		return;
 
-	identity = os_malloc(len + 1);
+	identity = (u8 *) dup_binstr(buf, len);
 	if (identity == NULL)
 		return;
-
-	os_memcpy(identity, buf, len);
-	identity[len] = '\0';
 
 	hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE8021X,
 		       HOSTAPD_LEVEL_DEBUG, "old identity '%s' updated with "
@@ -1203,6 +1174,32 @@ static void ieee802_1x_update_sta_identity(struct hostapd_data *hapd,
 	os_free(sm->identity);
 	sm->identity = identity;
 	sm->identity_len = len;
+}
+
+
+/* Update CUI based on Chargeable-User-Identity attribute in Access-Accept */
+static void ieee802_1x_update_sta_cui(struct hostapd_data *hapd,
+				      struct sta_info *sta,
+				      struct radius_msg *msg)
+{
+	struct eapol_state_machine *sm = sta->eapol_sm;
+	struct wpabuf *cui;
+	u8 *buf;
+	size_t len;
+
+	if (sm == NULL)
+		return;
+
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_CHARGEABLE_USER_IDENTITY,
+				    &buf, &len, NULL) < 0)
+		return;
+
+	cui = wpabuf_alloc_copy(buf, len);
+	if (cui == NULL)
+		return;
+
+	wpabuf_free(sm->radius_cui);
+	sm->radius_cui = cui;
 }
 
 
@@ -1280,15 +1277,14 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 			   "EAP-Message");
 	} else if (radius_msg_verify(msg, shared_secret, shared_secret_len,
 				     req, 1)) {
-		printf("Incoming RADIUS packet did not have correct "
-		       "Message-Authenticator - dropped\n");
+		wpa_printf(MSG_INFO, "Incoming RADIUS packet did not have correct Message-Authenticator - dropped");
 		return RADIUS_RX_INVALID_AUTHENTICATOR;
 	}
 
 	if (hdr->code != RADIUS_CODE_ACCESS_ACCEPT &&
 	    hdr->code != RADIUS_CODE_ACCESS_REJECT &&
 	    hdr->code != RADIUS_CODE_ACCESS_CHALLENGE) {
-		printf("Unknown RADIUS message code\n");
+		wpa_printf(MSG_INFO, "Unknown RADIUS message code");
 		return RADIUS_RX_UNKNOWN;
 	}
 
@@ -1332,8 +1328,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 			sta->vlan_id = radius_msg_get_vlanid(msg);
 		}
 		if (sta->vlan_id > 0 &&
-		    hostapd_get_vlan_id_ifname(hapd->conf->vlan,
-					       sta->vlan_id)) {
+		    hostapd_vlan_id_valid(hapd->conf->vlan, sta->vlan_id)) {
 			hostapd_logger(hapd, sta->addr,
 				       HOSTAPD_MODULE_RADIUS,
 				       HOSTAPD_LEVEL_INFO,
@@ -1365,6 +1360,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 				    shared_secret_len);
 		ieee802_1x_store_radius_class(hapd, sta, msg);
 		ieee802_1x_update_sta_identity(hapd, sta, msg);
+		ieee802_1x_update_sta_cui(hapd, sta, msg);
 		if (sm->eap_if->eapKeyAvailable &&
 		    wpa_auth_pmksa_add(sta->wpa_sm, sm->eapol_key_crypt,
 				       session_timeout_set ?
@@ -1430,6 +1426,9 @@ void ieee802_1x_abort_auth(struct hostapd_data *hapd, struct sta_info *sta)
 		 * request and we cannot continue EAP processing (EAP-Failure
 		 * could only be sent if the EAP peer actually replied).
 		 */
+		wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "EAP Timeout, STA " MACSTR,
+			MAC2STR(sta->addr));
+
 		sm->eap_if->portEnabled = FALSE;
 		ap_sta_disconnect(hapd, sta, sta->addr,
 				  WLAN_REASON_PREV_AUTH_NOT_VALID);
@@ -1449,7 +1448,7 @@ static int ieee802_1x_rekey_broadcast(struct hostapd_data *hapd)
 	if (eapol->default_wep_key == NULL ||
 	    random_get_bytes(eapol->default_wep_key,
 			     hapd->conf->default_wep_key_len)) {
-		printf("Could not generate random WEP key.\n");
+		wpa_printf(MSG_INFO, "Could not generate random WEP key");
 		os_free(eapol->default_wep_key);
 		eapol->default_wep_key = NULL;
 		return -1;
@@ -1582,19 +1581,15 @@ static int ieee802_1x_get_eap_user(void *ctx, const u8 *identity,
 {
 	struct hostapd_data *hapd = ctx;
 	const struct hostapd_eap_user *eap_user;
-	int i, count;
+	int i;
 
-	eap_user = hostapd_get_eap_user(hapd->conf, identity,
-					identity_len, phase2);
+	eap_user = hostapd_get_eap_user(hapd, identity, identity_len, phase2);
 	if (eap_user == NULL)
 		return -1;
 
 	os_memset(user, 0, sizeof(*user));
 	user->phase2 = phase2;
-	count = EAP_USER_MAX_METHODS;
-	if (count > EAP_MAX_METHODS)
-		count = EAP_MAX_METHODS;
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < EAP_MAX_METHODS; i++) {
 		user->methods[i].vendor = eap_user->methods[i].vendor;
 		user->methods[i].method = eap_user->methods[i].method;
 	}
@@ -1723,6 +1718,13 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	conf.fragment_size = hapd->conf->fragment_size;
 	conf.pwd_group = hapd->conf->pwd_group;
 	conf.pbc_in_m1 = hapd->conf->pbc_in_m1;
+	if (hapd->conf->server_id) {
+		conf.server_id = (const u8 *) hapd->conf->server_id;
+		conf.server_id_len = os_strlen(hapd->conf->server_id);
+	} else {
+		conf.server_id = (const u8 *) "hostapd";
+		conf.server_id_len = 7;
+	}
 
 	os_memset(&cb, 0, sizeof(cb));
 	cb.eapol_send = ieee802_1x_eapol_send;
@@ -1783,15 +1785,13 @@ int ieee802_1x_tx_status(struct hostapd_data *hapd, struct sta_info *sta,
 			 const u8 *buf, size_t len, int ack)
 {
 	struct ieee80211_hdr *hdr;
-	struct ieee802_1x_hdr *xhdr;
-	struct ieee802_1x_eapol_key *key;
 	u8 *pos;
 	const unsigned char rfc1042_hdr[ETH_ALEN] =
 		{ 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
 
 	if (sta == NULL)
 		return -1;
-	if (len < sizeof(*hdr) + sizeof(rfc1042_hdr) + 2 + sizeof(*xhdr))
+	if (len < sizeof(*hdr) + sizeof(rfc1042_hdr) + 2)
 		return 0;
 
 	hdr = (struct ieee80211_hdr *) buf;
@@ -1803,16 +1803,30 @@ int ieee802_1x_tx_status(struct hostapd_data *hapd, struct sta_info *sta,
 		return 0;
 	pos += 2;
 
-	xhdr = (struct ieee802_1x_hdr *) pos;
-	pos += sizeof(*xhdr);
+	return ieee802_1x_eapol_tx_status(hapd, sta, pos, buf + len - pos,
+					  ack);
+}
 
+
+int ieee802_1x_eapol_tx_status(struct hostapd_data *hapd, struct sta_info *sta,
+			       const u8 *buf, int len, int ack)
+{
+	const struct ieee802_1x_hdr *xhdr =
+		(const struct ieee802_1x_hdr *) buf;
+	const u8 *pos = buf + sizeof(*xhdr);
+	struct ieee802_1x_eapol_key *key;
+
+	if (len < (int) sizeof(*xhdr))
+		return 0;
 	wpa_printf(MSG_DEBUG, "IEEE 802.1X: " MACSTR " TX status - version=%d "
 		   "type=%d length=%d - ack=%d",
 		   MAC2STR(sta->addr), xhdr->version, xhdr->type,
 		   be_to_host16(xhdr->length), ack);
 
-	if (xhdr->type == IEEE802_1X_TYPE_EAPOL_KEY &&
-	    pos + sizeof(struct wpa_eapol_key) <= buf + len) {
+	if (xhdr->type != IEEE802_1X_TYPE_EAPOL_KEY)
+		return 0;
+
+	if (pos + sizeof(struct wpa_eapol_key) <= buf + len) {
 		const struct wpa_eapol_key *wpa;
 		wpa = (const struct wpa_eapol_key *) pos;
 		if (wpa->type == EAPOL_KEY_TYPE_RSN ||
@@ -1826,8 +1840,7 @@ int ieee802_1x_tx_status(struct hostapd_data *hapd, struct sta_info *sta,
 	 * retransmitted in case of failure. Try to re-send failed EAPOL-Key
 	 * packets couple of times because otherwise STA keys become
 	 * unsynchronized with AP. */
-	if (xhdr->type == IEEE802_1X_TYPE_EAPOL_KEY && !ack &&
-	    pos + sizeof(*key) <= buf + len) {
+	if (!ack && pos + sizeof(*key) <= buf + len) {
 		key = (struct ieee802_1x_eapol_key *) pos;
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE8021X,
 			       HOSTAPD_LEVEL_DEBUG, "did not Ack EAPOL-Key "
@@ -1868,6 +1881,14 @@ u8 * ieee802_1x_get_radius_class(struct eapol_state_machine *sm, size_t *len,
 
 	*len = sm->radius_class.attr[idx].len;
 	return sm->radius_class.attr[idx].data;
+}
+
+
+struct wpabuf * ieee802_1x_get_radius_cui(struct eapol_state_machine *sm)
+{
+	if (sm == NULL)
+		return NULL;
+	return sm->radius_cui;
 }
 
 
@@ -1931,7 +1952,7 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 {
 	int len = 0, ret;
 	struct eapol_state_machine *sm = sta->eapol_sm;
-	struct os_time t;
+	struct os_reltime diff;
 
 	if (sm == NULL)
 		return 0;
@@ -2046,7 +2067,7 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 	len += ret;
 
 	/* dot1xAuthSessionStatsTable */
-	os_get_time(&t);
+	os_reltime_age(&sta->acct_session_start, &diff);
 	ret = os_snprintf(buf + len, buflen - len,
 			  /* TODO: dot1xAuthSessionOctetsRx */
 			  /* TODO: dot1xAuthSessionOctetsTx */
@@ -2061,8 +2082,19 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 			  (wpa_key_mgmt_wpa_ieee8021x(
 				   wpa_auth_sta_key_mgmt(sta->wpa_sm))) ?
 			  1 : 2,
-			  (unsigned int) (t.sec - sta->acct_session_start),
+			  (unsigned int) diff.sec,
 			  sm->identity);
+	if (ret < 0 || (size_t) ret >= buflen - len)
+		return len;
+	len += ret;
+
+	ret = os_snprintf(buf + len, buflen - len,
+			  "last_eap_type_as=%d (%s)\n"
+			  "last_eap_type_sta=%d (%s)\n",
+			  sm->eap_type_authsrv,
+			  eap_server_get_name(0, sm->eap_type_authsrv),
+			  sm->eap_type_supp,
+			  eap_server_get_name(0, sm->eap_type_supp));
 	if (ret < 0 || (size_t) ret >= buflen - len)
 		return len;
 	len += ret;
@@ -2099,8 +2131,8 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 		 * EAP-FAST with anonymous provisioning, may require another
 		 * EAPOL authentication to be started to complete connection.
 		 */
-		wpa_printf(MSG_DEBUG, "IEEE 802.1X: Force disconnection after "
-			   "EAP-Failure");
+		wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "IEEE 802.1X: Force "
+			"disconnection after EAP-Failure");
 		/* Add a small sleep to increase likelihood of previously
 		 * requested EAP-Failure TX getting out before this should the
 		 * driver reorder operations.
@@ -2108,5 +2140,6 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 		os_sleep(0, 10000);
 		ap_sta_disconnect(hapd, sta, sta->addr,
 				  WLAN_REASON_IEEE_802_1X_AUTH_FAILED);
+		hostapd_wps_eap_completed(hapd);
 	}
 }

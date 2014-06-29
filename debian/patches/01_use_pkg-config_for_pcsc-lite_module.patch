@@ -5,7 +5,7 @@ Author: Reinhard Tartler <siretart@tauware.de>
 ---
 --- a/wpa_supplicant/Makefile
 +++ b/wpa_supplicant/Makefile
-@@ -776,7 +776,7 @@ ifdef CONFIG_NATIVE_WINDOWS
+@@ -869,7 +869,7 @@ ifdef CONFIG_NATIVE_WINDOWS
  #dynamic symbol loading that is now used in pcsc_funcs.c
  #LIBS += -lwinscard
  else

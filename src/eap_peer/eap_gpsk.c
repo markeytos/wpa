@@ -1,15 +1,9 @@
 /*
  * EAP peer method: EAP-GPSK (RFC 5433)
- * Copyright (c) 2006-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2006-2014, Jouni Malinen <j@w1.fi>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
+ * This software may be distributed under the terms of the BSD license.
+ * See README for more details.
  */
 
 #include "includes.h"
@@ -29,8 +23,8 @@ struct eap_gpsk_data {
 	size_t sk_len;
 	u8 pk[EAP_GPSK_MAX_PK_LEN];
 	size_t pk_len;
-	u8 session_id;
-	int session_id_set;
+	u8 session_id[128];
+	size_t id_len;
 	u8 *id_peer;
 	size_t id_peer_len;
 	u8 *id_server;
@@ -39,6 +33,7 @@ struct eap_gpsk_data {
 	int specifier; /* CSuite/Specifier */
 	u8 *psk;
 	size_t psk_len;
+	u16 forced_cipher; /* force cipher or 0 to allow all supported */
 };
 
 
@@ -86,6 +81,7 @@ static void * eap_gpsk_init(struct eap_sm *sm)
 	struct eap_gpsk_data *data;
 	const u8 *identity, *password;
 	size_t identity_len, password_len;
+	const char *phase1;
 
 	password = eap_get_config_password(sm, &password_len);
 	if (password == NULL) {
@@ -107,6 +103,18 @@ static void * eap_gpsk_init(struct eap_sm *sm)
 		}
 		os_memcpy(data->id_peer, identity, identity_len);
 		data->id_peer_len = identity_len;
+	}
+
+	phase1 = eap_get_config_phase1(sm);
+	if (phase1) {
+		const char *pos;
+
+		pos = os_strstr(phase1, "cipher=");
+		if (pos) {
+			data->forced_cipher = atoi(pos + 7);
+			wpa_printf(MSG_DEBUG, "EAP-GPSK: Forced cipher %u",
+				   data->forced_cipher);
+		}
 	}
 
 	data->psk = os_malloc(password_len);
@@ -201,7 +209,9 @@ static int eap_gpsk_select_csuite(struct eap_sm *sm,
 			   i, vendor, specifier);
 		if (data->vendor == EAP_GPSK_VENDOR_IETF &&
 		    data->specifier == EAP_GPSK_CIPHER_RESERVED &&
-		    eap_gpsk_supported_ciphersuite(vendor, specifier)) {
+		    eap_gpsk_supported_ciphersuite(vendor, specifier) &&
+		    (!data->forced_cipher || data->forced_cipher == specifier))
+		{
 			data->vendor = vendor;
 			data->specifier = specifier;
 		}
@@ -279,6 +289,7 @@ static struct wpabuf * eap_gpsk_process_gpsk_1(struct eap_sm *sm,
 	pos = eap_gpsk_process_csuite_list(sm, data, &csuite_list,
 					   &csuite_list_len, pos, end);
 	if (pos == NULL) {
+		ret->methodState = METHOD_DONE;
 		eap_gpsk_state(data, FAILURE);
 		return NULL;
 	}
@@ -359,6 +370,21 @@ static struct wpabuf * eap_gpsk_send_gpsk_2(struct eap_gpsk_data *data,
 		wpabuf_free(resp);
 		return NULL;
 	}
+
+	if (eap_gpsk_derive_session_id(data->psk, data->psk_len,
+				       data->vendor, data->specifier,
+				       data->rand_peer, data->rand_server,
+				       data->id_peer, data->id_peer_len,
+				       data->id_server, data->id_server_len,
+				       EAP_TYPE_GPSK,
+				       data->session_id, &data->id_len) < 0) {
+		wpa_printf(MSG_DEBUG, "EAP-GPSK: Failed to derive Session-Id");
+		eap_gpsk_state(data, FAILURE);
+		wpabuf_free(resp);
+		return NULL;
+	}
+	wpa_hexdump(MSG_DEBUG, "EAP-GPSK: Derived Session-Id",
+		    data->session_id, data->id_len);
 
 	/* No PD_Payload_1 */
 	wpabuf_put_be16(resp, 0);
@@ -714,6 +740,24 @@ static u8 * eap_gpsk_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
+static u8 * eap_gpsk_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
+{
+	struct eap_gpsk_data *data = priv;
+	u8 *sid;
+
+	if (data->state != SUCCESS)
+		return NULL;
+
+	sid = os_malloc(data->id_len);
+	if (sid == NULL)
+		return NULL;
+	os_memcpy(sid, data->session_id, data->id_len);
+	*len = data->id_len;
+
+	return sid;
+}
+
+
 int eap_peer_gpsk_register(void)
 {
 	struct eap_method *eap;
@@ -730,6 +774,7 @@ int eap_peer_gpsk_register(void)
 	eap->isKeyAvailable = eap_gpsk_isKeyAvailable;
 	eap->getKey = eap_gpsk_getKey;
 	eap->get_emsk = eap_gpsk_get_emsk;
+	eap->getSessionId = eap_gpsk_get_session_id;
 
 	ret = eap_peer_method_register(eap);
 	if (ret)

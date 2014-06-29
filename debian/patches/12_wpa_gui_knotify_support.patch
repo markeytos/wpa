@@ -4,7 +4,7 @@ Bug-Debian: http://bugs.debian.org/582793
 ---
 --- a/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
 +++ b/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
-@@ -17,11 +17,14 @@
+@@ -11,11 +11,14 @@
  #endif /* CONFIG_NATIVE_WINDOWS */
  
  #include <cstdio>
@@ -19,7 +19,7 @@ Bug-Debian: http://bugs.debian.org/582793
  
  #include "wpagui.h"
  #include "dirent.h"
-@@ -1339,10 +1342,21 @@ void WpaGui::createTrayIcon(bool trayOnl
+@@ -1329,10 +1332,21 @@ void WpaGui::createTrayIcon(bool trayOnl
  void WpaGui::showTrayMessage(QSystemTrayIcon::MessageIcon type, int sec,
  			     const QString & msg)
  {

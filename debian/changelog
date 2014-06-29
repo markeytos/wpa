@@ -1,12 +1,32 @@
-wpa (1.1-2) UNRELEASED; urgency=medium
+wpa (2.1-0) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
+  * DO NOT UPLOAD, work in progress.
+  * THIS TAG (2.1-1) IS JUST PROVIDED FOR REGRESSION TESTING AND NOT SUPPOSED
+    TO BE UPLOADED.
+  * to-do:
+  * verifiy debian/copyright
+  * run (by-hand) testsuite
+  * check dependencies (sqlite).
+
+  * New upstream release:
+    - import suggested changes from Gerald Turner <gturner@unzane.com> (see
+      #718651 for details), thanks very much. Use automatically parsed
+      copyright information for now.
+      + disable ACS for hostapd on kfreebsd-any (FTBS).
+    - fixed by the new upstream version:
+      + wpa_supplicant: OpenSSL: tls_connection_handshake - Failed to read
+      (Closes: #561081).
+      + wpasupplicant: new upstream release 2.1 (Closes:  #718651).
+    - refresh patches:
+      + drop 13_human_readable_signal.patch, applied upstream.
+      + drop hostapd_fix-WDS-VLAN-bridge-handling.patch, applied upstream.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.
   * adapt get-orig-source for wpa 2.2.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 21 Feb 2014 02:30:25 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 00:28:34 +0200
 
 wpa (1.1-1) unstable; urgency=medium
 

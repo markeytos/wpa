@@ -4,6 +4,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * DO NOT UPLOAD, work in progress.
   * to-do:
   * verifiy debian/copyright
+  * audit Hotspot 2.0 (HS20) settings.
   * run (by-hand) testsuite
 
   * New upstream release:

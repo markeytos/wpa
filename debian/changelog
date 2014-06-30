@@ -5,7 +5,6 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * to-do:
   * verifiy debian/copyright
   * run (by-hand) testsuite
-  * check dependencies (sqlite).
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see
@@ -20,6 +19,9 @@ wpa (2.2-1) UNRELEASED; urgency=medium
       + drop 13_human_readable_signal.patch, applied upstream.
       + drop hostapd_fix-WDS-VLAN-bridge-handling.patch, applied upstream.
       + drop fix-spelling-s-algorith-algorithm.patch, applied upstream.
+    - adapt build configs for hostapd/ wpa_supplicant 2.2:
+      + sync with updated upstream defconfigs.
+      + hostapd: keep sqlite3 support disabled for the time being.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.

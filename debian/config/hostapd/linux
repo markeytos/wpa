@@ -21,7 +21,19 @@ CONFIG_DRIVER_WIRED=y
 
 # Driver interface for drivers using the nl80211 kernel interface
 CONFIG_DRIVER_NL80211=y
+
+# driver_nl80211.c requires libnl. If you are compiling it yourself
+# you may need to point hostapd to your version of libnl.
+#
+#CFLAGS += -I$<path to libnl include files>
+#LIBS += -L$<path to libnl library files>
+
+# Use libnl v2.0 (or 3.0) libraries.
+#CONFIG_LIBNL20=y
+
+# Use libnl 3.2 libraries (if this is selected, CONFIG_LIBNL20 is ignored)
 CONFIG_LIBNL32=y
+
 
 # Driver interface for FreeBSD net80211 layer (e.g., Atheros driver)
 #CONFIG_DRIVER_BSD=y
@@ -43,9 +55,6 @@ CONFIG_RSN_PREAUTH=y
 CONFIG_PEERKEY=y
 
 # IEEE 802.11w (management frame protection)
-# This version is an experimental implementation based on IEEE 802.11w/D1.0
-# draft and is subject to change since the standard has not yet been finalized.
-# Driver support is also needed for IEEE 802.11w.
 CONFIG_IEEE80211W=y
 
 # Integrated EAP server
@@ -104,8 +113,6 @@ CONFIG_EAP_FAST=y
 
 # Wi-Fi Protected Setup (WPS)
 CONFIG_WPS=y
-# Enable WSC 2.0 support
-CONFIG_WPS2=y
 # Enable UPnP support for external WPS Registrars
 CONFIG_WPS_UPNP=y
 # Enable WPS support with NFC config method
@@ -272,10 +279,10 @@ CONFIG_TLSV12=y
 CONFIG_INTERWORKING=y
 
 # Hotspot 2.0
-CONFIG_HS20=y
+#CONFIG_HS20=y
 
 # Enable SQLite database support in hlr_auc_gw, EAP-SIM DB, and eap_user_file
-CONFIG_SQLITE=y
+#CONFIG_SQLITE=y
 
 # Testing options
 # This can be used to enable some testing options (see also the example

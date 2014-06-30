@@ -4,7 +4,6 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * DO NOT UPLOAD, work in progress.
   * to-do:
   * verifiy debian/copyright
-  * audit Hotspot 2.0 (HS20) settings.
   * run (by-hand) testsuite
 
   * New upstream release:
@@ -22,6 +21,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
       + drop fix-spelling-s-algorith-algorithm.patch, applied upstream.
     - adapt build configs for hostapd/ wpa_supplicant 2.2:
       + sync with updated upstream defconfigs.
+      + keep Hotspot 2.0 support disabled for the time being.
       + hostapd: keep sqlite3 support disabled for the time being.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.

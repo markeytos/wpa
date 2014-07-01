@@ -3,13 +3,11 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * NOT RELEASED YET
   * DO NOT UPLOAD, work in progress.
   * to-do:
-  * verifiy debian/copyright
   * run (by-hand) testsuite
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see
-      #718651 for details), thanks very much. Use automatically parsed
-      copyright information for now.
+      #718651 for details), thanks very much.
       + disable ACS for hostapd on kfreebsd-any (FTBS).
     - fixed by the new upstream version:
       + wpa_supplicant: OpenSSL: tls_connection_handshake - Failed to read
@@ -23,6 +21,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
       + sync with updated upstream defconfigs.
       + keep Hotspot 2.0 support disabled for the time being.
       + hostapd: keep sqlite3 support disabled for the time being.
+    - update debian/copyright manually.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.

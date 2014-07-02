@@ -26,6 +26,12 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.
   * adapt get-orig-source for wpa 2.2.
+  * drop version qualifiers for libnl3 build dependencies, as they're
+    fullfilled by wheezy.
+  * drop version qualifiers for the lsb-base build dependency, as they're
+    fullfilled by squeeze.
+  * shorten short description for hostapd.
+  * sort debian/control entries.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 

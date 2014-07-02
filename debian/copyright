@@ -279,6 +279,7 @@ License: BSD
 
 Files: wpa_supplicant/utils/log2pcap.py
 Copyright: Johannes Berg <johannes@sipsolutions.net>, Intel Corporation
+License: BSD
 
 Files: wpa_supplicant/wpa_gui-qt4/icons/ap.svg
 Copyright: 2008, mystica

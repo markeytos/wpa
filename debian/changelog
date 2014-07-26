@@ -1,3 +1,10 @@
+wpa (2.1-0ubuntu2) utopic; urgency=medium
+
+  * No-change rebuild with pkg-create-dbgsym 0.65 so that the full set of
+    debug symbol packages are generated.
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Sat, 26 Jul 2014 22:26:29 +0100
+
 wpa (2.1-0ubuntu1) trusty; urgency=medium
 
   * New upstream release (LP: #1099755)

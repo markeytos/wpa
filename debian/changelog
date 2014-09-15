@@ -32,6 +32,8 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     fullfilled by squeeze.
   * shorten short description for hostapd.
   * sort debian/control entries.
+  * make lintian happy (invalid-short-name-in-dep5-copyright bsd) and call it
+    BSD-3-clause.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 

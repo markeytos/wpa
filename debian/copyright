@@ -5,34 +5,34 @@ Source: git://w1.fi/srv/git/hostap.git
 
 Files: *
 Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: hostapd/logwatch/*
 Copyright: 2005, Henrik Brix Andersen <brix@gentoo.org>
-License: BSD or GPL-2
+License: BSD-3-clause or GPL-2
 
 Files: hostapd/Android.mk
 Copyright: 2008, The Android Open Source Project
-License: BSD
+License: BSD-3-clause
 
 Files: hostapd/hostapd.8
        hostapd/hostapd_cli.1
 Copyright: 2005, Faidon Liambotis <faidon@cube.gr>
-License: BSD
+License: BSD-3-clause
 
 Files: hs20/*
 Copyright: 2012-2014, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: patches/*
 Copyright: 2005, Alexey Kobozev <akobozev@cisco.com>
            2005-2012, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/acs.*
 Copyright: 2011, Atheros Communications
            2013, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/ap_list.*
        src/ap/ap_mlme.*
@@ -43,107 +43,107 @@ Files: src/ap/ap_list.*
 Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
            2002-2004, Instant802 Networks, Inc.
            2005-2006, Devicescape Software, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/dfs.*
 Copyright: 2002-2013, Jouni Malinen <j@w1.fi>
            2013, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/gas_serv.*
        src/ap/wnm_ap.*
        src/common/ieee802_1x_defs.h
        src/common/qca-vendor*
 Copyright: 2011-2014, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/hs20.*
        wpa_supplicant/hs20_supplicant.*
 Copyright: 2009, Atheros Communications, Inc.
            2011-2013, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/ieee802_11_ht.c
 Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
            2007-2008, Intel Corporation
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/p2p_hostapd.*
 Copyright: 2009-2010, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/ap/vlan_util.*
 Copyright: 2012, Michael Braun <michael-dev@fami-braun.de>
-License: BSD
+License: BSD-3-clause
 
 Files: src/common/gas.*
 Copyright: 2009, Atheros Communications
            2011-2012, Qualcomm Atheros
-License: BSD
+License: BSD-3-clause
 
 Files: src/common/ieee802_11_defs.h
 Copyright: 2002-2009, Jouni Malinen <j@w1.fi>
            2007-2008, Intel Corporation
-License: BSD
+License: BSD-3-clause
 
 Files: src/common/wpa_helpers.*
 Copyright: 2010-2011, Atheros Communications, Inc.
            2011-2012, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/crypto/aes-internal*
 Copyright: 2000, Vincent Rijmen <vincent.rijmen@esat.kuleuven.ac.be>
            2000, Antoon Bosselaers <antoon.bosselaers@esat.kuleuven.ac.be>
            2000, Paulo Barreto <paulo.barreto@terra.com.br>
            2003-2012, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/crypto/des-internal.c
 Copyright: 2005, Tom St Denis <tomstdenis@gmail.com>
            2006-2009, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/crypto/md4-internal.c
 Copyright: 1993, Colin Plumb
            2004, Todd C. Miller
            2006, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/crypto/md5-internal.c
 Copyright: 1993, Colin Plumb
            2003-2005, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/crypto/sha1-internal.c
 Copyright: 1998, Steve Reid <sreid@sea-to-sky.net>
            1998, James H. Brown <jbrown@burgoyne.com>
            2001, Saul Kravitz <Saul.Kravitz@celera.com>
            2001-2005, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_atheros.c
 Copyright: 2004, Sam Leffler <sam@errno.com>
            2004, Video54 Technologies
            2005-2007, Jouni Malinen <j@w1.fi>
            2009, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_bsd.c
 Copyright: 2004, Sam Leffler <sam@errno.com>
            2004, 2Wire, Inc
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_macsec_qca.c
 Copyright: 2004, Gunter Burchardt <tira@isx.de>
            2005-2009, Jouni Malinen <j@w1.fi>
            2013-2014, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_madwifi.c
 Copyright: 2004, Sam Leffler <sam@errno.com>
            2004, Video54 Technologies
            2004-2007, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_nl80211.c
 Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
@@ -151,24 +151,24 @@ Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
            2005-2006, Devicescape Software, Inc.
            2007, Johannes Berg <johannes@sipsolutions.net>
            2009-2010, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_none.c
 Copyright: 2008, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_openbsd.c
 Copyright: 2013, Mark Kettenis <mark.kettenis@xs4all.nl>
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_roboswitch.c
 Copyright: 2008-2009, Jouke Witteveen
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/driver_wired.c
 Copyright: 2005-2009, Jouni Malinen <j@w1.fi>
            2004, Gunter Burchardt <tira@isx.de>
-License: BSD
+License: BSD-3-clause
 
 Files: src/drivers/nl80211_copy.h
 Copyright: 2006-2010, Johannes Berg <johannes@sipsolutions.net>
@@ -184,28 +184,28 @@ Files: src/eap_common/eap_pwd_common.*
        src/eap_peer/eap_pwd.c
        src/eap_server/eap_server_pwd.c
 Copyright: 2010, Dan Harkins <dharkins@lounge.org>
-License: BSD
+License: BSD-3-clause
 
 Files: src/eap_peer/eap_proxy*
 Copyright: 2011-2013 Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/l2_packet/l2_packet_freebsd.c
 Copyright: 2003-2005, Jouni Malinen <j@w1.fi>
            2005, Sam Leffler <sam@errno.com>
-License: BSD
+License: BSD-3-clause
 
 Files: src/p2p/*
 Copyright: 2009-2010, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/pae/*
 Copyright: 2013-2014, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/rsn_supp/tdls.c
 Copyright: 2010-2011, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/tls/libtommath.c
 Copyright: 2005-2007, Tom St Denis <tomstdenis@gmail.com>
@@ -215,16 +215,16 @@ Files: src/utils/browser*
        src/utils/http*
        src/utils/xml*
 Copyright: 2012-2014, Qualcomm Atheros, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: src/utils/radiotap.c
 Copyright: 2007, Andy Green <andy@warmcat.com>
            2009, Johannes Berg <johannes@sipsolutions.net>
-License: BSD
+License: BSD-3-clause
 
 Files: src/utils/radiotap.h
 Copyright: 2003-2004, David Young
-License: BSD
+License: BSD-3-clause
 
 Files: src/wps/http.h
        src/wps/upnp_xml.*
@@ -237,22 +237,22 @@ Copyright: 2000-2003, Intel Corporation
            2006-2007, Sony Corporation
            2008-2009, Atheros Communications
            2009, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: src/wps/httpread.*
 Copyright: 2008, Ted Merrill, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: src/wps/ndef.c
        src/wps/wps_nfc.c
        src/wps/wps_nfc_pn531.c
        src/wps/wps_ufd.c
 Copyright: 2009-2012, Masashi Honma <honma@ictec.co.jp>
-License: BSD
+License: BSD-3-clause
 
 Files: src/wps/wps_validate.c
 Copyright: 2010, Atheros Communications, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/dbus/dbus_common.*
        wpa_supplicant/dbus/dbus_common_i.h
@@ -264,22 +264,22 @@ Files: wpa_supplicant/dbus/dbus_common.*
 Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
            2009-2010, Witold Sowa <witold.sowa@gmail.com>
            2009-2010, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/dbus/dbus_dict_helpers.*
        wpa_supplicant/dbus/dbus_old*
 Copyright: 2006, Dan Williams <dcbw@redhat.com> and Red Hat, Inc.
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/dbus/dbus_new_handlers_p2p.*
        wpa_supplicant/examples/p2p/*
        wpa_supplicant/examples/dbus-listen-preq.py
 Copyright: 2011-2012, Intel Corporation
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/utils/log2pcap.py
 Copyright: Johannes Berg <johannes@sipsolutions.net>, Intel Corporation
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/wpa_gui-qt4/icons/ap.svg
 Copyright: 2008, mystica
@@ -299,30 +299,30 @@ License: public-domain
 
 Files: wpa_supplicant/wpa_gui-qt4/icons/wpa_gui.svg
 Copyright: 2008, Bernard Gray <bernard.gray@gmail.com>
-License: BSD or GPL-2
+License: BSD-3-clause or GPL-2
 
 Files: wpa_supplicant/wpa_gui-qt4/peers.*
        wpa_supplicant/wpa_gui-qt4/stringquery.*
 Copyright: 2009-2010, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/wpa_gui-qt4/signalbar.*
 Copyright: 2011, Kel Modderman <kel@otaku42.de>
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/Android.mk
        wpa_supplicant/wpa_supplicant_conf.*
 Copyright: 2008-2010, The Android Open Source Project
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/ap.*
 Copyright: 2003-2009, Jouni Malinen <j@w1.fi>
            2009, Atheros Communications
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/autoscan*
 Copyright: 2012, Intel Corporation
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/gas_query.*
        wpa_supplicant/offchannel.*
@@ -331,14 +331,14 @@ Files: wpa_supplicant/gas_query.*
 Copyright: 2009-2011, Atheros Communications
            2011-2014, Qualcomm Atheros
            2011-2014, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: wpa_supplicant/interworking.*
        wpa_supplicant/wnm_sta.*
        wpa_supplicant/wpas_kay.*
 Copyright: 2011-2014, Qualcomm Atheros
            2011-2014, Jouni Malinen <j@w1.fi>
-License: BSD
+License: BSD-3-clause
 
 Files: debian/*
 Copyright: 2004-2006, Kyle McMartin <kyle@debian.org>
@@ -347,9 +347,9 @@ Copyright: 2004-2006, Kyle McMartin <kyle@debian.org>
            2006-2012, Kel Modderman <kel@otaku42.de>
            2010, Jan Dittberner <jandd@debian.org>
            2010-2014, Stefan Lippers-Hollmann <s.l-h@gmx.de>
-License: BSD
+License: BSD-3-clause
 
-License: BSD
+License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are
  met:

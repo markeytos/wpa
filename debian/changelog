@@ -12,7 +12,8 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     - fixed by the new upstream version:
       + wpa_supplicant: OpenSSL: tls_connection_handshake - Failed to read
       (Closes: #561081).
-      + wpasupplicant: new upstream release 2.1 (Closes:  #718651).
+      + wpasupplicant: new upstream release 2.1 (Closes: #718651).
+      + wpasupplicant: -s option not documented in man page (Closes: #608135).
     - refresh patches:
       + drop 13_human_readable_signal.patch, applied upstream.
       + drop hostapd_fix-WDS-VLAN-bridge-handling.patch, applied upstream.
@@ -37,7 +38,6 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * enable DEBUG_SYSLOG and set DEBUG_SYSLOG_FACILITY=LOG_DAEMON, as requested
     by Cyril Brulebois <kibi@debian.org> to improve logging options for d-i and
     netcfg (Closes: #761922).
-
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 

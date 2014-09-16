@@ -36,7 +36,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     BSD-3-clause.
   * enable DEBUG_SYSLOG and set DEBUG_SYSLOG_FACILITY=LOG_DAEMON, as requested
     by Cyril Brulebois <kibi@debian.org> to improve logging options for d-i and
-    netcfg.
+    netcfg (Closes: #761922).
 
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200

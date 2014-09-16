@@ -1,10 +1,20 @@
-ap_config.c: fix typo for "capabilities"
+From 01be02b9ff763dad3567b7f3079b5d3932d2e3ea Mon Sep 17 00:00:00 2001
+From: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Date: Wed, 17 Sep 2014 00:59:11 +0200
+Subject: [PATCH] ap_config.c: fix typo for "capabilities"
 
 Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+---
+http://lists.shmoo.com/pipermail/hostap/2014-September/030883.html
 
+ src/ap/ap_config.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ap/ap_config.c b/src/ap/ap_config.c
+index bc9f6cf..d7d5c3b 100644
 --- a/src/ap/ap_config.c
 +++ b/src/ap/ap_config.c
-@@ -759,7 +759,7 @@ static int hostapd_config_check_bss(stru
+@@ -759,7 +759,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
  	    conf->hw_mode == HOSTAPD_MODE_IEEE80211B) {
  		bss->disable_11n = 1;
  		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) in 11b mode is not "
@@ -13,3 +23,6 @@ Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
  	}
  
  	if (full_config && conf->ieee80211n &&
+-- 
+2.1.0
+

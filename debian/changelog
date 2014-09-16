@@ -38,6 +38,8 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * enable DEBUG_SYSLOG and set DEBUG_SYSLOG_FACILITY=LOG_DAEMON, as requested
     by Cyril Brulebois <kibi@debian.org> to improve logging options for d-i and
     netcfg (Closes: #761922).
+  * fix various typos around "existence", thanks to A. Costa <agcosta@gis.net>,
+    (Closes: #683636).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 
@@ -1354,7 +1356,7 @@ wpasupplicant (0.5.4-3) unstable; urgency=low
   * Add a 5 second timeout loop to init_wpa_supplicant() that waits for the
     ctrl_interface socket to be established before allowing wpa_cli to launch,
     and avoid a race condition. This means other functions no longer need to
-    test for existance of the ctrl_interface socket. [ifupdown.sh]
+    test for existence of the ctrl_interface socket. [ifupdown.sh]
   * Rename WPA_DRIVER to WPA_SUP_DRIVER to conform with name scheme of other
     similar variables. [ifupdown.sh]
   * Add (untested) wpa-bridge support to ifupdown.sh. This is an experimental
@@ -1439,7 +1441,7 @@ wpasupplicant (0.5.4-2) unstable; urgency=low
     with Ubuntu. (lp#51351)
   * Update wpa_action.8 with the behaviour of wpa_action when IFSTATE_FILE or
     INTERFACES_FILE cannot be found, and the pathnames searched for their
-    existance.
+    existence.
   * Mention wpa_cli(8) in Custom Action Script section of README.Debian, as it
     contains information about environment variables available to the script
     at runtime.
@@ -1859,7 +1861,7 @@ wpasupplicant (0.4.7-3) unstable; urgency=low
 
   * Another brown paper bag release.
   * Fix mistype of $CONFIG_FILE variable name in default script. Also make
-    this the same variable checked for existance in the init script, as that
+    this the same variable checked for existence in the init script, as that
     was another bug I missed. (closes: #350900)
 
  -- Kyle McMartin <kyle@debian.org>  Wed, 01 Feb 2006 09:21:41 -0500

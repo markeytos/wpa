@@ -245,8 +245,6 @@ License: BSD-3-clause
 
 Files: src/wps/ndef.c
        src/wps/wps_nfc.c
-       src/wps/wps_nfc_pn531.c
-       src/wps/wps_ufd.c
 Copyright: 2009-2012, Masashi Honma <honma@ictec.co.jp>
 License: BSD-3-clause
 

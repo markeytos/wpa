@@ -40,6 +40,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     netcfg (Closes: #761922).
   * fix various typos around "existence", thanks to A. Costa <agcosta@gis.net>,
     (Closes: #683636).
+  * ap_config.c: fix typo for "capabilities".
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
 

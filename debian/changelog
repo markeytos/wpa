@@ -24,7 +24,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
       doesn't change the licensing state as the BSD-3-clause license is 
       compatible with GPL-2.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
-    according versioned initscripts dependency to a versioned breaks relation.
+    versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.
   * adapt get-orig-source for wpa 2.2.
   * drop version qualifiers for libnl3 build dependencies, as they're

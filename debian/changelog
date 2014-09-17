@@ -4,7 +4,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see
-      #718651 for details), thanks very much.
+      #718651 for details).
       + disable ACS for hostapd on kfreebsd-any (FTBS).
     - fixed by the new upstream version:
       + wpa_supplicant: OpenSSL: tls_connection_handshake - Failed to read

@@ -1,9 +1,6 @@
 wpa (2.2-1) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
-  * DO NOT UPLOAD, work in progress.
-  * to-do:
-  * run (by-hand) testsuite
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see

@@ -1,6 +1,4 @@
-wpa (2.2-1) UNRELEASED; urgency=medium
-
-  * NOT RELEASED YET
+wpa (2.2-1) unstable; urgency=medium
 
   * New upstream release:
     - import suggested changes from Gerald Turner <gturner@unzane.com> (see
@@ -44,7 +42,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
   * remove no longer required lintian override (spelling-error-in-binary for
     the).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jun 2014 01:22:33 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 17 Sep 2014 04:52:36 +0200
 
 wpa (1.1-1) unstable; urgency=medium
 

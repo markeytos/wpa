@@ -9,7 +9,7 @@ wpa (2.2-1) UNRELEASED; urgency=medium
     - fixed by the new upstream version:
       + wpa_supplicant: OpenSSL: tls_connection_handshake - Failed to read
       (Closes: #561081).
-      + wpasupplicant: new upstream release 2.1 (Closes: #718651).
+      + wpasupplicant: new upstream release 2.2 (Closes: #718651).
       + wpasupplicant: -s option not documented in man page (Closes: #608135).
     - refresh patches:
       + drop 13_human_readable_signal.patch, applied upstream.
@@ -19,7 +19,10 @@ wpa (2.2-1) UNRELEASED; urgency=medium
       + sync with updated upstream defconfigs.
       + keep Hotspot 2.0 support disabled for the time being.
       + hostapd: keep sqlite3 support disabled for the time being.
-    - update debian/copyright manually.
+    - update debian/copyright manually, the wpa v2 branch was relicensed from
+      (BSD-3-clause || GPL-2) to BSD-3-clause only (for the most part). This
+      doesn't change the licensing state as the BSD-3-clause license is 
+      compatible with GPL-2.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     according versioned initscripts dependency to a versioned breaks relation.
   * migrate from /var/run/ to /run/.

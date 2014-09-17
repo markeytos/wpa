@@ -7,4 +7,3 @@ wpasupplicant binary: hyphen-used-as-minus-sign
 
 # false positive spelling complaints
 wpasupplicant binary: spelling-error-in-binary sbin/wpa_supplicant ment meant
-wpasupplicant binary: spelling-error-in-binary sbin/wpa_supplicant tEH the

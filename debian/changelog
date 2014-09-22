@@ -1,3 +1,11 @@
+wpa (2.1-0ubuntu3) utopic; urgency=medium
+
+  * debian/patches/git_update_scan_res_for_apscan_1_068e3877.patch: update
+    scan results when using ap_scan=1; this avoids 4-way handshake failures
+    while roaming. (LP: #1348105)
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Mon, 22 Sep 2014 18:28:29 +0100
+
 wpa (2.1-0ubuntu2) utopic; urgency=medium
 
   * No-change rebuild with pkg-create-dbgsym 0.65 so that the full set of

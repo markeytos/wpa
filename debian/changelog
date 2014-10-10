@@ -1,3 +1,15 @@
+wpa (2.1-0ubuntu4) utopic; urgency=medium
+
+  * SECURITY UPDATE: arbitrary command execution via unsanitized string
+    passed to action scripts by wpa_cli and hostapd_cli
+    - debian/patches/CVE-2014-3686.patch: added os_exec() helper to
+      src/utils/os.h, src/utils/os_unix.c, src/utils/os_win32.c,
+      use instead of system() in wpa_supplicant/wpa_cli.c,
+      hostapd/hostapd_cli.c.
+    - CVE-2014-3686
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Fri, 10 Oct 2014 09:15:39 -0400
+
 wpa (2.1-0ubuntu3) utopic; urgency=medium
 
   * debian/patches/git_update_scan_res_for_apscan_1_068e3877.patch: update

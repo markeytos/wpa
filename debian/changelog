@@ -1,6 +1,5 @@
-wpa (2.3-1) UNRELEASED; urgency=medium
+wpa (2.3-1) unstable; urgency=medium
 
-  * NOT RELEASED YET
   * New upstream release:
     - fixed by the new upstream version:
       + wpa: arbitrary command execution via action scripts (Closes: #765352).
@@ -13,7 +12,7 @@ wpa (2.3-1) UNRELEASED; urgency=medium
       + drop ap_config_c_fix-typo-for-capabilities, applied upstream.
   * bump standards version to 3.9.6, no changes necessary.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 14 Oct 2014 14:27:24 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 14 Oct 2014 20:57:08 +0200
 
 wpa (2.2-1) unstable; urgency=medium
 

@@ -10,9 +10,12 @@ wpa (2.3-1) unstable; urgency=medium
       + wpasupplicant: MAC addressing changing broken after updating to 2.2-1
         (Closes: #763775).
       + drop ap_config_c_fix-typo-for-capabilities, applied upstream.
+    - backport "Include ieee802_11_common.c in wpa_supplicant build
+      unconditionally" from HEAD, to fix a newly introduced FTBS on, at least,
+      kfreebsd.
   * bump standards version to 3.9.6, no changes necessary.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 14 Oct 2014 20:57:08 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 14 Oct 2014 21:29:37 +0200
 
 wpa (2.2-1) unstable; urgency=medium
 

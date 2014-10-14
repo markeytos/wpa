@@ -1,3 +1,20 @@
+wpa (2.3-1) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+  * New upstream release:
+    - fixed by the new upstream version:
+      + wpa: arbitrary command execution via action scripts (Closes: #765352).
+        wpasupplicant: fixed wpa_cli action script execution to use more
+        robust mechanism (CVE-2014-3686).
+        hostapd: fixed hostapd_cli action script execution to use more robust
+        mechanism (CVE-2014-3686).
+      + wpasupplicant: MAC addressing changing broken after updating to 2.2-1
+        (Closes: #763775).
+      + drop ap_config_c_fix-typo-for-capabilities, applied upstream.
+  * bump standards version to 3.9.6, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 14 Oct 2014 14:27:24 +0200
+
 wpa (2.2-1) unstable; urgency=medium
 
   * New upstream release:

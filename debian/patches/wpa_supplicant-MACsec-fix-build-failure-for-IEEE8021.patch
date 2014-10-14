@@ -29,9 +29,9 @@ Build-tested only.
 
 --- a/wpa_supplicant/wpa_supplicant.c
 +++ b/wpa_supplicant/wpa_supplicant.c
-@@ -298,9 +298,9 @@ void wpa_supplicant_initiate_eapol(struc
- 		wpa_s->key_mgmt != WPA_KEY_MGMT_WPS;
+@@ -299,9 +299,9 @@ void wpa_supplicant_initiate_eapol(struc
  	eapol_conf.external_sim = wpa_s->conf->external_sim;
+ 	eapol_conf.wps = wpa_s->key_mgmt == WPA_KEY_MGMT_WPS;
  	eapol_sm_notify_config(wpa_s->eapol, &ssid->eap, &eapol_conf);
 -#endif /* IEEE8021X_EAPOL */
  

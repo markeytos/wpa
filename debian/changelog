@@ -1,3 +1,15 @@
+wpa (2.1-0ubuntu5) vivid; urgency=medium
+
+  * debian/patches/android_hal_fw_path_change.patch: add a DBus method for
+    requesting a firmware change when working with the Android HAL; this is
+    used to set a device in P2P or AP mode; conditional to CONFIG_ANDROID_HAL
+    being enabled.
+  * debian/config/wpasupplicant/linux: enable CONFIG_ANDROID_HAL.
+  * debian/control: Build-Depends on android-headers to get the required wifi
+    headers for the HAL support.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Mon, 08 Dec 2014 21:05:25 -0500
+
 wpa (2.1-0ubuntu4) utopic; urgency=medium
 
   * SECURITY UPDATE: arbitrary command execution via unsanitized string

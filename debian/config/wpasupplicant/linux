@@ -478,3 +478,5 @@ CONFIG_P2P=y
 # AP-mode support (ad-hoc via infrastructure-type)
 CONFIG_AP=y
 
+# Ubuntu-specific; from path android_hal_firmware_path.patch
+CONFIG_ANDROID_HAL=y

@@ -1,3 +1,11 @@
+wpa (2.1-0ubuntu6) vivid; urgency=medium
+
+  * debian/patches/dbus-available-sta.patch: Make the list of connected
+    stations available on DBus for hotspot mode; along with some of the
+    station properties, such as rx/tx packets, bytes, capabilities, etc.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Fri, 19 Dec 2014 13:29:30 -0500
+
 wpa (2.1-0ubuntu5) vivid; urgency=medium
 
   * debian/patches/android_hal_fw_path_change.patch: add a DBus method for

@@ -10,3 +10,4 @@ git_accept_client_cert_from_server.patch
 git_update_scan_res_for_apscan_1_068e3877.patch
 CVE-2014-3686.patch
 android_hal_fw_path_change.patch
+dbus-available-sta.patch

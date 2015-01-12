@@ -92,6 +92,8 @@ override_dh_install:
 	# install systemd support
 	install --mode=644 -D wpa_supplicant/systemd/wpa_supplicant.service \
 		debian/wpasupplicant/lib/systemd/system/wpa_supplicant.service
+	install --mode=644 -D wpa_supplicant/systemd/wpa_supplicant@.service \
+		debian/wpasupplicant/lib/systemd/system/wpa_supplicant@.service
 	# install D-Bus service activation files & configuration
 	install --mode=644 -D wpa_supplicant/dbus/dbus-wpa_supplicant.conf \
 		debian/wpasupplicant/etc/dbus-1/system.d/wpa_supplicant.conf

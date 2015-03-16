@@ -1,6 +1,8 @@
 wpa (2.3-2) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
+  * remove Kel Modderman from Uploaders as per his request, many thanks for
+    all past efforts Kel.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 17 Mar 2015 00:56:21 +0100
 

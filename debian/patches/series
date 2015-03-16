@@ -6,5 +6,3 @@
 wpa_gui_desktop_add-keywords-entry.patch
 wpa_supplicant-MACsec-fix-build-failure-for-IEEE8021.patch
 include-ieee802_11_common.c-in-wpa_supplicant-build-.patch
-hostapd_fix-hostapd-operation-without-hw_mode-driver-data.patch
-networkd-driver-fallback.patch

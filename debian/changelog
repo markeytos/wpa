@@ -3,9 +3,10 @@ wpa (2.3-2) unstable; urgency=medium
   * remove Kel Modderman from Uploaders as per his request, many thanks for
     all past efforts Kel.
   * fix systemd unit dependencies for wpasupplicant, it needs to be started
-    before the network target (Closes: 780552).
+    before the network target (Closes: 780552), many thanks to Michael Biebl
+    <biebl@debian.org> for reporting and suggesting the patch.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 17 Mar 2015 01:06:28 +0100
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 17 Mar 2015 02:23:24 +0100
 
 wpa (2.3-1) unstable; urgency=medium
 

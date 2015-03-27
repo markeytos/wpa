@@ -1,3 +1,12 @@
+wpa (2.1-0ubuntu7) vivid; urgency=medium
+
+  Cherry-pick from Debian svn:
+  * Add wpasupplicant_fix-systemd-unit-dependencies.patch: Fix systemd unit
+    dependencies for wpasupplicant, it needs to be started before the network
+    target (Closes: 780552, LP: #1431774).
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Fri, 27 Mar 2015 14:07:35 +0100
+
 wpa (2.1-0ubuntu6) vivid; urgency=medium
 
   * debian/patches/dbus-available-sta.patch: Make the list of connected

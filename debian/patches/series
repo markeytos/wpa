@@ -11,3 +11,4 @@ git_update_scan_res_for_apscan_1_068e3877.patch
 CVE-2014-3686.patch
 android_hal_fw_path_change.patch
 dbus-available-sta.patch
+wpasupplicant_fix-systemd-unit-dependencies.patch

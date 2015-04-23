@@ -1,4 +1,4 @@
-wpa (2.3-2) unstable; urgency=medium
+wpa (2.3-2) unstable; urgency=high
 
   * remove Kel Modderman from Uploaders as per his request, many thanks for
     all past efforts Kel.

@@ -9,8 +9,6 @@ wpa (2.3-2) UNRELEASED; urgency=medium
   * hostapd: avoid segfault with driver=wired, by merging upstream commit
     e9b783d58c23a7bb50b2f25bce7157f1f3b5d58b "Fix hostapd operation without
     hw_mode driver data."
-  * wpasupplicant: install systemd unit (Closes: #766746).
-  * wpasupplicant: configure driver fallback for networkd.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 17 Mar 2015 02:23:24 +0100
 

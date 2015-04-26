@@ -3,6 +3,7 @@ wpa (2.3-3) UNRELEASED; urgency=medium
   * NOT RELEASED YET
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.
+  * import changelogs from the security queues.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Apr 2015 05:52:57 +0200
 

@@ -1,11 +1,23 @@
-wpa (2.3-3) UNRELEASED; urgency=medium
+wpa (2.3-3) unstable; urgency=medium
 
-  * NOT RELEASED YET
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.
   * import changelogs from the security queues.
+  * import upstream security fixes for wpa (no CVEs yet):
+    - WPS UPnP vulnerability with HTTP chunked transfer encoding (2015-2)
+      +  WPS: Fix HTTP chunked transfer encoding parser
+    - Integer underflow in AP mode WMM Action frame processing (2015-3)
+      + AP WMM: Fix integer underflow in WMM Action frame parser
+    - EAP-pwd missing payload length validation (2015-4)
+      + EAP-pwd peer: Fix payload length validation for Commit and Confirm
+      + EAP-pwd server: Fix payload length validation for Commit and Confirm
+      + EAP-pwd peer: Fix Total-Length parsing for fragment reassembly
+      + EAP-pwd server: Fix Total-Length parsing for fragment reassembly
+      + EAP-pwd peer: Fix asymmetric fragmentation behavior
+  * move previous patch for CVE-2015-1863 into a new subdirectory,
+    debian/patches/2015-1/ and add the upstream advisory.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Apr 2015 05:52:57 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 08 May 2015 00:50:57 +0200
 
 wpa (2.3-2) unstable; urgency=high
 

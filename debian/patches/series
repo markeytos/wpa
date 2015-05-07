@@ -9,4 +9,11 @@ include-ieee802_11_common.c-in-wpa_supplicant-build-.patch
 hostapd_fix-hostapd-operation-without-hw_mode-driver-data.patch
 networkd-driver-fallback.patch
 wpasupplicant_fix-systemd-unit-dependencies.patch
-wpasupplicant_P2P-Validate-SSID-element-length-before-copying-it-C.patch
+2015-01/0001-P2P-Validate-SSID-element-length-before-copying-it-C.patch
+2015-02/0001-WPS-Fix-HTTP-chunked-transfer-encoding-parser.patch
+2015-03/0001-AP-WMM-Fix-integer-underflow-in-WMM-Action-frame-par.patch
+2015-04/0001-EAP-pwd-peer-Fix-payload-length-validation-for-Commi.patch
+2015-04/0002-EAP-pwd-server-Fix-payload-length-validation-for-Com.patch
+2015-04/0003-EAP-pwd-peer-Fix-Total-Length-parsing-for-fragment-r.patch
+2015-04/0004-EAP-pwd-server-Fix-Total-Length-parsing-for-fragment.patch
+2015-04/0005-EAP-pwd-peer-Fix-asymmetric-fragmentation-behavior.patch

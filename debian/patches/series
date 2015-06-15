@@ -12,3 +12,7 @@ CVE-2014-3686.patch
 android_hal_fw_path_change.patch
 dbus-available-sta.patch
 wpasupplicant_fix-systemd-unit-dependencies.patch
+CVE-2015-1863.patch
+CVE-2015-4141.patch
+CVE-2015-4142.patch
+CVE-2015-4143-4146.patch

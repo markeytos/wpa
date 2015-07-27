@@ -10,6 +10,7 @@
 
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/hw_features_common.h"
 #include "wps/wps.h"
 #include "p2p/p2p.h"
 #include "hostapd.h"
@@ -128,14 +129,14 @@ int hostapd_build_ap_extra_ies(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_P2P_MANAGER */
 
-#ifdef CONFIG_WPS2
+#ifdef CONFIG_WPS
 	if (hapd->conf->wps_state) {
 		struct wpabuf *a = wps_build_assoc_resp_ie();
 		if (a && wpabuf_resize(&assocresp, wpabuf_len(a)) == 0)
 			wpabuf_put_buf(assocresp, a);
 		wpabuf_free(a);
 	}
-#endif /* CONFIG_WPS2 */
+#endif /* CONFIG_WPS */
 
 #ifdef CONFIG_P2P_MANAGER
 	if (hapd->conf->p2p & P2P_MANAGE) {
@@ -161,6 +162,17 @@ int hostapd_build_ap_extra_ies(struct hostapd_data *hapd,
 #ifdef CONFIG_HS20
 	pos = buf;
 	pos = hostapd_eid_hs20_indication(hapd, pos);
+	if (pos != buf) {
+		if (wpabuf_resize(&beacon, pos - buf) != 0)
+			goto fail;
+		wpabuf_put_data(beacon, buf, pos - buf);
+
+		if (wpabuf_resize(&proberesp, pos - buf) != 0)
+			goto fail;
+		wpabuf_put_data(proberesp, buf, pos - buf);
+	}
+
+	pos = hostapd_eid_osen(hapd, buf);
 	if (pos != buf) {
 		if (wpabuf_resize(&beacon, pos - buf) != 0)
 			goto fail;
@@ -269,7 +281,8 @@ int hostapd_set_drv_ieee8021x(struct hostapd_data *hapd, const char *ifname,
 		params.wpa = hapd->conf->wpa;
 		params.ieee802_1x = hapd->conf->ieee802_1x;
 		params.wpa_group = hapd->conf->wpa_group;
-		params.wpa_pairwise = hapd->conf->wpa_pairwise;
+		params.wpa_pairwise = hapd->conf->wpa_pairwise |
+			hapd->conf->rsn_pairwise;
 		params.wpa_key_mgmt = hapd->conf->wpa_key_mgmt;
 		params.rsn_preauth = hapd->conf->rsn_preauth;
 #ifdef CONFIG_IEEE80211W
@@ -346,7 +359,7 @@ int hostapd_sta_add(struct hostapd_data *hapd,
 		    u16 listen_interval,
 		    const struct ieee80211_ht_capabilities *ht_capab,
 		    const struct ieee80211_vht_capabilities *vht_capab,
-		    u32 flags, u8 qosinfo)
+		    u32 flags, u8 qosinfo, u8 vht_opmode)
 {
 	struct hostapd_sta_add_params params;
 
@@ -364,6 +377,8 @@ int hostapd_sta_add(struct hostapd_data *hapd,
 	params.listen_interval = listen_interval;
 	params.ht_capabilities = ht_capab;
 	params.vht_capabilities = vht_capab;
+	params.vht_opmode_enabled = !!(flags & WLAN_STA_VHT_OPMODE_ENABLED);
+	params.vht_opmode = vht_opmode;
 	params.flags = hostapd_sta_flags_to_drv(flags);
 	params.qosinfo = qosinfo;
 	return hapd->driver->sta_add(hapd->drv_priv, &params);
@@ -463,92 +478,8 @@ int hostapd_flush(struct hostapd_data *hapd)
 }
 
 
-int hostapd_set_freq_params(struct hostapd_freq_params *data, int mode,
-			    int freq, int channel, int ht_enabled,
-			    int vht_enabled, int sec_channel_offset,
-			    int vht_oper_chwidth, int center_segment0,
-			    int center_segment1, u32 vht_caps)
-{
-	int tmp;
-
-	os_memset(data, 0, sizeof(*data));
-	data->mode = mode;
-	data->freq = freq;
-	data->channel = channel;
-	data->ht_enabled = ht_enabled;
-	data->vht_enabled = vht_enabled;
-	data->sec_channel_offset = sec_channel_offset;
-	data->center_freq1 = freq + sec_channel_offset * 10;
-	data->center_freq2 = 0;
-	data->bandwidth = sec_channel_offset ? 40 : 20;
-
-	/*
-	 * This validation code is probably misplaced, maybe it should be
-	 * in src/ap/hw_features.c and check the hardware support as well.
-	 */
-	if (data->vht_enabled) switch (vht_oper_chwidth) {
-	case VHT_CHANWIDTH_USE_HT:
-		if (center_segment1)
-			return -1;
-		if (5000 + center_segment0 * 5 != data->center_freq1 &&
-		    2407 + center_segment0 * 5 != data->center_freq1)
-			return -1;
-		break;
-	case VHT_CHANWIDTH_80P80MHZ:
-		if (!(vht_caps & VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)) {
-			wpa_printf(MSG_ERROR,
-				   "80+80 channel width is not supported!");
-			return -1;
-		}
-		if (center_segment1 == center_segment0 + 4 ||
-		    center_segment1 == center_segment0 - 4)
-			return -1;
-		data->center_freq2 = 5000 + center_segment1 * 5;
-		/* fall through */
-	case VHT_CHANWIDTH_80MHZ:
-		data->bandwidth = 80;
-		if (vht_oper_chwidth == 1 && center_segment1)
-			return -1;
-		if (vht_oper_chwidth == 3 && !center_segment1)
-			return -1;
-		if (!sec_channel_offset)
-			return -1;
-		/* primary 40 part must match the HT configuration */
-		tmp = (30 + freq - 5000 - center_segment0 * 5)/20;
-		tmp /= 2;
-		if (data->center_freq1 != 5000 +
-					 center_segment0 * 5 - 20 + 40 * tmp)
-			return -1;
-		data->center_freq1 = 5000 + center_segment0 * 5;
-		break;
-	case VHT_CHANWIDTH_160MHZ:
-		data->bandwidth = 160;
-		if (!(vht_caps & (VHT_CAP_SUPP_CHAN_WIDTH_160MHZ |
-				  VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ))) {
-			wpa_printf(MSG_ERROR,
-				   "160MHZ channel width is not supported!");
-			return -1;
-		}
-		if (center_segment1)
-			return -1;
-		if (!sec_channel_offset)
-			return -1;
-		/* primary 40 part must match the HT configuration */
-		tmp = (70 + freq - 5000 - center_segment0 * 5)/20;
-		tmp /= 2;
-		if (data->center_freq1 != 5000 +
-					 center_segment0 * 5 - 60 + 40 * tmp)
-			return -1;
-		data->center_freq1 = 5000 + center_segment0 * 5;
-		break;
-	}
-
-	return 0;
-}
-
-
-int hostapd_set_freq(struct hostapd_data *hapd, int mode, int freq,
-		     int channel, int ht_enabled, int vht_enabled,
+int hostapd_set_freq(struct hostapd_data *hapd, enum hostapd_hw_mode mode,
+		     int freq, int channel, int ht_enabled, int vht_enabled,
 		     int sec_channel_offset, int vht_oper_chwidth,
 		     int center_segment0, int center_segment1)
 {
@@ -558,7 +489,8 @@ int hostapd_set_freq(struct hostapd_data *hapd, int mode, int freq,
 				    vht_enabled, sec_channel_offset,
 				    vht_oper_chwidth,
 				    center_segment0, center_segment1,
-				    hapd->iface->current_mode->vht_capab))
+				    hapd->iface->current_mode ?
+				    hapd->iface->current_mode->vht_capab : 0))
 		return -1;
 
 	if (hapd->driver == NULL)
@@ -732,7 +664,8 @@ int hostapd_drv_send_action(struct hostapd_data *hapd, unsigned int freq,
 }
 
 
-int hostapd_start_dfs_cac(struct hostapd_iface *iface, int mode, int freq,
+int hostapd_start_dfs_cac(struct hostapd_iface *iface,
+			  enum hostapd_hw_mode mode, int freq,
 			  int channel, int ht_enabled, int vht_enabled,
 			  int sec_channel_offset, int vht_oper_chwidth,
 			  int center_segment0, int center_segment1)
@@ -754,12 +687,16 @@ int hostapd_start_dfs_cac(struct hostapd_iface *iface, int mode, int freq,
 				    vht_enabled, sec_channel_offset,
 				    vht_oper_chwidth, center_segment0,
 				    center_segment1,
-				    iface->current_mode->vht_capab))
+				    iface->current_mode->vht_capab)) {
+		wpa_printf(MSG_ERROR, "Can't set freq params");
 		return -1;
+	}
 
 	res = hapd->driver->start_dfs_cac(hapd->drv_priv, &data);
-	if (!res)
+	if (!res) {
 		iface->cac_started = 1;
+		os_get_reltime(&iface->dfs_cac_start);
+	}
 
 	return res;
 }
@@ -772,4 +709,19 @@ int hostapd_drv_set_qos_map(struct hostapd_data *hapd,
 		return 0;
 	return hapd->driver->set_qos_map(hapd->drv_priv, qos_map_set,
 					 qos_map_set_len);
+}
+
+
+int hostapd_drv_do_acs(struct hostapd_data *hapd)
+{
+	struct drv_acs_params params;
+
+	if (hapd->driver == NULL || hapd->driver->do_acs == NULL)
+		return 0;
+	os_memset(&params, 0, sizeof(params));
+	params.hw_mode = hapd->iface->conf->hw_mode;
+	params.ht_enabled = !!(hapd->iface->conf->ieee80211n);
+	params.ht40_enabled = !!(hapd->iface->conf->ht_capab &
+				 HT_CAP_INFO_SUPP_CHANNEL_WIDTH_SET);
+	return hapd->driver->do_acs(hapd->drv_priv, &params);
 }

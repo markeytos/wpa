@@ -172,7 +172,7 @@ static void eap_peap_reset(struct eap_sm *sm, void *priv)
 	wpabuf_free(data->pending_phase2_resp);
 	os_free(data->phase2_key);
 	wpabuf_free(data->soh_response);
-	os_free(data);
+	bin_clear_free(data, sizeof(*data));
 }
 
 
@@ -344,12 +344,14 @@ static struct wpabuf * eap_peap_build_phase2_tlv(struct eap_sm *sm,
 	size_t mlen;
 
 	mlen = 6; /* Result TLV */
-	if (data->crypto_binding != NO_BINDING)
+	if (data->peap_version == 0 && data->tlv_request == TLV_REQ_SUCCESS &&
+	    data->crypto_binding != NO_BINDING) {
 		mlen += 60; /* Cryptobinding TLV */
 #ifdef EAP_SERVER_TNC
-	if (data->soh_response)
-		mlen += wpabuf_len(data->soh_response);
+		if (data->soh_response)
+			mlen += wpabuf_len(data->soh_response);
 #endif /* EAP_SERVER_TNC */
+	}
 
 	buf = eap_msg_alloc(EAP_VENDOR_IETF, EAP_TYPE_TLV, mlen,
 			    EAP_CODE_REQUEST, id);
@@ -593,7 +595,7 @@ static int eap_tlv_validate_cryptobinding(struct eap_sm *sm,
 	buf[60] = EAP_TYPE_PEAP;
 	hmac_sha1(data->cmk, 20, buf, sizeof(buf), mac);
 
-	if (os_memcmp(mac, pos, SHA1_MAC_LEN) != 0) {
+	if (os_memcmp_const(mac, pos, SHA1_MAC_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "EAP-PEAP: Invalid Compound_MAC in "
 			   "cryptobinding TLV");
 		wpa_hexdump_key(MSG_DEBUG, "EAP-PEAP: CMK", data->cmk, 20);
@@ -1229,6 +1231,18 @@ static Boolean eap_peap_isSuccess(struct eap_sm *sm, void *priv)
 }
 
 
+static u8 * eap_peap_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
+{
+	struct eap_peap_data *data = priv;
+
+	if (data->state != SUCCESS)
+		return NULL;
+
+	return eap_server_tls_derive_session_id(sm, &data->ssl, EAP_TYPE_PEAP,
+						len);
+}
+
+
 int eap_server_peap_register(void)
 {
 	struct eap_method *eap;
@@ -1247,6 +1261,7 @@ int eap_server_peap_register(void)
 	eap->isDone = eap_peap_isDone;
 	eap->getKey = eap_peap_getKey;
 	eap->isSuccess = eap_peap_isSuccess;
+	eap->getSessionId = eap_peap_get_session_id;
 
 	ret = eap_server_method_register(eap);
 	if (ret)

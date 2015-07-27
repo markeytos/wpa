@@ -34,6 +34,7 @@ enum {
 #define wpa_hexdump_ascii_key(l,t,b,le) do { } while (0)
 #define wpa_debug_open_file(p) do { } while (0)
 #define wpa_debug_close_file() do { } while (0)
+#define wpa_debug_setup_stdout() do { } while (0)
 #define wpa_dbg(args...) do { } while (0)
 
 static inline int wpa_debug_reopen_file(void)
@@ -46,6 +47,7 @@ static inline int wpa_debug_reopen_file(void)
 int wpa_debug_open_file(const char *path);
 int wpa_debug_reopen_file(void);
 void wpa_debug_close_file(void);
+void wpa_debug_setup_stdout(void);
 
 /**
  * wpa_debug_printf_timestamp - Print timestamp for debug output
@@ -160,6 +162,7 @@ void wpa_hexdump_ascii_key(int level, const char *title, const void *buf,
 #define wpa_msg(args...) do { } while (0)
 #define wpa_msg_ctrl(args...) do { } while (0)
 #define wpa_msg_global(args...) do { } while (0)
+#define wpa_msg_global_ctrl(args...) do { } while (0)
 #define wpa_msg_no_global(args...) do { } while (0)
 #define wpa_msg_register_cb(f) do { } while (0)
 #define wpa_msg_register_ifname_cb(f) do { } while (0)
@@ -209,6 +212,21 @@ PRINTF_FORMAT(3, 4);
  * specified by the context data).
  */
 void wpa_msg_global(void *ctx, int level, const char *fmt, ...)
+PRINTF_FORMAT(3, 4);
+
+/**
+ * wpa_msg_global_ctrl - Conditional global printf for ctrl_iface monitors
+ * @ctx: Pointer to context data; this is the ctx variable registered
+ *	with struct wpa_driver_ops::init()
+ * @level: priority level (MSG_*) of the message
+ * @fmt: printf format string, followed by optional arguments
+ *
+ * This function is used to print conditional debugging and error messages.
+ * This function is like wpa_msg_global(), but it sends the output only to the
+ * attached global ctrl_iface monitors. In other words, it can be used for
+ * frequent events that do not need to be sent to syslog.
+ */
+void wpa_msg_global_ctrl(void *ctx, int level, const char *fmt, ...)
 PRINTF_FORMAT(3, 4);
 
 /**

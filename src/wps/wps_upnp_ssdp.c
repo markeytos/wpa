@@ -134,6 +134,8 @@ next_advertisement(struct upnp_wps_device_sm *sm,
 	*islast = 0;
 	iface = dl_list_first(&sm->interfaces,
 			      struct upnp_wps_device_interface, list);
+	if (!iface)
+		return NULL;
 	uuid_bin2str(iface->wps->uuid, uuid_string, sizeof(uuid_string));
 	msg = wpabuf_alloc(800); /* more than big enough */
 	if (msg == NULL)
@@ -315,7 +317,8 @@ static void advertisement_state_machine_handler(void *eloop_data,
 			 * (see notes above)
 			 */
 			next_timeout_msec = 0;
-			os_get_random((void *) &r, sizeof(r));
+			if (os_get_random((void *) &r, sizeof(r)) < 0)
+				r = 32768;
 			next_timeout_sec = UPNP_CACHE_SEC / 4 +
 				(((UPNP_CACHE_SEC / 4) * r) >> 16);
 			sm->advertise_count++;
@@ -587,6 +590,8 @@ static void ssdp_parse_msearch(struct upnp_wps_device_sm *sm,
 					&sm->interfaces,
 					struct upnp_wps_device_interface,
 					list);
+				if (!iface)
+					continue;
 				data += os_strlen("uuid:");
 				uuid_bin2str(iface->wps->uuid, uuid_string,
 					     sizeof(uuid_string));

@@ -1,6 +1,6 @@
 /*
  * hostapd / main()
- * Copyright (c) 2002-2011, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2015, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -14,6 +14,7 @@
 
 #include "utils/common.h"
 #include "utils/eloop.h"
+#include "utils/uuid.h"
 #include "crypto/random.h"
 #include "crypto/tls.h"
 #include "common/version.h"
@@ -91,18 +92,20 @@ static void hostapd_logger_cb(void *ctx, const u8 *addr, unsigned int module,
 	if (hapd && hapd->conf && addr)
 		os_snprintf(format, maxlen, "%s: STA " MACSTR "%s%s: %s",
 			    hapd->conf->iface, MAC2STR(addr),
-			    module_str ? " " : "", module_str, txt);
+			    module_str ? " " : "", module_str ? module_str : "",
+			    txt);
 	else if (hapd && hapd->conf)
 		os_snprintf(format, maxlen, "%s:%s%s %s",
 			    hapd->conf->iface, module_str ? " " : "",
-			    module_str, txt);
+			    module_str ? module_str : "", txt);
 	else if (addr)
 		os_snprintf(format, maxlen, "STA " MACSTR "%s%s: %s",
 			    MAC2STR(addr), module_str ? " " : "",
-			    module_str, txt);
+			    module_str ? module_str : "", txt);
 	else
 		os_snprintf(format, maxlen, "%s%s%s",
-			    module_str, module_str ? ": " : "", txt);
+			    module_str ? module_str : "",
+			    module_str ? ": " : "", txt);
 
 	if ((conf_stdout & module) && level >= conf_stdout_level) {
 		wpa_debug_print_timestamp();
@@ -181,9 +184,7 @@ static int hostapd_driver_init(struct hostapd_iface *iface)
 	}
 	params.bssid = b;
 	params.ifname = hapd->conf->iface;
-	params.ssid = hapd->conf->ssid.ssid;
-	params.ssid_len = hapd->conf->ssid.ssid_len;
-	params.test_socket = hapd->conf->test_socket;
+	params.driver_params = hapd->iconf->driver_params;
 	params.use_pae_group_addr = hapd->conf->use_pae_group_addr;
 
 	params.num_bridge = hapd->iface->num_bss;
@@ -209,12 +210,22 @@ static int hostapd_driver_init(struct hostapd_iface *iface)
 
 	if (hapd->driver->get_capa &&
 	    hapd->driver->get_capa(hapd->drv_priv, &capa) == 0) {
+		struct wowlan_triggers *triggs;
+
 		iface->drv_flags = capa.flags;
+		iface->smps_modes = capa.smps_modes;
 		iface->probe_resp_offloads = capa.probe_resp_offloads;
 		iface->extended_capa = capa.extended_capa;
 		iface->extended_capa_mask = capa.extended_capa_mask;
 		iface->extended_capa_len = capa.extended_capa_len;
 		iface->drv_max_acl_mac_addrs = capa.max_acl_mac_addrs;
+
+		triggs = wpa_get_wowlan_triggers(conf->wowlan_triggers, &capa);
+		if (triggs && hapd->driver->set_wowlan) {
+			if (hapd->driver->set_wowlan(hapd->drv_priv, triggs))
+				wpa_printf(MSG_ERROR, "set_wowlan failed");
+		}
+		os_free(triggs);
 	}
 
 	return 0;
@@ -397,7 +408,7 @@ static int hostapd_global_run(struct hapd_interfaces *ifaces, int daemonize,
 #endif /* EAP_SERVER_TNC */
 
 	if (daemonize && os_daemonize(pid_file)) {
-		perror("daemon");
+		wpa_printf(MSG_ERROR, "daemon: %s", strerror(errno));
 		return -1;
 	}
 
@@ -413,7 +424,7 @@ static void show_version(void)
 		"hostapd v" VERSION_STR "\n"
 		"User space daemon for IEEE 802.11 AP management,\n"
 		"IEEE 802.1X/WPA/WPA2/EAP/RADIUS Authenticator\n"
-		"Copyright (c) 2002-2014, Jouni Malinen <j@w1.fi> "
+		"Copyright (c) 2002-2015, Jouni Malinen <j@w1.fi> "
 		"and contributors\n");
 }
 
@@ -501,6 +512,27 @@ static int hostapd_get_ctrl_iface_group(struct hapd_interfaces *interfaces,
 }
 
 
+#ifdef CONFIG_WPS
+static int gen_uuid(const char *txt_addr)
+{
+	u8 addr[ETH_ALEN];
+	u8 uuid[UUID_LEN];
+	char buf[100];
+
+	if (hwaddr_aton(txt_addr, addr) < 0)
+		return -1;
+
+	uuid_gen_mac_addr(addr, uuid);
+	if (uuid_bin2str(uuid, buf, sizeof(buf)) < 0)
+		return -1;
+
+	printf("%s\n", buf);
+
+	return 0;
+}
+#endif /* CONFIG_WPS */
+
+
 int main(int argc, char *argv[])
 {
 	struct hapd_interfaces interfaces;
@@ -531,7 +563,7 @@ int main(int argc, char *argv[])
 	interfaces.global_ctrl_sock = -1;
 
 	for (;;) {
-		c = getopt(argc, argv, "b:Bde:f:hKP:Ttvg:G:");
+		c = getopt(argc, argv, "b:Bde:f:hKP:Ttu:vg:G:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -588,6 +620,10 @@ int main(int argc, char *argv[])
 			bss_config = tmp_bss;
 			bss_config[num_bss_configs++] = optarg;
 			break;
+#ifdef CONFIG_WPS
+		case 'u':
+			return gen_uuid(optarg);
+#endif /* CONFIG_WPS */
 		default:
 			usage();
 			break;
@@ -602,6 +638,8 @@ int main(int argc, char *argv[])
 
 	if (log_file)
 		wpa_debug_open_file(log_file);
+	else
+		wpa_debug_setup_stdout();
 #ifdef CONFIG_DEBUG_LINUX_TRACING
 	if (enable_trace_dbg) {
 		int tret = wpa_debug_open_linux_tracing();
@@ -701,8 +739,14 @@ int main(int argc, char *argv[])
  out:
 	hostapd_global_ctrl_iface_deinit(&interfaces);
 	/* Deinitialize all interfaces */
-	for (i = 0; i < interfaces.count; i++)
+	for (i = 0; i < interfaces.count; i++) {
+		if (!interfaces.iface[i])
+			continue;
+		interfaces.iface[i]->driver_ap_teardown =
+			!!(interfaces.iface[i]->drv_flags &
+			   WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
 		hostapd_interface_deinit_free(interfaces.iface[i]);
+	}
 	os_free(interfaces.iface);
 
 	hostapd_global_deinit(pid_file);

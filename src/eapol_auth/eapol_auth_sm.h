@@ -24,6 +24,9 @@ struct eapol_auth_config {
 	void *eap_sim_db_priv;
 	char *eap_req_id_text; /* a copy of this will be allocated */
 	size_t eap_req_id_text_len;
+	int erp_send_reauth_start;
+	char *erp_domain; /* a copy of this will be allocated */
+	int erp; /* Whether ERP is enabled on authentication server */
 	u8 *pac_opaque_encr_key;
 	u8 *eap_fast_a_id;
 	size_t eap_fast_a_id_len;
@@ -45,6 +48,7 @@ struct eapol_auth_config {
 };
 
 struct eap_user;
+struct eap_server_erp_key;
 
 typedef enum {
 	EAPOL_LOGGER_DEBUG, EAPOL_LOGGER_INFO, EAPOL_LOGGER_WARNING
@@ -60,7 +64,8 @@ struct eapol_auth_cb {
 			   size_t datalen);
 	void (*aaa_send)(void *ctx, void *sta_ctx, const u8 *data,
 			 size_t datalen);
-	void (*finished)(void *ctx, void *sta_ctx, int success, int preauth);
+	void (*finished)(void *ctx, void *sta_ctx, int success, int preauth,
+			 int remediation);
 	int (*get_eap_user)(void *ctx, const u8 *identity, size_t identity_len,
 			    int phase2, struct eap_user *user);
 	int (*sta_entry_alive)(void *ctx, const u8 *addr);
@@ -70,6 +75,9 @@ struct eapol_auth_cb {
 	void (*abort_auth)(void *ctx, void *sta_ctx);
 	void (*tx_key)(void *ctx, void *sta_ctx);
 	void (*eapol_event)(void *ctx, void *sta_ctx, enum eapol_event type);
+	struct eap_server_erp_key * (*erp_get_key)(void *ctx,
+						   const char *keyname);
+	int (*erp_add_key)(void *ctx, struct eap_server_erp_key *erp);
 };
 
 

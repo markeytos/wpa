@@ -474,123 +474,6 @@ static int vlan_set_name_type(unsigned int name_type)
 #endif /* CONFIG_VLAN_NETLINK */
 
 
-/**
- * Increase the usage counter for given parent/ifname combination.
- * If create is set, then this iface is added to the global list.
- * Returns
- * 	-1 on error
- * 	0 if iface is not in list
- * 	1 if iface is in list (was there or has been added)
- */
-static int hapd_get_dynamic_iface(const char *parent, const char *ifname,
-				  int create, struct hostapd_data *hapd)
-{
-	size_t i;
-	struct hostapd_dynamic_iface *j = NULL, **tmp;
-	struct hapd_interfaces *hapd_global = hapd->iface->interfaces;
-
-	if (!parent)
-		parent = "";
-
-	for (i = 0; i < hapd_global->count_dynamic; i++) {
-		j = hapd_global->dynamic_iface[i];
-		if (os_strncmp(j->iface, ifname, sizeof(j->iface)) == 0 &&
-		    os_strncmp(j->parent, parent, sizeof(j->parent)) == 0)
-			break;
-	}
-	if (i < hapd_global->count_dynamic) {
-		j->usage++;
-		return 1;
-	}
-
-	/* new entry required */
-	if (!create)
-		return 0;
-
-	j = os_zalloc(sizeof(*j));
-	if (!j)
-		return -1;
-	os_strlcpy(j->iface, ifname, sizeof(j->iface));
-	os_strlcpy(j->parent, parent, sizeof(j->parent));
-
-	tmp = os_realloc_array(hapd_global->dynamic_iface, i + 1,
-			       sizeof(*hapd_global->dynamic_iface));
-	if (!tmp) {
-		wpa_printf(MSG_ERROR, "VLAN: Failed to allocate memory in %s",
-			   __func__);
-		return -1;
-	}
-	hapd_global->count_dynamic++;
-	hapd_global->dynamic_iface = tmp;
-	hapd_global->dynamic_iface[i] = j;
-
-	return 1;
-}
-
-
-/**
- * Decrease the usage counter for given ifname.
- * Returns
- *     -1 on error or if iface was not found
- *     0 if iface was found and is still present
- *     1 if iface was removed from global list
- */
-static int hapd_put_dynamic_iface(const char *parent, const char *ifname,
-				  struct hostapd_data *hapd)
-{
-	size_t i;
-	struct hostapd_dynamic_iface *j = NULL, **tmp;
-	struct hapd_interfaces *hapd_glob = hapd->iface->interfaces;
-
-	if (!parent)
-		parent = "";
-
-	for (i = 0; i < hapd_glob->count_dynamic; i++) {
-		j = hapd_glob->dynamic_iface[i];
-		if (os_strncmp(j->iface, ifname, sizeof(j->iface)) == 0 &&
-		    os_strncmp(j->parent, parent, sizeof(j->parent)) == 0)
-			break;
-	}
-
-	if (i == hapd_glob->count_dynamic) {
-		/*
-		 * Interface not in global list. This can happen if alloc in
-		 * _get_ failed.
-		 */
-		return -1;
-	}
-
-	if (j->usage > 0) {
-		j->usage--;
-		return 0;
-	}
-
-	os_free(j);
-	for (; i < hapd_glob->count_dynamic - 1; i++)
-		hapd_glob->dynamic_iface[i] = hapd_glob->dynamic_iface[i + 1];
-	hapd_glob->dynamic_iface[hapd_glob->count_dynamic - 1] = NULL;
-	hapd_glob->count_dynamic--;
-
-	if (hapd_glob->count_dynamic == 0) {
-		os_free(hapd_glob->dynamic_iface);
-		hapd_glob->dynamic_iface = NULL;
-		return 1;
-	}
-
-	tmp = os_realloc_array(hapd_glob->dynamic_iface,
-			       hapd_glob->count_dynamic,
-			       sizeof(*hapd_glob->dynamic_iface));
-	if (!tmp) {
-		wpa_printf(MSG_ERROR, "VLAN: Failed to release memory in %s",
-			   __func__);
-		return -1;
-	}
-	hapd_glob->dynamic_iface = tmp;
-
-	return 1;
-}
-
-
 static void vlan_newlink(char *ifname, struct hostapd_data *hapd)
 {
 	char vlan_ifname[IFNAMSIZ];
@@ -598,7 +481,6 @@ static void vlan_newlink(char *ifname, struct hostapd_data *hapd)
 	struct hostapd_vlan *vlan = hapd->conf->vlan;
 	char *tagged_interface = hapd->conf->ssid.vlan_tagged_interface;
 	int vlan_naming = hapd->conf->ssid.vlan_naming;
-	int ret;
 
 	wpa_printf(MSG_DEBUG, "VLAN: vlan_newlink(%s)", ifname);
 
@@ -618,9 +500,7 @@ static void vlan_newlink(char *ifname, struct hostapd_data *hapd)
 				            "brvlan%d", vlan->vlan_id);
 			}
 
-			ret = br_addbr(br_name);
-			if (hapd_get_dynamic_iface(NULL, br_name, ret == 0,
-			                           hapd))
+			if (!br_addbr(br_name))
 				vlan->clean |= DVLAN_CLEAN_BR;
 
 			ifconfig_up(br_name);
@@ -638,24 +518,17 @@ static void vlan_newlink(char *ifname, struct hostapd_data *hapd)
 						    "vlan%d", vlan->vlan_id);
 
 				ifconfig_up(tagged_interface);
-				ret = vlan_add(tagged_interface, vlan->vlan_id,
-					      vlan_ifname);
-				if (hapd_get_dynamic_iface(NULL, vlan_ifname,
-				                           ret == 0, hapd))
+				if (!vlan_add(tagged_interface, vlan->vlan_id,
+					      vlan_ifname))
 					vlan->clean |= DVLAN_CLEAN_VLAN;
 
-				ret = br_addif(br_name, vlan_ifname);
-				if (hapd_get_dynamic_iface(br_name,
-							   vlan_ifname,
-							   ret == 0, hapd))
+				if (!br_addif(br_name, vlan_ifname))
 					vlan->clean |= DVLAN_CLEAN_VLAN_PORT;
 
 				ifconfig_up(vlan_ifname);
 			}
 
-			ret = br_addif(br_name, ifname);
-			if (hapd_get_dynamic_iface(br_name, ifname, ret == 0,
-						   hapd))
+			if (!br_addif(br_name, ifname))
 				vlan->clean |= DVLAN_CLEAN_WLAN_PORT;
 
 			ifconfig_up(ifname);
@@ -694,8 +567,7 @@ static void vlan_dellink(char *ifname, struct hostapd_data *hapd)
 				            "brvlan%d", vlan->vlan_id);
 			}
 
-			if ((vlan->clean & DVLAN_CLEAN_WLAN_PORT) &&
-			    hapd_put_dynamic_iface(br_name, vlan->ifname, hapd))
+			if (vlan->clean & DVLAN_CLEAN_WLAN_PORT)
 				br_delif(br_name, vlan->ifname);
 
 			if (tagged_interface) {
@@ -709,20 +581,15 @@ static void vlan_dellink(char *ifname, struct hostapd_data *hapd)
 					os_snprintf(vlan_ifname,
 						    sizeof(vlan_ifname),
 						    "vlan%d", vlan->vlan_id);
-				if ((vlan->clean & DVLAN_CLEAN_VLAN_PORT) &&
-				    hapd_put_dynamic_iface(br_name, vlan_ifname,
-							   hapd))
+				if (vlan->clean & DVLAN_CLEAN_VLAN_PORT)
 					br_delif(br_name, vlan_ifname);
 				ifconfig_down(vlan_ifname);
 
-				if ((vlan->clean & DVLAN_CLEAN_VLAN) &&
-				    hapd_put_dynamic_iface(NULL, vlan_ifname,
-							   hapd))
+				if (vlan->clean & DVLAN_CLEAN_VLAN)
 					vlan_rem(vlan_ifname);
 			}
 
 			if ((vlan->clean & DVLAN_CLEAN_BR) &&
-			    hapd_put_dynamic_iface(NULL, br_name, hapd) &&
 			    br_getnumports(br_name) == 0) {
 				ifconfig_down(br_name);
 				br_delbr(br_name);
@@ -750,6 +617,7 @@ vlan_read_ifnames(struct nlmsghdr *h, size_t len, int del,
 	struct ifinfomsg *ifi;
 	int attrlen, nlmsg_len, rta_len;
 	struct rtattr *attr;
+	char ifname[IFNAMSIZ + 1];
 
 	if (len < sizeof(*ifi))
 		return;
@@ -764,29 +632,39 @@ vlan_read_ifnames(struct nlmsghdr *h, size_t len, int del,
 
 	attr = (struct rtattr *) (((char *) ifi) + nlmsg_len);
 
+	os_memset(ifname, 0, sizeof(ifname));
 	rta_len = RTA_ALIGN(sizeof(struct rtattr));
 	while (RTA_OK(attr, attrlen)) {
-		char ifname[IFNAMSIZ + 1];
-
 		if (attr->rta_type == IFLA_IFNAME) {
 			int n = attr->rta_len - rta_len;
 			if (n < 0)
 				break;
 
-			os_memset(ifname, 0, sizeof(ifname));
-
-			if ((size_t) n > sizeof(ifname))
-				n = sizeof(ifname);
+			if ((size_t) n >= sizeof(ifname))
+				n = sizeof(ifname) - 1;
 			os_memcpy(ifname, ((char *) attr) + rta_len, n);
 
-			if (del)
-				vlan_dellink(ifname, hapd);
-			else
-				vlan_newlink(ifname, hapd);
 		}
 
 		attr = RTA_NEXT(attr, attrlen);
 	}
+
+	if (!ifname[0])
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "VLAN: RTM_%sLINK: ifi_index=%d ifname=%s ifi_family=%d ifi_flags=0x%x (%s%s%s%s)",
+		   del ? "DEL" : "NEW",
+		   ifi->ifi_index, ifname, ifi->ifi_family, ifi->ifi_flags,
+		   (ifi->ifi_flags & IFF_UP) ? "[UP]" : "",
+		   (ifi->ifi_flags & IFF_RUNNING) ? "[RUNNING]" : "",
+		   (ifi->ifi_flags & IFF_LOWER_UP) ? "[LOWER_UP]" : "",
+		   (ifi->ifi_flags & IFF_DORMANT) ? "[DORMANT]" : "");
+
+	if (del)
+		vlan_dellink(ifname, hapd);
+	else
+		vlan_newlink(ifname, hapd);
 }
 
 
@@ -810,7 +688,7 @@ static void vlan_event_receive(int sock, void *eloop_ctx, void *sock_ctx)
 	}
 
 	h = (struct nlmsghdr *) buf;
-	while (left >= (int) sizeof(*h)) {
+	while (NLMSG_OK(h, left)) {
 		int len, plen;
 
 		len = h->nlmsg_len;
@@ -831,9 +709,7 @@ static void vlan_event_receive(int sock, void *eloop_ctx, void *sock_ctx)
 			break;
 		}
 
-		len = NLMSG_ALIGN(len);
-		left -= len;
-		h = (struct nlmsghdr *) ((char *) h + len);
+		h = NLMSG_NEXT(h, left);
 	}
 
 	if (left > 0) {
@@ -1024,7 +900,7 @@ struct hostapd_vlan * vlan_add_dynamic(struct hostapd_data *hapd,
 				       struct hostapd_vlan *vlan,
 				       int vlan_id)
 {
-	struct hostapd_vlan *n;
+	struct hostapd_vlan *n = NULL;
 	char *ifname, *pos;
 
 	if (vlan == NULL || vlan_id <= 0 || vlan_id > MAX_VLAN_ID ||
@@ -1037,28 +913,24 @@ struct hostapd_vlan * vlan_add_dynamic(struct hostapd_data *hapd,
 	if (ifname == NULL)
 		return NULL;
 	pos = os_strchr(ifname, '#');
-	if (pos == NULL) {
-		os_free(ifname);
-		return NULL;
-	}
+	if (pos == NULL)
+		goto free_ifname;
 	*pos++ = '\0';
 
 	n = os_zalloc(sizeof(*n));
-	if (n == NULL) {
-		os_free(ifname);
-		return NULL;
-	}
+	if (n == NULL)
+		goto free_ifname;
 
 	n->vlan_id = vlan_id;
 	n->dynamic_vlan = 1;
 
 	os_snprintf(n->ifname, sizeof(n->ifname), "%s%d%s", ifname, vlan_id,
 		    pos);
-	os_free(ifname);
 
 	if (hostapd_vlan_if_add(hapd, n->ifname)) {
 		os_free(n);
-		return NULL;
+		n = NULL;
+		goto free_ifname;
 	}
 
 	n->next = hapd->conf->vlan;
@@ -1068,6 +940,8 @@ struct hostapd_vlan * vlan_add_dynamic(struct hostapd_data *hapd,
 	ifconfig_up(n->ifname);
 #endif /* CONFIG_FULL_DYNAMIC_VLAN */
 
+free_ifname:
+	os_free(ifname);
 	return n;
 }
 

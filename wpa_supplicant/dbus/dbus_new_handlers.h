@@ -55,8 +55,8 @@ dbus_bool_t wpas_dbus_getter_debug_level(DBusMessageIter *iter,
 					 void *user_data);
 
 dbus_bool_t wpas_dbus_getter_debug_timestamp(DBusMessageIter *iter,
-                                             DBusError *error,
-                                             void *user_data);
+					     DBusError *error,
+					     void *user_data);
 
 dbus_bool_t wpas_dbus_getter_debug_show_keys(DBusMessageIter *iter,
 					     DBusError *error,
@@ -87,6 +87,9 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(DBusMessageIter *iter,
 DBusMessage * wpas_dbus_handler_scan(DBusMessage *message,
 				     struct wpa_supplicant *wpa_s);
 
+DBusMessage * wpas_dbus_handler_signal_poll(DBusMessage *message,
+					    struct wpa_supplicant *wpa_s);
+
 DBusMessage * wpas_dbus_handler_disconnect(DBusMessage *message,
 					   struct wpa_supplicant *wpa_s);
 
@@ -100,6 +103,9 @@ DBusMessage * wpas_dbus_handler_add_network(DBusMessage *message,
 
 DBusMessage * wpas_dbus_handler_reassociate(DBusMessage *message,
 					    struct wpa_supplicant *wpa_s);
+
+DBusMessage * wpas_dbus_handler_reattach(DBusMessage *message,
+					 struct wpa_supplicant *wpa_s);
 
 DBusMessage * wpas_dbus_handler_remove_network(DBusMessage *message,
 					       struct wpa_supplicant *wpa_s);
@@ -265,6 +271,9 @@ dbus_bool_t wpas_dbus_getter_bss_wps(DBusMessageIter *iter, DBusError *error,
 dbus_bool_t wpas_dbus_getter_bss_ies(DBusMessageIter *iter, DBusError *error,
 				     void *user_data);
 
+dbus_bool_t wpas_dbus_getter_bss_age(DBusMessageIter *iter, DBusError *error,
+				     void *user_data);
+
 dbus_bool_t wpas_dbus_getter_enabled(DBusMessageIter *iter, DBusError *error,
 				     void *user_data);
 
@@ -289,6 +298,14 @@ dbus_bool_t wpas_dbus_setter_process_credentials(DBusMessageIter *iter,
 						 DBusError *error,
 						 void *user_data);
 
+dbus_bool_t wpas_dbus_getter_config_methods(DBusMessageIter *iter,
+					    DBusError *error,
+					    void *user_data);
+
+dbus_bool_t wpas_dbus_setter_config_methods(DBusMessageIter *iter,
+					    DBusError *error,
+					    void *user_data);
+
 DBusMessage * wpas_dbus_handler_tdls_discover(DBusMessage *message,
 					      struct wpa_supplicant *wpa_s);
 DBusMessage * wpas_dbus_handler_tdls_setup(DBusMessage *message,
@@ -302,6 +319,7 @@ DBusMessage * wpas_dbus_error_invalid_args(DBusMessage *message,
 					   const char *arg);
 DBusMessage * wpas_dbus_error_unknown_error(DBusMessage *message,
 					    const char *arg);
+DBusMessage * wpas_dbus_error_no_memory(DBusMessage *message);
 
 DBusMessage * wpas_dbus_handler_subscribe_preq(
 	DBusMessage *message, struct wpa_supplicant *wpa_s);

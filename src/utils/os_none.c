@@ -218,6 +218,11 @@ size_t os_strlcpy(char *dest, const char *src, size_t size)
 }
 
 
+int os_memcmp_const(const void *a, const void *b, size_t len)
+{
+	return 0;
+}
+
 char * os_strstr(const char *haystack, const char *needle)
 {
 	return NULL;
@@ -229,3 +234,9 @@ int os_snprintf(char *str, size_t size, const char *format, ...)
 	return 0;
 }
 #endif /* OS_NO_C_LIB_DEFINES */
+
+
+int os_exec(const char *program, const char *arg, int wait_completion)
+{
+	return -1;
+}

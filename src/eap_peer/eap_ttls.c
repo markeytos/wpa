@@ -133,6 +133,15 @@ static void eap_ttls_phase2_eap_deinit(struct eap_sm *sm,
 }
 
 
+static void eap_ttls_free_key(struct eap_ttls_data *data)
+{
+	if (data->key_data) {
+		bin_clear_free(data->key_data, EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
+		data->key_data = NULL;
+	}
+}
+
+
 static void eap_ttls_deinit(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
@@ -141,7 +150,7 @@ static void eap_ttls_deinit(struct eap_sm *sm, void *priv)
 	eap_ttls_phase2_eap_deinit(sm, data);
 	os_free(data->phase2_eap_types);
 	eap_peer_tls_ssl_deinit(sm, &data->ssl);
-	os_free(data->key_data);
+	eap_ttls_free_key(data);
 	os_free(data->session_id);
 	wpabuf_free(data->pending_phase2_req);
 	os_free(data);
@@ -213,10 +222,11 @@ static int eap_ttls_avp_encapsulate(struct wpabuf **resp, u32 avp_code,
 static int eap_ttls_v0_derive_key(struct eap_sm *sm,
 				  struct eap_ttls_data *data)
 {
-	os_free(data->key_data);
+	eap_ttls_free_key(data);
 	data->key_data = eap_peer_tls_derive_key(sm, &data->ssl,
 						 "ttls keying material",
-						 EAP_TLS_KEY_LEN);
+						 EAP_TLS_KEY_LEN +
+						 EAP_EMSK_LEN);
 	if (!data->key_data) {
 		wpa_printf(MSG_INFO, "EAP-TTLS: Failed to derive key");
 		return -1;
@@ -224,6 +234,9 @@ static int eap_ttls_v0_derive_key(struct eap_sm *sm,
 
 	wpa_hexdump_key(MSG_DEBUG, "EAP-TTLS: Derived key",
 			data->key_data, EAP_TLS_KEY_LEN);
+	wpa_hexdump_key(MSG_DEBUG, "EAP-TTLS: Derived EMSK",
+			data->key_data + EAP_TLS_KEY_LEN,
+			EAP_EMSK_LEN);
 
 	os_free(data->session_id);
 	data->session_id = eap_peer_tls_derive_session_id(sm, &data->ssl,
@@ -491,16 +504,6 @@ static int eap_ttls_phase2_request_mschapv2(struct eap_sm *sm,
 
 	wpabuf_put(msg, pos - buf);
 	*resp = msg;
-
-	if (sm->workaround) {
-		/* At least FreeRADIUS seems to be terminating
-		 * EAP-TTLS/MSHCAPV2 without the expected MS-CHAP-v2 Success
-		 * packet. */
-		wpa_printf(MSG_DEBUG, "EAP-TTLS/MSCHAPV2: EAP workaround - "
-			   "allow success without tunneled response");
-		ret->methodState = METHOD_MAY_CONT;
-		ret->decision = DECISION_COND_SUCC;
-	}
 
 	return 0;
 #else /* EAP_MSCHAPv2 */
@@ -992,6 +995,7 @@ static int eap_ttls_encrypt_response(struct eap_sm *sm,
 				 resp, out_data)) {
 		wpa_printf(MSG_INFO, "EAP-TTLS: Failed to encrypt a Phase 2 "
 			   "frame");
+		wpabuf_free(resp);
 		return -1;
 	}
 	wpabuf_free(resp);
@@ -1540,8 +1544,7 @@ static void eap_ttls_deinit_for_reauth(struct eap_sm *sm, void *priv)
 static void * eap_ttls_init_for_reauth(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
-	os_free(data->key_data);
-	data->key_data = NULL;
+	eap_ttls_free_key(data);
 	os_free(data->session_id);
 	data->session_id = NULL;
 	if (eap_peer_tls_reauth_init(sm, &data->ssl)) {
@@ -1569,7 +1572,7 @@ static int eap_ttls_get_status(struct eap_sm *sm, void *priv, char *buf,
 	ret = os_snprintf(buf + len, buflen - len,
 			  "EAP-TTLSv%d Phase2 method=",
 			  data->ttls_version);
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 	switch (data->phase2_type) {
@@ -1594,7 +1597,7 @@ static int eap_ttls_get_status(struct eap_sm *sm, void *priv, char *buf,
 		ret = 0;
 		break;
 	}
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -1647,6 +1650,25 @@ static u8 * eap_ttls_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
+static u8 * eap_ttls_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
+{
+	struct eap_ttls_data *data = priv;
+	u8 *key;
+
+	if (data->key_data == NULL)
+		return NULL;
+
+	key = os_malloc(EAP_EMSK_LEN);
+	if (key == NULL)
+		return NULL;
+
+	*len = EAP_EMSK_LEN;
+	os_memcpy(key, data->key_data + EAP_TLS_KEY_LEN, EAP_EMSK_LEN);
+
+	return key;
+}
+
+
 int eap_peer_ttls_register(void)
 {
 	struct eap_method *eap;
@@ -1667,6 +1689,7 @@ int eap_peer_ttls_register(void)
 	eap->has_reauth_data = eap_ttls_has_reauth_data;
 	eap->deinit_for_reauth = eap_ttls_deinit_for_reauth;
 	eap->init_for_reauth = eap_ttls_init_for_reauth;
+	eap->get_emsk = eap_ttls_get_emsk;
 
 	ret = eap_peer_method_register(eap);
 	if (ret)

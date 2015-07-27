@@ -9,6 +9,7 @@
 #include "utils/includes.h"
 
 #include "utils/common.h"
+#include "utils/eloop.h"
 #include "radius/radius.h"
 #include "drivers/driver.h"
 #include "common/ieee802_11_defs.h"
@@ -30,6 +31,7 @@
 #include "ap_config.h"
 #include "hw_features.h"
 #include "dfs.h"
+#include "beacon.h"
 
 
 int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
@@ -78,6 +80,12 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		ie = elems.wpa_ie - 2;
 		ielen = elems.wpa_ie_len + 2;
 		wpa_printf(MSG_DEBUG, "STA included WPA IE in (Re)AssocReq");
+#ifdef CONFIG_HS20
+	} else if (elems.osen) {
+		ie = elems.osen - 2;
+		ielen = elems.osen_len + 2;
+		wpa_printf(MSG_DEBUG, "STA included OSEN IE in (Re)AssocReq");
+#endif /* CONFIG_HS20 */
 	} else {
 		ie = NULL;
 		ielen = 0;
@@ -114,6 +122,24 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			p2p_dev_addr = p2p_get_go_dev_addr(sta->p2p_ie);
 	}
 #endif /* CONFIG_P2P */
+
+#ifdef CONFIG_IEEE80211N
+#ifdef NEED_AP_MLME
+	if (elems.ht_capabilities &&
+	    elems.ht_capabilities_len >=
+	    sizeof(struct ieee80211_ht_capabilities) &&
+	    (hapd->iface->conf->ht_capab &
+	     HT_CAP_INFO_SUPP_CHANNEL_WIDTH_SET)) {
+		struct ieee80211_ht_capabilities *ht_cap =
+			(struct ieee80211_ht_capabilities *)
+			elems.ht_capabilities;
+
+		if (le_to_host16(ht_cap->ht_capabilities_info) &
+		    HT_CAP_INFO_40MHZ_INTOLERANT)
+			ht40_intolerant_add(hapd->iface, sta);
+	}
+#endif /* NEED_AP_MLME */
+#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_INTERWORKING
 	if (elems.ext_capab && elems.ext_capab_len > 4) {
@@ -281,6 +307,29 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			sta->flags |= WLAN_STA_MAYBE_WPS;
 		wpabuf_free(wps);
 #endif /* CONFIG_WPS */
+#ifdef CONFIG_HS20
+	} else if (hapd->conf->osen) {
+		if (elems.osen == NULL) {
+			hostapd_logger(
+				hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+				HOSTAPD_LEVEL_INFO,
+				"No HS 2.0 OSEN element in association request");
+			return WLAN_STATUS_INVALID_IE;
+		}
+
+		wpa_printf(MSG_DEBUG, "HS 2.0: OSEN association");
+		if (sta->wpa_sm == NULL)
+			sta->wpa_sm = wpa_auth_sta_init(hapd->wpa_auth,
+							sta->addr, NULL);
+		if (sta->wpa_sm == NULL) {
+			wpa_printf(MSG_WARNING, "Failed to initialize WPA "
+				   "state machine");
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
+		if (wpa_validate_osen(hapd->wpa_auth, sta->wpa_sm,
+				      elems.osen - 2, elems.osen_len + 2) < 0)
+			return WLAN_STATUS_INVALID_IE;
+#endif /* CONFIG_HS20 */
 	}
 #ifdef CONFIG_WPS
 skip_wpa_check:
@@ -291,6 +340,9 @@ skip_wpa_check:
 					sta->auth_alg, req_ies, req_ies_len);
 
 	hostapd_sta_assoc(hapd, addr, reassoc, status, buf, p - buf);
+
+	if (sta->auth_alg == WLAN_AUTH_FT)
+		ap_sta_set_authorized(hapd, sta, 1);
 #else /* CONFIG_IEEE80211R */
 	/* Keep compiler silent about unused variables */
 	if (status) {
@@ -300,6 +352,8 @@ skip_wpa_check:
 	new_assoc = (sta->flags & WLAN_STA_ASSOC) == 0;
 	sta->flags |= WLAN_STA_AUTH | WLAN_STA_ASSOC;
 	sta->flags &= ~WLAN_STA_WNM_SLEEP_MODE;
+
+	hostapd_set_sta_flags(hapd, sta);
 
 	if (reassoc && (sta->auth_alg == WLAN_AUTH_FT))
 		wpa_auth_sm_event(sta->wpa_sm, WPA_ASSOC_FT);
@@ -385,12 +439,13 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 			     int offset, int width, int cf1, int cf2)
 {
 #ifdef NEED_AP_MLME
-	int channel, chwidth, seg0_idx = 0, seg1_idx = 0;
+	int channel, chwidth, seg0_idx = 0, seg1_idx = 0, is_dfs;
 
 	hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
-		       HOSTAPD_LEVEL_INFO, "driver had channel switch: "
-		       "freq=%d, ht=%d, offset=%d, width=%d, cf1=%d, cf2=%d",
-		       freq, ht, offset, width, cf1, cf2);
+		       HOSTAPD_LEVEL_INFO,
+		       "driver had channel switch: freq=%d, ht=%d, offset=%d, width=%d (%s), cf1=%d, cf2=%d",
+		       freq, ht, offset, width, channel_width_to_string(width),
+		       cf1, cf2);
 
 	hapd->iface->freq = freq;
 
@@ -435,17 +490,25 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	hapd->iconf->channel = channel;
 	hapd->iconf->ieee80211n = ht;
+	if (!ht)
+		hapd->iconf->ieee80211ac = 0;
 	hapd->iconf->secondary_channel = offset;
 	hapd->iconf->vht_oper_chwidth = chwidth;
 	hapd->iconf->vht_oper_centr_freq_seg0_idx = seg0_idx;
 	hapd->iconf->vht_oper_centr_freq_seg1_idx = seg1_idx;
 
-	if (hapd->iface->csa_in_progress &&
-	    freq == hapd->iface->cs_freq_params.freq) {
-		hostapd_cleanup_cs_params(hapd);
+	is_dfs = ieee80211_is_dfs(freq);
 
-		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_CSA_FINISHED "freq=%d",
-			freq);
+	if (hapd->csa_in_progress &&
+	    freq == hapd->cs_freq_params.freq) {
+		hostapd_cleanup_cs_params(hapd);
+		ieee802_11_set_beacon(hapd);
+
+		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_CSA_FINISHED
+			"freq=%d dfs=%d", freq, is_dfs);
+	} else if (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_CSA_FINISHED
+			"freq=%d dfs=%d", freq, is_dfs);
 	}
 #endif /* NEED_AP_MLME */
 }
@@ -465,6 +528,51 @@ void hostapd_event_connect_failed_reason(struct hostapd_data *hapd,
 		break;
 	}
 }
+
+
+#ifdef CONFIG_ACS
+static void hostapd_acs_channel_selected(struct hostapd_data *hapd,
+					 u8 pri_channel, u8 sec_channel)
+{
+	int channel;
+	int ret;
+
+	if (hapd->iconf->channel) {
+		wpa_printf(MSG_INFO, "ACS: Channel was already set to %d",
+			   hapd->iconf->channel);
+		return;
+	}
+
+	hapd->iface->freq = hostapd_hw_get_freq(hapd, pri_channel);
+
+	channel = pri_channel;
+	if (!channel) {
+		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_WARNING,
+			       "driver switched to bad channel");
+		return;
+	}
+
+	hapd->iconf->channel = channel;
+
+	if (sec_channel == 0)
+		hapd->iconf->secondary_channel = 0;
+	else if (sec_channel < pri_channel)
+		hapd->iconf->secondary_channel = -1;
+	else if (sec_channel > pri_channel)
+		hapd->iconf->secondary_channel = 1;
+	else {
+		wpa_printf(MSG_ERROR, "Invalid secondary channel!");
+		return;
+	}
+
+	ret = hostapd_acs_completed(hapd->iface, 0);
+	if (ret) {
+		wpa_printf(MSG_ERROR,
+			   "ACS: Possibly channel configuration is invalid");
+	}
+}
+#endif /* CONFIG_ACS */
 
 
 int hostapd_probe_req_rx(struct hostapd_data *hapd, const u8 *sa, const u8 *da,
@@ -649,6 +757,20 @@ static int hostapd_mgmt_rx(struct hostapd_data *hapd, struct rx_mgmt *rx_mgmt)
 	struct hostapd_frame_info fi;
 	int ret;
 
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->ext_mgmt_frame_handling) {
+		size_t hex_len = 2 * rx_mgmt->frame_len + 1;
+		char *hex = os_malloc(hex_len);
+		if (hex) {
+			wpa_snprintf_hex(hex, hex_len, rx_mgmt->frame,
+					 rx_mgmt->frame_len);
+			wpa_msg(hapd->msg_ctx, MSG_INFO, "MGMT-RX %s", hex);
+			os_free(hex);
+		}
+		return 1;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
 	hdr = (const struct ieee80211_hdr *) rx_mgmt->frame;
 	bssid = get_hdr_bssid(hdr, rx_mgmt->frame_len);
 	if (bssid == NULL)
@@ -678,6 +800,12 @@ static int hostapd_mgmt_rx(struct hostapd_data *hapd, struct rx_mgmt *rx_mgmt)
 		size_t i;
 		ret = 0;
 		for (i = 0; i < iface->num_bss; i++) {
+			/* if bss is set, driver will call this function for
+			 * each bss individually. */
+			if (rx_mgmt->drv_priv &&
+			    (iface->bss[i]->drv_priv != rx_mgmt->drv_priv))
+				continue;
+
 			if (ieee802_11_mgmt(iface->bss[i], rx_mgmt->frame,
 					    rx_mgmt->frame_len, &fi) > 0)
 				ret = 1;
@@ -783,6 +911,42 @@ static void hostapd_update_nf(struct hostapd_iface *iface,
 }
 
 
+static void hostapd_single_channel_get_survey(struct hostapd_iface *iface,
+					      struct survey_results *survey_res)
+{
+	struct hostapd_channel_data *chan;
+	struct freq_survey *survey;
+	u64 divisor, dividend;
+
+	survey = dl_list_first(&survey_res->survey_list, struct freq_survey,
+			       list);
+	if (!survey || !survey->freq)
+		return;
+
+	chan = hostapd_get_mode_channel(iface, survey->freq);
+	if (!chan || chan->flag & HOSTAPD_CHAN_DISABLED)
+		return;
+
+	wpa_printf(MSG_DEBUG, "Single Channel Survey: (freq=%d channel_time=%ld channel_time_busy=%ld)",
+		   survey->freq,
+		   (unsigned long int) survey->channel_time,
+		   (unsigned long int) survey->channel_time_busy);
+
+	if (survey->channel_time > iface->last_channel_time &&
+	    survey->channel_time > survey->channel_time_busy) {
+		dividend = survey->channel_time_busy -
+			iface->last_channel_time_busy;
+		divisor = survey->channel_time - iface->last_channel_time;
+
+		iface->channel_utilization = dividend * 255 / divisor;
+		wpa_printf(MSG_DEBUG, "Channel Utilization: %d",
+			   iface->channel_utilization);
+	}
+	iface->last_channel_time = survey->channel_time;
+	iface->last_channel_time_busy = survey->channel_time_busy;
+}
+
+
 static void hostapd_event_get_survey(struct hostapd_data *hapd,
 				     struct survey_results *survey_results)
 {
@@ -792,6 +956,11 @@ static void hostapd_event_get_survey(struct hostapd_data *hapd,
 
 	if (dl_list_empty(&survey_results->survey_list)) {
 		wpa_printf(MSG_DEBUG, "No survey data received");
+		return;
+	}
+
+	if (survey_results->freq_filter) {
+		hostapd_single_channel_get_survey(iface, survey_results);
 		return;
 	}
 
@@ -814,6 +983,20 @@ static void hostapd_event_get_survey(struct hostapd_data *hapd,
 
 
 #ifdef NEED_AP_MLME
+
+static void hostapd_event_iface_unavailable(struct hostapd_data *hapd)
+{
+	wpa_printf(MSG_DEBUG, "Interface %s is unavailable -- stopped",
+		   hapd->conf->iface);
+
+	if (hapd->csa_in_progress) {
+		wpa_printf(MSG_INFO, "CSA failed (%s was stopped)",
+			   hapd->conf->iface);
+		hostapd_switch_channel_fallback(hapd->iface,
+						&hapd->cs_freq_params);
+	}
+}
+
 
 static void hostapd_event_dfs_radar_detected(struct hostapd_data *hapd,
 					     struct dfs_event *radar)
@@ -854,6 +1037,16 @@ static void hostapd_event_dfs_nop_finished(struct hostapd_data *hapd,
 				 radar->cf1, radar->cf2);
 }
 
+
+static void hostapd_event_dfs_cac_started(struct hostapd_data *hapd,
+					  struct dfs_event *radar)
+{
+	wpa_printf(MSG_DEBUG, "DFS offload CAC started on %d MHz", radar->freq);
+	hostapd_dfs_start_cac(hapd->iface, radar->freq, radar->ht_enabled,
+			      radar->chan_offset, radar->chan_width,
+			      radar->cf1, radar->cf2);
+}
+
 #endif /* NEED_AP_MLME */
 
 
@@ -890,12 +1083,6 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		if (hapd->iface->scan_cb)
 			hapd->iface->scan_cb(hapd->iface);
 		break;
-#ifdef CONFIG_IEEE80211R
-	case EVENT_FT_RRB_RX:
-		wpa_ft_rrb_rx(hapd->wpa_auth, data->ft_rrb_rx.src,
-			      data->ft_rrb_rx.data, data->ft_rrb_rx.data_len);
-		break;
-#endif /* CONFIG_IEEE80211R */
 	case EVENT_WPS_BUTTON_PUSHED:
 		hostapd_wps_button_pushed(hapd, NULL);
 		break;
@@ -932,6 +1119,8 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		break;
 #endif /* NEED_AP_MLME */
 	case EVENT_RX_MGMT:
+		if (!data->rx_mgmt.frame)
+			break;
 #ifdef NEED_AP_MLME
 		if (hostapd_mgmt_rx(hapd, &data->rx_mgmt) > 0)
 			break;
@@ -958,6 +1147,8 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 				       data->eapol_rx.data_len);
 		break;
 	case EVENT_ASSOC:
+		if (!data)
+			return;
 		hostapd_notif_assoc(hapd, data->assoc_info.addr,
 				    data->assoc_info.req_ies,
 				    data->assoc_info.req_ies_len,
@@ -1000,6 +1191,9 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		hostapd_event_get_survey(hapd, &data->survey_results);
 		break;
 #ifdef NEED_AP_MLME
+	case EVENT_INTERFACE_UNAVAILABLE:
+		hostapd_event_iface_unavailable(hapd);
+		break;
 	case EVENT_DFS_RADAR_DETECTED:
 		if (!data)
 			break;
@@ -1028,7 +1222,37 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		hostapd_channel_list_updated(
 			hapd->iface, data->channel_list_changed.initiator);
 		break;
+	case EVENT_DFS_CAC_STARTED:
+		if (!data)
+			break;
+		hostapd_event_dfs_cac_started(hapd, &data->dfs_event);
+		break;
 #endif /* NEED_AP_MLME */
+	case EVENT_INTERFACE_ENABLED:
+		wpa_msg(hapd->msg_ctx, MSG_INFO, INTERFACE_ENABLED);
+		if (hapd->disabled && hapd->started) {
+			hapd->disabled = 0;
+			/*
+			 * Try to re-enable interface if the driver stopped it
+			 * when the interface got disabled.
+			 */
+			wpa_auth_reconfig_group_keys(hapd->wpa_auth);
+			hapd->reenable_beacon = 1;
+			ieee802_11_set_beacon(hapd);
+		}
+		break;
+	case EVENT_INTERFACE_DISABLED:
+		hostapd_free_stas(hapd);
+		wpa_msg(hapd->msg_ctx, MSG_INFO, INTERFACE_DISABLED);
+		hapd->disabled = 1;
+		break;
+#ifdef CONFIG_ACS
+	case EVENT_ACS_CHANNEL_SELECTED:
+		hostapd_acs_channel_selected(
+			hapd, data->acs_selected_channels.pri_channel,
+			data->acs_selected_channels.sec_channel);
+		break;
+#endif /* CONFIG_ACS */
 	default:
 		wpa_printf(MSG_DEBUG, "Unknown event %d", event);
 		break;

@@ -1,6 +1,6 @@
 /*
  * IEEE 802.11 Frame type definitions
- * Copyright (c) 2002-2009, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2015, Jouni Malinen <j@w1.fi>
  * Copyright (c) 2007-2008 Intel Corporation
  *
  * This software may be distributed under the terms of the BSD license.
@@ -24,6 +24,8 @@
 
 #define WLAN_FC_GET_TYPE(fc)	(((fc) & 0x000c) >> 2)
 #define WLAN_FC_GET_STYPE(fc)	(((fc) & 0x00f0) >> 4)
+
+#define WLAN_INVALID_MGMT_SEQ   0xFFFF
 
 #define WLAN_GET_SEQ_FRAG(seq) ((seq) & (BIT(3) | BIT(2) | BIT(1) | BIT(0)))
 #define WLAN_GET_SEQ_SEQ(seq) \
@@ -161,6 +163,7 @@
 #define WLAN_STATUS_ANTI_CLOGGING_TOKEN_REQ 76
 #define WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED 77
 #define WLAN_STATUS_TRANSMISSION_FAILURE 79
+#define WLAN_STATUS_QUERY_RESP_OUTSTANDING 95
 #define WLAN_STATUS_ASSOC_DENIED_NO_VHT 104
 
 /* Reason codes (IEEE 802.11-2007, 7.3.1.7, Table 7-22) */
@@ -193,6 +196,16 @@
 #define WLAN_REASON_TDLS_TEARDOWN_UNSPECIFIED 26
 /* IEEE 802.11e */
 #define WLAN_REASON_DISASSOC_LOW_ACK 34
+/* IEEE 802.11s */
+#define WLAN_REASON_MESH_PEERING_CANCELLED 52
+#define WLAN_REASON_MESH_MAX_PEERS 53
+#define WLAN_REASON_MESH_CONFIG_POLICY_VIOLATION 54
+#define WLAN_REASON_MESH_CLOSE_RCVD 55
+#define WLAN_REASON_MESH_MAX_RETRIES 56
+#define WLAN_REASON_MESH_CONFIRM_TIMEOUT 57
+#define WLAN_REASON_MESH_INVALID_GTK 58
+#define WLAN_REASON_MESH_INCONSISTENT_PARAMS 59
+#define WLAN_REASON_MESH_INVALID_SECURITY_CAP 60
 
 
 /* Information Element IDs */
@@ -223,6 +236,7 @@
 #define WLAN_EID_QOS 46
 #define WLAN_EID_RSN 48
 #define WLAN_EID_EXT_SUPP_RATES 50
+#define WLAN_EID_NEIGHBOR_REPORT 52
 #define WLAN_EID_MOBILITY_DOMAIN 54
 #define WLAN_EID_FAST_BSS_TRANSITION 55
 #define WLAN_EID_TIMEOUT_INTERVAL 56
@@ -232,6 +246,7 @@
 #define WLAN_EID_SECONDARY_CHANNEL_OFFSET 62
 #define WLAN_EID_WAPI 68
 #define WLAN_EID_TIME_ADVERTISEMENT 69
+#define WLAN_EID_RRM_ENABLED_CAPABILITIES 70
 #define WLAN_EID_20_40_BSS_COEXISTENCE 72
 #define WLAN_EID_20_40_BSS_INTOLERANT 73
 #define WLAN_EID_OVERLAPPING_BSS_SCAN_PARAMS 74
@@ -247,7 +262,12 @@
 #define WLAN_EID_ADV_PROTO 108
 #define WLAN_EID_QOS_MAP_SET 110
 #define WLAN_EID_ROAMING_CONSORTIUM 111
+#define WLAN_EID_MESH_CONFIG 113
+#define WLAN_EID_MESH_ID 114
+#define WLAN_EID_PEER_MGMT 117
 #define WLAN_EID_EXT_CAPAB 127
+#define WLAN_EID_AMPE 139
+#define WLAN_EID_MIC 140
 #define WLAN_EID_CCKM 156
 #define WLAN_EID_VHT_CAP 191
 #define WLAN_EID_VHT_OPERATION 192
@@ -275,6 +295,7 @@
 #define WLAN_ACTION_WNM 10
 #define WLAN_ACTION_UNPROTECTED_WNM 11
 #define WLAN_ACTION_TDLS 12
+#define WLAN_ACTION_SELF_PROTECTED 15
 #define WLAN_ACTION_WMM 17 /* WMM Specification 1.1 */
 #define WLAN_ACTION_VENDOR_SPECIFIC 127
 
@@ -318,6 +339,19 @@
 #define WLAN_TDLS_PEER_PSM_RESPONSE 8
 #define WLAN_TDLS_PEER_TRAFFIC_RESPONSE 9
 #define WLAN_TDLS_DISCOVERY_REQUEST 10
+
+/* Radio Measurement Action codes */
+#define WLAN_RRM_RADIO_MEASUREMENT_REQUEST 0
+#define WLAN_RRM_RADIO_MEASUREMENT_REPORT 1
+#define WLAN_RRM_LINK_MEASUREMENT_REQUEST 2
+#define WLAN_RRM_LINK_MEASUREMENT_REPORT 3
+#define WLAN_RRM_NEIGHBOR_REPORT_REQUEST 4
+#define WLAN_RRM_NEIGHBOR_REPORT_RESPONSE 5
+
+/* Radio Measurement capabilities (from RRM Capabilities IE) */
+/* byte 1 (out of 5) */
+#define WLAN_RRM_CAPS_LINK_MEASUREMENT BIT(0)
+#define WLAN_RRM_CAPS_NEIGHBOR_REPORT BIT(1)
 
 /* Timeout Interval Type */
 #define WLAN_TIMEOUT_REASSOC_DEADLINE 1
@@ -575,6 +609,10 @@ struct ieee80211_mgmt {
 					 * Entries (optional) */
 					u8 variable[0];
 				} STRUCT_PACKED bss_tm_query;
+				struct {
+					u8 action; /* 15 */
+					u8 variable[0];
+				} STRUCT_PACKED slf_prot_action;
 			} u;
 		} STRUCT_PACKED action;
 	} u;
@@ -584,9 +622,12 @@ struct ieee80211_mgmt {
 /* Rx MCS bitmask is in the first 77 bits of supported_mcs_set */
 #define IEEE80211_HT_MCS_MASK_LEN 10
 
+/* HT Capabilities element */
 struct ieee80211_ht_capabilities {
 	le16 ht_capabilities_info;
-	u8 a_mpdu_params;
+	u8 a_mpdu_params; /* Maximum A-MPDU Length Exponent B0..B1
+			   * Minimum MPDU Start Spacing B2..B4
+			   * Reserved B5..B7 */
 	u8 supported_mcs_set[16];
 	le16 ht_extended_capabilities;
 	le32 tx_bf_capability_info;
@@ -594,12 +635,14 @@ struct ieee80211_ht_capabilities {
 } STRUCT_PACKED;
 
 
+/* HT Operation element */
 struct ieee80211_ht_operation {
-	u8 control_chan;
-	u8 ht_param;
-	le16 operation_mode;
-	le16 stbc_param;
-	u8 basic_set[16];
+	u8 primary_chan;
+	/* Five octets of HT Operation Information */
+	u8 ht_param; /* B0..B7 */
+	le16 operation_mode; /* B8..B23 */
+	le16 param; /* B24..B39 */
+	u8 basic_mcs_set[16];
 } STRUCT_PACKED;
 
 
@@ -631,6 +674,15 @@ struct ieee80211_vht_operation {
 	le16 vht_basic_mcs_set;
 } STRUCT_PACKED;
 
+struct ieee80211_ampe_ie {
+	u8 selected_pairwise_suite[4];
+	u8 local_nonce[32];
+	u8 peer_nonce[32];
+	u8 mgtk[16];
+	u8 key_rsc[8];
+	u8 key_expiration[4];
+} STRUCT_PACKED;
+
 #ifdef _MSC_VER
 #pragma pack(pop)
 #endif /* _MSC_VER */
@@ -639,7 +691,9 @@ struct ieee80211_vht_operation {
 #define ERP_INFO_USE_PROTECTION BIT(1)
 #define ERP_INFO_BARKER_PREAMBLE_MODE BIT(2)
 
+#define OVERLAPPING_BSS_TRANS_DELAY_FACTOR 5
 
+/* HT Capabilities Info field within HT Capabilities element */
 #define HT_CAP_INFO_LDPC_CODING_CAP		((u16) BIT(0))
 #define HT_CAP_INFO_SUPP_CHANNEL_WIDTH_SET	((u16) BIT(1))
 #define HT_CAP_INFO_SMPS_MASK			((u16) (BIT(2) | BIT(3)))
@@ -657,73 +711,86 @@ struct ieee80211_vht_operation {
 #define HT_CAP_INFO_DELAYED_BA			((u16) BIT(10))
 #define HT_CAP_INFO_MAX_AMSDU_SIZE		((u16) BIT(11))
 #define HT_CAP_INFO_DSSS_CCK40MHZ		((u16) BIT(12))
-#define HT_CAP_INFO_PSMP_SUPP			((u16) BIT(13))
+/* B13 - Reserved (was PSMP support during P802.11n development) */
 #define HT_CAP_INFO_40MHZ_INTOLERANT		((u16) BIT(14))
 #define HT_CAP_INFO_LSIG_TXOP_PROTECT_SUPPORT	((u16) BIT(15))
 
-
+/* HT Extended Capabilities field within HT Capabilities element */
 #define EXT_HT_CAP_INFO_PCO			((u16) BIT(0))
+#define EXT_HT_CAP_INFO_PCO_TRANS_TIME_MASK	((u16) (BIT(1) | BIT(2)))
 #define EXT_HT_CAP_INFO_TRANS_TIME_OFFSET	1
+/* B3..B7 - Reserved */
+#define EXT_HT_CAP_INFO_MCS_FEEDBACK_MASK	((u16) (BIT(8) | BIT(9)))
 #define EXT_HT_CAP_INFO_MCS_FEEDBACK_OFFSET	8
-#define EXT_HT_CAP_INFO_HTC_SUPPORTED		((u16) BIT(10))
+#define EXT_HT_CAP_INFO_HTC_SUPPORT		((u16) BIT(10))
 #define EXT_HT_CAP_INFO_RD_RESPONDER		((u16) BIT(11))
+/* B12..B15 - Reserved */
 
+/* Transmit Beanforming Capabilities within HT Capabilities element */
+#define TX_BF_CAP_IMPLICIT_TXBF_RX_CAP ((u32) BIT(0))
+#define TX_BF_CAP_RX_STAGGERED_SOUNDING_CAP ((u32) BIT(1))
+#define TX_BF_CAP_TX_STAGGERED_SOUNDING_CAP ((u32) BIT(2))
+#define TX_BF_CAP_RX_NDP_CAP ((u32) BIT(3))
+#define TX_BF_CAP_TX_NDP_CAP ((u32) BIT(4))
+#define TX_BF_CAP_IMPLICIT_TX_BF_CAP ((u32) BIT(5))
+#define TX_BF_CAP_CALIBRATION_MASK ((u32) (BIT(6) | BIT(7))
+#define TX_BF_CAP_CALIB_OFFSET 6
+#define TX_BF_CAP_EXPLICIT_CSI_TXBF_CAP ((u32) BIT(8))
+#define TX_BF_CAP_EXPLICIT_NONCOMPR_STEERING_CAP ((u32) BIT(9))
+#define TX_BF_CAP_EXPLICIT_COMPR_STEERING_CAP ((u32) BIT(10))
+#define TX_BF_CAP_EXPLICIT_TX_BF_CSI_FEEDBACK_MASK ((u32) (BIT(10) | BIT(11)))
+#define TX_BF_CAP_EXPLICIT_BF_CSI_FEEDBACK_OFFSET 11
+#define TX_BF_CAP_EXPLICIT_UNCOMPR_STEERING_MATRIX_FEEDBACK_OFFSET 13
+#define TX_BF_CAP_EXPLICIT_COMPRESSED_STEERING_MATRIX_FEEDBACK_OFFSET 15
+#define TX_BF_CAP_MINIMAL_GROUPING_OFFSET 17
+#define TX_BF_CAP_CSI_NUM_BEAMFORMER_ANT_OFFSET 19
+#define TX_BF_CAP_UNCOMPRESSED_STEERING_MATRIX_BEAMFORMER_ANT_OFFSET 21
+#define TX_BF_CAP_COMPRESSED_STEERING_MATRIX_BEAMFORMER_ANT_OFFSET 23
+#define TX_BF_CAP_SCI_MAX_OF_ROWS_BEANFORMER_SUPPORTED_OFFSET 25
+#define TX_BF_CAP_CHANNEL_ESTIMATION_CAP_MASK ((u32) (BIT(27) | BIT(28)))
+#define TX_BF_CAP_CHANNEL_ESTIMATION_CAP_OFFSET 27
+/* B29..B31 - Reserved */
 
-#define TX_BEAMFORM_CAP_TXBF_CAP ((u32) BIT(0))
-#define TX_BEAMFORM_CAP_RX_STAGGERED_SOUNDING_CAP ((u32) BIT(1))
-#define TX_BEAMFORM_CAP_TX_STAGGERED_SOUNDING_CAP ((u32) BIT(2))
-#define TX_BEAMFORM_CAP_RX_ZLF_CAP ((u32) BIT(3))
-#define TX_BEAMFORM_CAP_TX_ZLF_CAP ((u32) BIT(4))
-#define TX_BEAMFORM_CAP_IMPLICIT_ZLF_CAP ((u32) BIT(5))
-#define TX_BEAMFORM_CAP_CALIB_OFFSET 6
-#define TX_BEAMFORM_CAP_EXPLICIT_CSI_TXBF_CAP ((u32) BIT(8))
-#define TX_BEAMFORM_CAP_EXPLICIT_UNCOMPR_STEERING_MATRIX_CAP ((u32) BIT(9))
-#define TX_BEAMFORM_CAP_EXPLICIT_BF_CSI_FEEDBACK_CAP ((u32) BIT(10))
-#define TX_BEAMFORM_CAP_EXPLICIT_BF_CSI_FEEDBACK_OFFSET 11
-#define TX_BEAMFORM_CAP_EXPLICIT_UNCOMPR_STEERING_MATRIX_FEEDBACK_OFFSET 13
-#define TX_BEAMFORM_CAP_EXPLICIT_COMPRESSED_STEERING_MATRIX_FEEDBACK_OFFSET 15
-#define TX_BEAMFORM_CAP_MINIMAL_GROUPING_OFFSET 17
-#define TX_BEAMFORM_CAP_CSI_NUM_BEAMFORMER_ANT_OFFSET 19
-#define TX_BEAMFORM_CAP_UNCOMPRESSED_STEERING_MATRIX_BEAMFORMER_ANT_OFFSET 21
-#define TX_BEAMFORM_CAP_COMPRESSED_STEERING_MATRIX_BEAMFORMER_ANT_OFFSET 23
-#define TX_BEAMFORM_CAP_SCI_MAX_OF_ROWS_BEANFORMER_SUPPORTED_OFFSET 25
+/* ASEL Capability field within HT Capabilities element */
+#define ASEL_CAP_ASEL_CAPABLE ((u8) BIT(0))
+#define ASEL_CAP_EXPLICIT_CSI_FEEDBACK_BASED_TX_AS_CAP ((u8) BIT(1))
+#define ASEL_CAP_ANT_INDICES_FEEDBACK_BASED_TX_AS_CAP ((u8) BIT(2))
+#define ASEL_CAP_EXPLICIT_CSI_FEEDBACK_CAP ((u8) BIT(3))
+#define ASEL_CAP_ANT_INDICES_FEEDBACK_CAP ((u8) BIT(4))
+#define ASEL_CAP_RX_AS_CAP ((u8) BIT(5))
+#define ASEL_CAP_TX_SOUNDING_PPDUS_CAP ((u8) BIT(6))
+/* B7 - Reserved */
 
-
-#define ASEL_CAPABILITY_ASEL_CAPABLE ((u8) BIT(0))
-#define ASEL_CAPABILITY_EXPLICIT_CSI_FEEDBACK_BASED_TX_AS_CAP ((u8) BIT(1))
-#define ASEL_CAPABILITY_ANT_INDICES_FEEDBACK_BASED_TX_AS_CAP ((u8) BIT(2))
-#define ASEL_CAPABILITY_EXPLICIT_CSI_FEEDBACK_CAP ((u8) BIT(3))
-#define ASEL_CAPABILITY_ANT_INDICES_FEEDBACK_CAP ((u8) BIT(4))
-#define ASEL_CAPABILITY_RX_AS_CAP ((u8) BIT(5))
-#define ASEL_CAPABILITY_TX_SOUND_PPDUS_CAP ((u8) BIT(6))
-
+/* First octet of HT Operation Information within HT Operation element */
 #define HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK	((u8) BIT(0) | BIT(1))
 #define HT_INFO_HT_PARAM_SECONDARY_CHNL_ABOVE		((u8) BIT(0))
 #define HT_INFO_HT_PARAM_SECONDARY_CHNL_BELOW		((u8) BIT(0) | BIT(1))
-#define HT_INFO_HT_PARAM_REC_TRANS_CHNL_WIDTH		((u8) BIT(2))
+#define HT_INFO_HT_PARAM_STA_CHNL_WIDTH			((u8) BIT(2))
 #define HT_INFO_HT_PARAM_RIFS_MODE			((u8) BIT(3))
-#define HT_INFO_HT_PARAM_CTRL_ACCESS_ONLY		((u8) BIT(4))
-#define HT_INFO_HT_PARAM_SRV_INTERVAL_GRANULARITY	((u8) BIT(5))
+/* B4..B7 - Reserved */
 
+/* HT Protection (B8..B9 of HT Operation Information) */
+#define HT_PROT_NO_PROTECTION           0
+#define HT_PROT_NONMEMBER_PROTECTION    1
+#define HT_PROT_20MHZ_PROTECTION        2
+#define HT_PROT_NON_HT_MIXED            3
+/* Bits within ieee80211_ht_operation::operation_mode (BIT(0) maps to B8 in
+ * HT Operation Information) */
+#define HT_OPER_OP_MODE_HT_PROT_MASK ((u16) (BIT(0) | BIT(1))) /* B8..B9 */
+#define HT_OPER_OP_MODE_NON_GF_HT_STAS_PRESENT	((u16) BIT(2)) /* B10 */
+/* BIT(3), i.e., B11 in HT Operation Information field - Reserved */
+#define HT_OPER_OP_MODE_OBSS_NON_HT_STAS_PRESENT	((u16) BIT(4)) /* B12 */
+/* BIT(5)..BIT(15), i.e., B13..B23 - Reserved */
 
-#define OP_MODE_PURE                    0
-#define OP_MODE_MAY_BE_LEGACY_STAS      1
-#define OP_MODE_20MHZ_HT_STA_ASSOCED    2
-#define OP_MODE_MIXED                   3
-
-#define HT_INFO_OPERATION_MODE_OP_MODE_MASK	\
-		(0x0001 | 0x0002)
-#define HT_INFO_OPERATION_MODE_OP_MODE_OFFSET		0
-#define HT_INFO_OPERATION_MODE_NON_GF_DEVS_PRESENT	((u8) BIT(2))
-#define HT_INFO_OPERATION_MODE_TRANSMIT_BURST_LIMIT	((u8) BIT(3))
-#define HT_INFO_OPERATION_MODE_NON_HT_STA_PRESENT	((u8) BIT(4))
-
-#define HT_INFO_STBC_PARAM_DUAL_BEACON			((u16) BIT(6))
-#define HT_INFO_STBC_PARAM_DUAL_STBC_PROTECT		((u16) BIT(7))
-#define HT_INFO_STBC_PARAM_SECONDARY_BCN		((u16) BIT(8))
-#define HT_INFO_STBC_PARAM_LSIG_TXOP_PROTECT_ALLOWED	((u16) BIT(9))
-#define HT_INFO_STBC_PARAM_PCO_ACTIVE			((u16) BIT(10))
-#define HT_INFO_STBC_PARAM_PCO_PHASE			((u16) BIT(11))
+/* Last two octets of HT Operation Information (BIT(0) = B24) */
+/* B24..B29 - Reserved */
+#define HT_OPER_PARAM_DUAL_BEACON			((u16) BIT(6))
+#define HT_OPER_PARAM_DUAL_CTS_PROTECTION		((u16) BIT(7))
+#define HT_OPER_PARAM_STBC_BEACON			((u16) BIT(8))
+#define HT_OPER_PARAM_LSIG_TXOP_PROT_FULL_SUPP		((u16) BIT(9))
+#define HT_OPER_PARAM_PCO_ACTIVE			((u16) BIT(10))
+#define HT_OPER_PARAM_PCO_PHASE				((u16) BIT(11))
+/* B36..B39 - Reserved */
 
 #define BSS_MEMBERSHIP_SELECTOR_VHT_PHY 126
 #define BSS_MEMBERSHIP_SELECTOR_HT_PHY 127
@@ -732,6 +799,7 @@ struct ieee80211_vht_operation {
 #define VHT_CAP_MAX_MPDU_LENGTH_7991                ((u32) BIT(0))
 #define VHT_CAP_MAX_MPDU_LENGTH_11454               ((u32) BIT(1))
 #define VHT_CAP_MAX_MPDU_LENGTH_MASK                ((u32) BIT(0) | BIT(1))
+#define VHT_CAP_MAX_MPDU_LENGTH_MASK_SHIFT          0
 #define VHT_CAP_SUPP_CHAN_WIDTH_160MHZ              ((u32) BIT(2))
 #define VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ     ((u32) BIT(3))
 #define VHT_CAP_SUPP_CHAN_WIDTH_MASK                ((u32) BIT(2) | BIT(3))
@@ -745,24 +813,42 @@ struct ieee80211_vht_operation {
 #define VHT_CAP_RXSTBC_4                            ((u32) BIT(10))
 #define VHT_CAP_RXSTBC_MASK                         ((u32) BIT(8) | BIT(9) | \
 							   BIT(10))
+#define VHT_CAP_RXSTBC_MASK_SHIFT                   8
 #define VHT_CAP_SU_BEAMFORMER_CAPABLE               ((u32) BIT(11))
 #define VHT_CAP_SU_BEAMFORMEE_CAPABLE               ((u32) BIT(12))
 #define VHT_CAP_BEAMFORMEE_STS_MAX                  ((u32) BIT(13) | \
 							   BIT(14) | BIT(15))
+#define VHT_CAP_BEAMFORMEE_STS_MAX_SHIFT            13
 #define VHT_CAP_BEAMFORMEE_STS_OFFSET               13
 #define VHT_CAP_SOUNDING_DIMENSION_MAX              ((u32) BIT(16) | \
 							   BIT(17) | BIT(18))
+#define VHT_CAP_SOUNDING_DIMENSION_MAX_SHIFT        16
 #define VHT_CAP_SOUNDING_DIMENSION_OFFSET           16
 #define VHT_CAP_MU_BEAMFORMER_CAPABLE               ((u32) BIT(19))
 #define VHT_CAP_MU_BEAMFORMEE_CAPABLE               ((u32) BIT(20))
 #define VHT_CAP_VHT_TXOP_PS                         ((u32) BIT(21))
 #define VHT_CAP_HTC_VHT                             ((u32) BIT(22))
-#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT          ((u32) BIT(23) | \
+
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_1        ((u32) BIT(23))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_2        ((u32) BIT(24))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_3        ((u32) BIT(23) | BIT(24))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_4        ((u32) BIT(25))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_5        ((u32) BIT(23) | BIT(25))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_6        ((u32) BIT(24) | BIT(25))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MAX      ((u32) BIT(23) | \
 							   BIT(24) | BIT(25))
+#define VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MAX_SHIFT 23
 #define VHT_CAP_VHT_LINK_ADAPTATION_VHT_UNSOL_MFB   ((u32) BIT(27))
 #define VHT_CAP_VHT_LINK_ADAPTATION_VHT_MRQ_MFB     ((u32) BIT(26) | BIT(27))
 #define VHT_CAP_RX_ANTENNA_PATTERN                  ((u32) BIT(28))
 #define VHT_CAP_TX_ANTENNA_PATTERN                  ((u32) BIT(29))
+
+#define VHT_OPMODE_CHANNEL_WIDTH_MASK		    ((u8) BIT(0) | BIT(1))
+#define VHT_OPMODE_CHANNEL_RxNSS_MASK		    ((u8) BIT(4) | BIT(5) | \
+						     BIT(6))
+#define VHT_OPMODE_NOTIF_RX_NSS_SHIFT		    4
+
+#define VHT_RX_NSS_MAX_STREAMS			    8
 
 /* VHT channel widths */
 #define VHT_CHANWIDTH_USE_HT	0
@@ -773,12 +859,14 @@ struct ieee80211_vht_operation {
 #define OUI_MICROSOFT 0x0050f2 /* Microsoft (also used in Wi-Fi specs)
 				* 00:50:F2 */
 #define WPA_IE_VENDOR_TYPE 0x0050f201
+#define WMM_IE_VENDOR_TYPE 0x0050f202
 #define WPS_IE_VENDOR_TYPE 0x0050f204
 #define OUI_WFA 0x506f9a
 #define P2P_IE_VENDOR_TYPE 0x506f9a09
 #define WFD_IE_VENDOR_TYPE 0x506f9a0a
 #define WFD_OUI_TYPE 10
 #define HS20_IE_VENDOR_TYPE 0x506f9a10
+#define OSEN_IE_VENDOR_TYPE 0x506f9a12
 
 #define WMM_OUI_TYPE 2
 #define WMM_OUI_SUBTYPE_INFORMATION_ELEMENT 0
@@ -816,6 +904,8 @@ struct wmm_information_element {
 	u8 qos_info; /* AP/STA specific QoS info */
 
 } STRUCT_PACKED;
+
+#define WMM_QOSINFO_AP_UAPSD 0x80
 
 #define WMM_QOSINFO_STA_AC_MASK 0x0f
 #define WMM_QOSINFO_STA_SP_MASK 0x03
@@ -884,16 +974,18 @@ struct wmm_tspec_element {
 
 
 /* Access Categories / ACI to AC coding */
-enum {
+enum wmm_ac {
 	WMM_AC_BE = 0 /* Best Effort */,
 	WMM_AC_BK = 1 /* Background */,
 	WMM_AC_VI = 2 /* Video */,
-	WMM_AC_VO = 3 /* Voice */
+	WMM_AC_VO = 3 /* Voice */,
+	WMM_AC_NUM = 4
 };
 
 
 #define HS20_INDICATION_OUI_TYPE 16
 #define HS20_ANQP_OUI_TYPE 17
+#define HS20_OSEN_OUI_TYPE 18
 #define HS20_STYPE_QUERY_LIST 1
 #define HS20_STYPE_CAPABILITY_LIST 2
 #define HS20_STYPE_OPERATOR_FRIENDLY_NAME 3
@@ -901,6 +993,21 @@ enum {
 #define HS20_STYPE_CONNECTION_CAPABILITY 5
 #define HS20_STYPE_NAI_HOME_REALM_QUERY 6
 #define HS20_STYPE_OPERATING_CLASS 7
+#define HS20_STYPE_OSU_PROVIDERS_LIST 8
+#define HS20_STYPE_ICON_REQUEST 10
+#define HS20_STYPE_ICON_BINARY_FILE 11
+
+#define HS20_DGAF_DISABLED 0x01
+#define HS20_PPS_MO_ID_PRESENT 0x02
+#define HS20_ANQP_DOMAIN_ID_PRESENT 0x04
+#define HS20_VERSION 0x10 /* Release 2 */
+
+/* WNM-Notification WFA vendors specific subtypes */
+#define HS20_WNM_SUB_REM_NEEDED 0
+#define HS20_WNM_DEAUTH_IMMINENT_NOTICE 1
+
+#define HS20_DEAUTH_REASON_CODE_BSS 0
+#define HS20_DEAUTH_REASON_CODE_ESS 1
 
 /* Wi-Fi Direct (P2P) */
 
@@ -927,6 +1034,14 @@ enum p2p_attr_id {
 	P2P_ATTR_OPERATING_CHANNEL = 17,
 	P2P_ATTR_INVITATION_FLAGS = 18,
 	P2P_ATTR_OOB_GO_NEG_CHANNEL = 19,
+	P2P_ATTR_SERVICE_HASH = 21,
+	P2P_ATTR_SESSION_INFORMATION_DATA = 22,
+	P2P_ATTR_CONNECTION_CAPABILITY = 23,
+	P2P_ATTR_ADVERTISEMENT_ID = 24,
+	P2P_ATTR_ADVERTISED_SERVICE = 25,
+	P2P_ATTR_SESSION_ID = 26,
+	P2P_ATTR_FEATURE_CAPABILITY = 27,
+	P2P_ATTR_PERSISTENT_GROUP = 28,
 	P2P_ATTR_VENDOR_SPECIFIC = 221
 };
 
@@ -971,6 +1086,7 @@ enum p2p_status_code {
 	P2P_SC_FAIL_BOTH_GO_INTENT_15 = 9,
 	P2P_SC_FAIL_INCOMPATIBLE_PROV_METHOD = 10,
 	P2P_SC_FAIL_REJECTED_BY_USER = 11,
+	P2P_SC_SUCCESS_DEFERRED = 12,
 };
 
 enum p2p_role_indication {
@@ -1009,6 +1125,7 @@ enum p2p_service_protocol_type {
 	P2P_SERV_UPNP = 2,
 	P2P_SERV_WS_DISCOVERY = 3,
 	P2P_SERV_WIFI_DISPLAY = 4,
+	P2P_SERV_P2PS = 11,
 	P2P_SERV_VENDOR_SPECIFIC = 255
 };
 
@@ -1033,8 +1150,24 @@ enum wifi_display_subelem {
 	WFD_SUBELEM_SESSION_INFO = 9
 };
 
+/* 802.11s */
+#define MESH_SYNC_METHOD_NEIGHBOR_OFFSET 1
+#define MESH_SYNC_METHOD_VENDOR		255
+#define MESH_PATH_PROTOCOL_HWMP		1
+#define MESH_PATH_PROTOCOL_VENDOR	255
+#define MESH_PATH_METRIC_AIRTIME	1
+#define MESH_PATH_METRIC_VENDOR		255
+
+enum plink_action_field {
+	PLINK_OPEN = 1,
+	PLINK_CONFIRM,
+	PLINK_CLOSE
+};
 
 #define OUI_BROADCOM 0x00904c /* Broadcom (Epigram) */
+#define VENDOR_VHT_TYPE		0x04
+#define VENDOR_VHT_SUBTYPE	0x08
+#define VENDOR_VHT_SUBTYPE2	0x00
 
 #define VENDOR_HT_CAPAB_OUI_TYPE 0x33 /* 00-90-4c:0x33 */
 
@@ -1066,7 +1199,12 @@ enum wifi_display_subelem {
 #define WLAN_AKM_SUITE_PSK		0x000FAC02
 #define WLAN_AKM_SUITE_FT_8021X		0x000FAC03
 #define WLAN_AKM_SUITE_FT_PSK		0x000FAC04
+#define WLAN_AKM_SUITE_8021X_SHA256	0x000FAC05
+#define WLAN_AKM_SUITE_PSK_SHA256	0x000FAC06
+#define WLAN_AKM_SUITE_8021X_SUITE_B	0x000FAC11
+#define WLAN_AKM_SUITE_8021X_SUITE_B_192	0x000FAC12
 #define WLAN_AKM_SUITE_CCKM		0x00409600
+#define WLAN_AKM_SUITE_OSEN		0x506f9a01
 
 
 /* IEEE 802.11v - WNM Action field values */
@@ -1189,5 +1327,31 @@ enum wnm_sleep_mode_subelement_id {
 /* Channel Switch modes (802.11h) */
 #define CHAN_SWITCH_MODE_ALLOW_TX	0
 #define CHAN_SWITCH_MODE_BLOCK_TX	1
+
+struct tpc_report {
+	u8 eid;
+	u8 len;
+	u8 tx_power;
+	u8 link_margin;
+} STRUCT_PACKED;
+
+/* IEEE Std 802.11-2012, 8.5.7.4 - Link Measurement Request frame format */
+struct rrm_link_measurement_request {
+	u8 dialog_token;
+	s8 tx_power;
+	s8 max_tp;
+	u8 variable[0];
+} STRUCT_PACKED;
+
+/* IEEE Std 802.11-2012, 8.5.7.5 - Link Measurement Report frame format */
+struct rrm_link_measurement_report {
+	u8 dialog_token;
+	struct tpc_report tpc;
+	u8 rx_ant_id;
+	u8 tx_ant_id;
+	u8 rcpi;
+	u8 rsni;
+	u8 variable[0];
+} STRUCT_PACKED;
 
 #endif /* IEEE802_11_DEFS_H */

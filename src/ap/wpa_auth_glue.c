@@ -49,6 +49,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 	wconf->okc = conf->okc;
 #ifdef CONFIG_IEEE80211W
 	wconf->ieee80211w = conf->ieee80211w;
+	wconf->group_mgmt_cipher = conf->group_mgmt_cipher;
 #endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_IEEE80211R
 	wconf->ssid_len = conf->ssid.ssid_len;
@@ -73,6 +74,19 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 #endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_HS20
 	wconf->disable_gtk = conf->disable_dgaf;
+	if (conf->osen) {
+		wconf->disable_gtk = 1;
+		wconf->wpa = WPA_PROTO_OSEN;
+		wconf->wpa_key_mgmt = WPA_KEY_MGMT_OSEN;
+		wconf->wpa_pairwise = 0;
+		wconf->wpa_group = WPA_CIPHER_CCMP;
+		wconf->rsn_pairwise = WPA_CIPHER_CCMP;
+		wconf->rsn_preauth = 0;
+		wconf->disable_pmksa_caching = 1;
+#ifdef CONFIG_IEEE80211W
+		wconf->ieee80211w = 1;
+#endif /* CONFIG_IEEE80211W */
+	}
 #endif /* CONFIG_HS20 */
 #ifdef CONFIG_TESTING_OPTIONS
 	wconf->corrupt_gtk_rekey_mic_probability =
@@ -235,12 +249,17 @@ static int hostapd_wpa_auth_get_msk(void *ctx, const u8 *addr, u8 *msk,
 	struct sta_info *sta;
 
 	sta = ap_get_sta(hapd, addr);
-	if (sta == NULL)
+	if (sta == NULL) {
+		wpa_printf(MSG_DEBUG, "AUTH_GET_MSK: Cannot find STA");
 		return -1;
+	}
 
 	key = ieee802_1x_get_key(sta->eapol_sm, &keylen);
-	if (key == NULL)
+	if (key == NULL) {
+		wpa_printf(MSG_DEBUG, "AUTH_GET_MSK: Key is null, eapol_sm: %p",
+			   sta->eapol_sm);
 		return -1;
+	}
 
 	if (keylen > *len)
 		keylen = *len;
@@ -284,6 +303,21 @@ static int hostapd_wpa_auth_send_eapol(void *ctx, const u8 *addr,
 	struct hostapd_data *hapd = ctx;
 	struct sta_info *sta;
 	u32 flags = 0;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->ext_eapol_frame_io) {
+		size_t hex_len = 2 * data_len + 1;
+		char *hex = os_malloc(hex_len);
+
+		if (hex == NULL)
+			return -1;
+		wpa_snprintf_hex(hex, hex_len, data, data_len);
+		wpa_msg(hapd->msg_ctx, MSG_INFO, "EAPOL-TX " MACSTR " %s",
+			MAC2STR(addr), hex);
+		os_free(hex);
+		return 0;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	sta = ap_get_sta(hapd, addr);
 	if (sta)
@@ -389,6 +423,21 @@ static int hostapd_wpa_auth_send_ether(void *ctx, const u8 *dst, u16 proto,
 	struct hostapd_data *hapd = ctx;
 	struct l2_ethhdr *buf;
 	int ret;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->ext_eapol_frame_io && proto == ETH_P_EAPOL) {
+		size_t hex_len = 2 * data_len + 1;
+		char *hex = os_malloc(hex_len);
+
+		if (hex == NULL)
+			return -1;
+		wpa_snprintf_hex(hex, hex_len, data, data_len);
+		wpa_msg(hapd->msg_ctx, MSG_INFO, "EAPOL-TX " MACSTR " %s",
+			MAC2STR(dst), hex);
+		os_free(hex);
+		return 0;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_IEEE80211R
 	if (proto == ETH_P_RRB && hapd->iface->interfaces &&

@@ -27,12 +27,18 @@
 #define DEFAULT_FRAGMENT_SIZE 1398
 
 #define DEFAULT_BG_SCAN_PERIOD -1
+#define DEFAULT_MESH_MAX_RETRIES 2
+#define DEFAULT_MESH_RETRY_TIMEOUT 40
+#define DEFAULT_MESH_CONFIRM_TIMEOUT 40
+#define DEFAULT_MESH_HOLDING_TIMEOUT 40
 #define DEFAULT_DISABLE_HT 0
 #define DEFAULT_DISABLE_HT40 0
 #define DEFAULT_DISABLE_SGI 0
+#define DEFAULT_DISABLE_LDPC 0
 #define DEFAULT_DISABLE_MAX_AMSDU -1 /* no change */
 #define DEFAULT_AMPDU_FACTOR -1 /* no change */
 #define DEFAULT_AMPDU_DENSITY -1 /* no change */
+#define DEFAULT_USER_SELECTED_SIM 1
 
 struct psk_list_entry {
 	struct dl_list list;
@@ -124,6 +130,18 @@ struct wpa_ssid {
 	 * Device Address.
 	 */
 	u8 bssid[ETH_ALEN];
+
+	/**
+	 * bssid_blacklist - List of inacceptable BSSIDs
+	 */
+	u8 *bssid_blacklist;
+	size_t num_bssid_blacklist;
+
+	/**
+	 * bssid_blacklist - List of acceptable BSSIDs
+	 */
+	u8 *bssid_whitelist;
+	size_t num_bssid_whitelist;
 
 	/**
 	 * bssid_set - Whether BSSID is configured for this network
@@ -315,6 +333,8 @@ struct wpa_ssid {
 	 * 4 = P2P Group Formation (used internally; not in configuration
 	 * files)
 	 *
+	 * 5 = Mesh
+	 *
 	 * Note: IBSS can only be used with key_mgmt NONE (plaintext and static
 	 * WEP) and WPA-PSK (with proto=RSN). In addition, key_mgmt=WPA-NONE
 	 * (fixed group key TKIP/CCMP) is available for backwards compatibility,
@@ -329,6 +349,7 @@ struct wpa_ssid {
 		WPAS_MODE_AP = 2,
 		WPAS_MODE_P2P_GO = 3,
 		WPAS_MODE_P2P_GROUP_FORMATION = 4,
+		WPAS_MODE_MESH = 5,
 	} mode;
 
 	/**
@@ -397,6 +418,25 @@ struct wpa_ssid {
 	 * will be used instead of this configured value.
 	 */
 	int frequency;
+
+	/**
+	 * fixed_freq - Use fixed frequency for IBSS
+	 */
+	int fixed_freq;
+
+	/**
+	 * mesh_basic_rates - BSS Basic rate set for mesh network
+	 *
+	 */
+	int *mesh_basic_rates;
+
+	/**
+	 * Mesh network plink parameters
+	 */
+	int dot11MeshMaxRetries;
+	int dot11MeshRetryTimeout; /* msec */
+	int dot11MeshConfirmTimeout; /* msec */
+	int dot11MeshHoldingTimeout; /* msec */
 
 	int ht40;
 
@@ -525,6 +565,19 @@ struct wpa_ssid {
 	int disable_sgi;
 
 	/**
+	 * disable_ldpc - Disable LDPC for this network
+	 *
+	 * By default, use it if it is available, but this can be configured
+	 * to 1 to have it disabled.
+	 */
+	int disable_ldpc;
+
+	/**
+	 * ht40_intolerant - Indicate 40 MHz intolerant for this network
+	 */
+	int ht40_intolerant;
+
+	/**
 	 * disable_max_amsdu - Disable MAX A-MSDU
 	 *
 	 * A-MDSU will be 3839 bytes when disabled, or 7935
@@ -621,6 +674,44 @@ struct wpa_ssid {
 	 * dereferences since it may not be updated in all cases.
 	 */
 	void *parent_cred;
+
+#ifdef CONFIG_MACSEC
+	/**
+	 * macsec_policy - Determines the policy for MACsec secure session
+	 *
+	 * 0: MACsec not in use (default)
+	 * 1: MACsec enabled - Should secure, accept key server's advice to
+	 *    determine whether to use a secure session or not.
+	 */
+	int macsec_policy;
+#endif /* CONFIG_MACSEC */
+
+#ifdef CONFIG_HS20
+	int update_identifier;
+#endif /* CONFIG_HS20 */
+
+	unsigned int wps_run;
+
+	/**
+	 * mac_addr - MAC address policy
+	 *
+	 * 0 = use permanent MAC address
+	 * 1 = use random MAC address for each ESS connection
+	 * 2 = like 1, but maintain OUI (with local admin bit set)
+	 *
+	 * Internally, special value -1 is used to indicate that the parameter
+	 * was not specified in the configuration (i.e., default behavior is
+	 * followed).
+	 */
+	int mac_addr;
+
+	/**
+	 * no_auto_peer - Do not automatically peer with compatible mesh peers
+	 *
+	 * When unset, the reception of a beacon from a another mesh peer in
+	 * this MBSS will trigger a peering attempt.
+	 */
+	int no_auto_peer;
 };
 
 #endif /* CONFIG_SSID_H */

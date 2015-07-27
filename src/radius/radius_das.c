@@ -38,11 +38,17 @@ static struct radius_msg * radius_das_disconnect(struct radius_das_data *das,
 	struct radius_msg *reply;
 	u8 allowed[] = {
 		RADIUS_ATTR_USER_NAME,
+		RADIUS_ATTR_NAS_IP_ADDRESS,
 		RADIUS_ATTR_CALLING_STATION_ID,
+		RADIUS_ATTR_NAS_IDENTIFIER,
 		RADIUS_ATTR_ACCT_SESSION_ID,
+		RADIUS_ATTR_ACCT_MULTI_SESSION_ID,
 		RADIUS_ATTR_EVENT_TIMESTAMP,
 		RADIUS_ATTR_MESSAGE_AUTHENTICATOR,
 		RADIUS_ATTR_CHARGEABLE_USER_IDENTITY,
+#ifdef CONFIG_IPV6
+		RADIUS_ATTR_NAS_IPV6_ADDRESS,
+#endif /* CONFIG_IPV6 */
 		0
 	};
 	int error = 405;
@@ -66,6 +72,36 @@ static struct radius_msg * radius_das_disconnect(struct radius_das_data *das,
 	}
 
 	os_memset(&attrs, 0, sizeof(attrs));
+
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_NAS_IP_ADDRESS,
+				    &buf, &len, NULL) == 0) {
+		if (len != 4) {
+			wpa_printf(MSG_INFO, "DAS: Invalid NAS-IP-Address from %s:%d",
+				   abuf, from_port);
+			error = 407;
+			goto fail;
+		}
+		attrs.nas_ip_addr = buf;
+	}
+
+#ifdef CONFIG_IPV6
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_NAS_IPV6_ADDRESS,
+				    &buf, &len, NULL) == 0) {
+		if (len != 16) {
+			wpa_printf(MSG_INFO, "DAS: Invalid NAS-IPv6-Address from %s:%d",
+				   abuf, from_port);
+			error = 407;
+			goto fail;
+		}
+		attrs.nas_ipv6_addr = buf;
+	}
+#endif /* CONFIG_IPV6 */
+
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_NAS_IDENTIFIER,
+				    &buf, &len, NULL) == 0) {
+		attrs.nas_identifier = buf;
+		attrs.nas_identifier_len = len;
+	}
 
 	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_CALLING_STATION_ID,
 				    &buf, &len, NULL) == 0) {
@@ -94,6 +130,12 @@ static struct radius_msg * radius_das_disconnect(struct radius_das_data *das,
 		attrs.acct_session_id_len = len;
 	}
 
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_ACCT_MULTI_SESSION_ID,
+				    &buf, &len, NULL) == 0) {
+		attrs.acct_multi_session_id = buf;
+		attrs.acct_multi_session_id_len = len;
+	}
+
 	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_CHARGEABLE_USER_IDENTITY,
 				    &buf, &len, NULL) == 0) {
 		attrs.cui = buf;
@@ -111,6 +153,12 @@ static struct radius_msg * radius_das_disconnect(struct radius_das_data *das,
 		wpa_printf(MSG_INFO, "DAS: Session not found for request from "
 			   "%s:%d", abuf, from_port);
 		error = 503;
+		break;
+	case RADIUS_DAS_MULTI_SESSION_MATCH:
+		wpa_printf(MSG_INFO,
+			   "DAS: Multiple sessions match for request from %s:%d",
+			   abuf, from_port);
+		error = 508;
 		break;
 	case RADIUS_DAS_SUCCESS:
 		error = 0;

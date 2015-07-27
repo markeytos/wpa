@@ -17,7 +17,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
 ===================================================================
 --- a/wpa_supplicant/dbus/dbus_new.c
 +++ b/wpa_supplicant/dbus/dbus_new.c
-@@ -1975,6 +1975,16 @@ static const struct wpa_dbus_method_desc
+@@ -2039,6 +2039,16 @@ static const struct wpa_dbus_method_desc
  		  END_ARGS
  	  }
  	},
@@ -32,24 +32,24 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
 +	},
 +#endif /* CONFIG_ANDROID_HAL */
  	{ "RemoveInterface", WPAS_DBUS_NEW_INTERFACE,
- 	  (WPADBusMethodHandler) &wpas_dbus_handler_remove_interface,
+ 	  (WPADBusMethodHandler) wpas_dbus_handler_remove_interface,
  	  {
 Index: b/wpa_supplicant/dbus/dbus_new_handlers.c
 ===================================================================
 --- a/wpa_supplicant/dbus/dbus_new_handlers.c
 +++ b/wpa_supplicant/dbus/dbus_new_handlers.c
-@@ -27,6 +27,10 @@
- #include "dbus_new_handlers.h"
+@@ -32,6 +32,10 @@
  #include "dbus_dict_helpers.h"
  #include "dbus_common_i.h"
+ #include "drivers/driver.h"
 +#ifdef CONFIG_ANDROID_HAL
 +#include <dlfcn.h>
 +#include <android/hardware_legacy/wifi.h>
 +#endif
  
- static const char *debug_strings[] = {
+ static const char * const debug_strings[] = {
  	"excessive", "msgdump", "debug", "info", "warning", "error", NULL
-@@ -613,6 +617,94 @@ error:
+@@ -632,6 +636,94 @@ oom:
  	goto out;
  }
  
@@ -148,7 +148,7 @@ Index: b/wpa_supplicant/dbus/dbus_new_handlers.h
 ===================================================================
 --- a/wpa_supplicant/dbus/dbus_new_handlers.h
 +++ b/wpa_supplicant/dbus/dbus_new_handlers.h
-@@ -44,6 +44,9 @@ dbus_bool_t wpas_dbus_simple_array_array
+@@ -49,6 +49,9 @@ dbus_bool_t wpas_dbus_simple_array_array
  DBusMessage * wpas_dbus_handler_create_interface(DBusMessage *message,
  						 struct wpa_global *global);
  
@@ -178,7 +178,7 @@ Index: b/wpa_supplicant/Makefile
 ===================================================================
 --- a/wpa_supplicant/Makefile
 +++ b/wpa_supplicant/Makefile
-@@ -1538,6 +1538,11 @@ EXTRALIBS += WbemUuid.Lib
+@@ -1586,6 +1586,11 @@ EXTRALIBS += WbemUuid.Lib
  endif
  endif
  

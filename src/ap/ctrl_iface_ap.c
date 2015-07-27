@@ -1,6 +1,6 @@
 /*
  * Control interface for shared AP commands
- * Copyright (c) 2004-2013, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2014, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -10,6 +10,7 @@
 
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/sae.h"
 #include "eapol_auth/eapol_auth_sm.h"
 #include "hostapd.h"
 #include "ieee802_1x.h"
@@ -36,7 +37,7 @@ static int hostapd_get_sta_tx_rx(struct hostapd_data *hapd,
 			  "rx_bytes=%lu\ntx_bytes=%lu\n",
 			  data.rx_packets, data.tx_packets,
 			  data.rx_bytes, data.tx_bytes);
-	if (ret < 0 || (size_t) ret >= buflen)
+	if (os_snprintf_error(buflen, ret))
 		return 0;
 	return ret;
 }
@@ -55,7 +56,7 @@ static int hostapd_get_sta_conn_time(struct sta_info *sta,
 
 	ret = os_snprintf(buf, buflen, "connected_time=%u\n",
 			  (unsigned int) age.sec);
-	if (ret < 0 || (size_t) ret >= buflen)
+	if (os_snprintf_error(buflen, ret))
 		return 0;
 	return ret;
 }
@@ -92,7 +93,7 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	len = 0;
 	ret = os_snprintf(buf + len, buflen - len, MACSTR "\nflags=",
 			  MAC2STR(sta->addr));
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -104,7 +105,7 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	ret = os_snprintf(buf + len, buflen - len, "\naid=%d\ncapability=0x%x\n"
 			  "listen_interval=%d\nsupported_rates=",
 			  sta->aid, sta->capability, sta->listen_interval);
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -112,14 +113,14 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 		ret = os_snprintf(buf + len, buflen - len, "%02x%s",
 				  sta->supported_rates[i],
 				  i + 1 < sta->supported_rates_len ? " " : "");
-		if (ret < 0 || (size_t) ret >= buflen - len)
+		if (os_snprintf_error(buflen - len, ret))
 			return len;
 		len += ret;
 	}
 
 	ret = os_snprintf(buf + len, buflen - len, "\ntimeout_next=%s\n",
 			  timeout_next_str(sta->timeout_next));
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -143,6 +144,15 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	len += hostapd_get_sta_tx_rx(hapd, sta, buf + len, buflen - len);
 	len += hostapd_get_sta_conn_time(sta, buf + len, buflen - len);
 
+#ifdef CONFIG_SAE
+	if (sta->sae && sta->sae->state == SAE_ACCEPTED) {
+		res = os_snprintf(buf + len, buflen - len, "sae_group=%d\n",
+				  sta->sae->group);
+		if (!os_snprintf_error(buflen - len, res))
+			len += res;
+	}
+#endif /* CONFIG_SAE */
+
 	return len;
 }
 
@@ -164,7 +174,7 @@ int hostapd_ctrl_iface_sta(struct hostapd_data *hapd, const char *txtaddr,
 
 	if (hwaddr_aton(txtaddr, addr)) {
 		ret = os_snprintf(buf, buflen, "FAIL\n");
-		if (ret < 0 || (size_t) ret >= buflen)
+		if (os_snprintf_error(buflen, ret))
 			return 0;
 		return ret;
 	}
@@ -203,7 +213,7 @@ int hostapd_ctrl_iface_sta_next(struct hostapd_data *hapd, const char *txtaddr,
 	if (hwaddr_aton(txtaddr, addr) ||
 	    (sta = ap_get_sta(hapd, addr)) == NULL) {
 		ret = os_snprintf(buf, buflen, "FAIL\n");
-		if (ret < 0 || (size_t) ret >= buflen)
+		if (os_snprintf_error(buflen, ret))
 			return 0;
 		return ret;
 	}
@@ -230,11 +240,12 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
 	if (mgmt == NULL)
 		return -1;
 
-	wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "P2P: Disconnect STA " MACSTR
-		" with minor reason code %u (stype=%u)",
-		MAC2STR(addr), minor_reason_code, stype);
-
 	mgmt->frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT, stype);
+	wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "P2P: Disconnect STA " MACSTR
+		" with minor reason code %u (stype=%u (%s))",
+		MAC2STR(addr), minor_reason_code, stype,
+		fc2str(mgmt->frame_control));
+
 	os_memcpy(mgmt->da, addr, ETH_ALEN);
 	os_memcpy(mgmt->sa, hapd->own_addr, ETH_ALEN);
 	os_memcpy(mgmt->bssid, hapd->own_addr, ETH_ALEN);
@@ -250,9 +261,8 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
 
 	*pos++ = WLAN_EID_VENDOR_SPECIFIC;
 	*pos++ = 4 + 3 + 1;
-	WPA_PUT_BE24(pos, OUI_WFA);
-	pos += 3;
-	*pos++ = P2P_OUI_TYPE;
+	WPA_PUT_BE32(pos, P2P_IE_VENDOR_TYPE);
+	pos += 4;
 
 	*pos++ = P2P_ATTR_MINOR_REASON_CODE;
 	WPA_PUT_LE16(pos, 1);
@@ -282,6 +292,10 @@ int hostapd_ctrl_iface_deauthenticate(struct hostapd_data *hapd,
 	if (hwaddr_aton(txtaddr, addr))
 		return -1;
 
+	pos = os_strstr(txtaddr, " reason=");
+	if (pos)
+		reason = atoi(pos + 8);
+
 	pos = os_strstr(txtaddr, " test=");
 	if (pos) {
 		struct ieee80211_mgmt mgmt;
@@ -296,8 +310,7 @@ int hostapd_ctrl_iface_deauthenticate(struct hostapd_data *hapd,
 		os_memcpy(mgmt.da, addr, ETH_ALEN);
 		os_memcpy(mgmt.sa, hapd->own_addr, ETH_ALEN);
 		os_memcpy(mgmt.bssid, hapd->own_addr, ETH_ALEN);
-		mgmt.u.deauth.reason_code =
-			host_to_le16(WLAN_REASON_PREV_AUTH_NOT_VALID);
+		mgmt.u.deauth.reason_code = host_to_le16(reason);
 		if (hapd->driver->send_frame(hapd->drv_priv, (u8 *) &mgmt,
 					     IEEE80211_HDRLEN +
 					     sizeof(mgmt.u.deauth),
@@ -313,10 +326,6 @@ int hostapd_ctrl_iface_deauthenticate(struct hostapd_data *hapd,
 					      atoi(pos + 5), addr);
 	}
 #endif /* CONFIG_P2P_MANAGER */
-
-	pos = os_strstr(txtaddr, " reason=");
-	if (pos)
-		reason = atoi(pos + 8);
 
 	hostapd_drv_sta_deauth(hapd, addr, reason);
 	sta = ap_get_sta(hapd, addr);
@@ -343,6 +352,10 @@ int hostapd_ctrl_iface_disassociate(struct hostapd_data *hapd,
 	if (hwaddr_aton(txtaddr, addr))
 		return -1;
 
+	pos = os_strstr(txtaddr, " reason=");
+	if (pos)
+		reason = atoi(pos + 8);
+
 	pos = os_strstr(txtaddr, " test=");
 	if (pos) {
 		struct ieee80211_mgmt mgmt;
@@ -357,8 +370,7 @@ int hostapd_ctrl_iface_disassociate(struct hostapd_data *hapd,
 		os_memcpy(mgmt.da, addr, ETH_ALEN);
 		os_memcpy(mgmt.sa, hapd->own_addr, ETH_ALEN);
 		os_memcpy(mgmt.bssid, hapd->own_addr, ETH_ALEN);
-		mgmt.u.disassoc.reason_code =
-			host_to_le16(WLAN_REASON_PREV_AUTH_NOT_VALID);
+		mgmt.u.disassoc.reason_code = host_to_le16(reason);
 		if (hapd->driver->send_frame(hapd->drv_priv, (u8 *) &mgmt,
 					     IEEE80211_HDRLEN +
 					     sizeof(mgmt.u.deauth),
@@ -374,10 +386,6 @@ int hostapd_ctrl_iface_disassociate(struct hostapd_data *hapd,
 					      atoi(pos + 5), addr);
 	}
 #endif /* CONFIG_P2P_MANAGER */
-
-	pos = os_strstr(txtaddr, " reason=");
-	if (pos)
-		reason = atoi(pos + 8);
 
 	hostapd_drv_sta_disassoc(hapd, addr, reason);
 	sta = ap_get_sta(hapd, addr);
@@ -408,6 +416,7 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 			  "num_sta_ht_no_gf=%d\n"
 			  "num_sta_no_ht=%d\n"
 			  "num_sta_ht_20_mhz=%d\n"
+			  "num_sta_ht40_intolerant=%d\n"
 			  "olbc_ht=%d\n"
 			  "ht_op_mode=0x%x\n",
 			  hostapd_state_text(iface->state),
@@ -420,9 +429,32 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 			  iface->num_sta_ht_no_gf,
 			  iface->num_sta_no_ht,
 			  iface->num_sta_ht_20mhz,
+			  iface->num_sta_ht40_intolerant,
 			  iface->olbc_ht,
 			  iface->ht_op_mode);
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
+		return len;
+	len += ret;
+
+	if (!iface->cac_started || !iface->dfs_cac_ms) {
+		ret = os_snprintf(buf + len, buflen - len,
+				  "cac_time_seconds=%d\n"
+				  "cac_time_left_seconds=N/A\n",
+				  iface->dfs_cac_ms / 1000);
+	} else {
+		/* CAC started and CAC time set - calculate remaining time */
+		struct os_reltime now;
+		unsigned int left_time;
+
+		os_reltime_age(&iface->dfs_cac_start, &now);
+		left_time = iface->dfs_cac_ms / 1000 - now.sec;
+		ret = os_snprintf(buf + len, buflen - len,
+				  "cac_time_seconds=%u\n"
+				  "cac_time_left_seconds=%u\n",
+				  iface->dfs_cac_ms / 1000,
+				  left_time);
+	}
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -441,7 +473,7 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 			  iface->conf->vht_oper_chwidth,
 			  iface->conf->vht_oper_centr_freq_seg0_idx,
 			  iface->conf->vht_oper_centr_freq_seg1_idx);
-	if (ret < 0 || (size_t) ret >= buflen - len)
+	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
 
@@ -458,7 +490,7 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 				  wpa_ssid_txt(bss->conf->ssid.ssid,
 					       bss->conf->ssid.ssid_len),
 				  (int) i, bss->num_sta);
-		if (ret < 0 || (size_t) ret >= buflen - len)
+		if (os_snprintf_error(buflen - len, ret))
 			return len;
 		len += ret;
 	}
@@ -471,9 +503,6 @@ int hostapd_parse_csa_settings(const char *pos,
 			       struct csa_settings *settings)
 {
 	char *end;
-
-	if (!settings)
-		return -1;
 
 	os_memset(settings, 0, sizeof(*settings));
 	settings->cs_count = strtol(pos, &end, 10);
@@ -507,4 +536,10 @@ int hostapd_parse_csa_settings(const char *pos,
 #undef SET_CSA_SETTING
 
 	return 0;
+}
+
+
+int hostapd_ctrl_iface_stop_ap(struct hostapd_data *hapd)
+{
+	return hostapd_drv_stop_ap(hapd);
 }

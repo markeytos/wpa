@@ -413,8 +413,8 @@ static void httpread_read_handler(int sd, void *eloop_ctx, void *sock_ctx)
 		 */
 		if (httpread_debug >= 10)
 			wpa_printf(MSG_DEBUG, "httpread ok eof(%p)", h);
-			h->got_body = 1;
-			goto got_file;
+		h->got_body = 1;
+		goto got_file;
 	}
 	rbp = readbuf;
 
@@ -617,7 +617,6 @@ static void httpread_read_handler(int sd, void *eloop_ctx, void *sock_ctx)
 		 * We do NOT support trailers except to skip them --
 		 * this is supported (generally) by the http spec.
 		 */
-		bbp = h->body + h->body_nbytes;
 		for (;;) {
 			int c;
 			if (nread <= 0)

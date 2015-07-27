@@ -1,6 +1,6 @@
 /*
  * Wrapper functions for OpenSSL libcrypto
- * Copyright (c) 2004-2013, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -28,19 +28,12 @@
 #include "dh_group5.h"
 #include "sha1.h"
 #include "sha256.h"
+#include "sha384.h"
 #include "crypto.h"
-
-#if OPENSSL_VERSION_NUMBER < 0x00907000
-#define DES_key_schedule des_key_schedule
-#define DES_cblock des_cblock
-#define DES_set_key(key, schedule) des_set_key((key), *(schedule))
-#define DES_ecb_encrypt(input, output, ks, enc) \
-	des_ecb_encrypt((input), (output), *(ks), (enc))
-#endif /* openssl < 0.9.7 */
 
 static BIGNUM * get_group5_prime(void)
 {
-#if OPENSSL_VERSION_NUMBER < 0x00908000
+#ifdef OPENSSL_IS_BORINGSSL
 	static const unsigned char RFC3526_PRIME_1536[] = {
 		0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xC9,0x0F,0xDA,0xA2,
 		0x21,0x68,0xC2,0x34,0xC4,0xC6,0x62,0x8B,0x80,0xDC,0x1C,0xD1,
@@ -60,19 +53,10 @@ static BIGNUM * get_group5_prime(void)
 		0xCA,0x23,0x73,0x27,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
 	};
         return BN_bin2bn(RFC3526_PRIME_1536, sizeof(RFC3526_PRIME_1536), NULL);
-#else /* openssl < 0.9.8 */
+#else /* OPENSSL_IS_BORINGSSL */
 	return get_rfc3526_prime_1536(NULL);
-#endif /* openssl < 0.9.8 */
+#endif /* OPENSSL_IS_BORINGSSL */
 }
-
-#if OPENSSL_VERSION_NUMBER < 0x00908000
-#ifndef OPENSSL_NO_SHA256
-#ifndef OPENSSL_FIPS
-#define NO_SHA256_WRAPPER
-#endif
-#endif
-
-#endif /* openssl < 0.9.8 */
 
 #ifdef OPENSSL_NO_SHA256
 #define NO_SHA256_WRAPPER
@@ -130,7 +114,7 @@ void des_encrypt(const u8 *clear, const u8 *key, u8 *cypher)
 	}
 	pkey[i] = next | 1;
 
-	DES_set_key(&pkey, &ks);
+	DES_set_key((DES_cblock *) &pkey, &ks);
 	DES_ecb_encrypt((DES_cblock *) clear, (DES_cblock *) cypher, &ks,
 			DES_ENCRYPT);
 }
@@ -199,8 +183,10 @@ static const EVP_CIPHER * aes_get_evp_cipher(size_t keylen)
 	switch (keylen) {
 	case 16:
 		return EVP_aes_128_ecb();
+#ifndef OPENSSL_IS_BORINGSSL
 	case 24:
 		return EVP_aes_192_ecb();
+#endif /* OPENSSL_IS_BORINGSSL */
 	case 32:
 		return EVP_aes_256_ecb();
 	}
@@ -256,7 +242,7 @@ void aes_encrypt_deinit(void *ctx)
 			   "in AES encrypt", len);
 	}
 	EVP_CIPHER_CTX_cleanup(c);
-	os_free(c);
+	bin_clear_free(c, sizeof(*c));
 }
 
 
@@ -307,7 +293,34 @@ void aes_decrypt_deinit(void *ctx)
 			   "in AES decrypt", len);
 	}
 	EVP_CIPHER_CTX_cleanup(c);
-	os_free(ctx);
+	bin_clear_free(c, sizeof(*c));
+}
+
+
+int aes_wrap(const u8 *kek, size_t kek_len, int n, const u8 *plain, u8 *cipher)
+{
+	AES_KEY actx;
+	int res;
+
+	if (AES_set_encrypt_key(kek, kek_len << 3, &actx))
+		return -1;
+	res = AES_wrap_key(&actx, NULL, cipher, plain, n * 8);
+	OPENSSL_cleanse(&actx, sizeof(actx));
+	return res <= 0 ? -1 : 0;
+}
+
+
+int aes_unwrap(const u8 *kek, size_t kek_len, int n, const u8 *cipher,
+	       u8 *plain)
+{
+	AES_KEY actx;
+	int res;
+
+	if (AES_set_decrypt_key(kek, kek_len << 3, &actx))
+		return -1;
+	res = AES_unwrap_key(&actx, NULL, plain, cipher, (n + 1) * 8);
+	OPENSSL_cleanse(&actx, sizeof(actx));
+	return res <= 0 ? -1 : 0;
 }
 
 
@@ -340,10 +353,10 @@ int crypto_mod_exp(const u8 *base, size_t base_len,
 	ret = 0;
 
 error:
-	BN_free(bn_base);
-	BN_free(bn_exp);
-	BN_free(bn_modulus);
-	BN_free(bn_result);
+	BN_clear_free(bn_base);
+	BN_clear_free(bn_exp);
+	BN_clear_free(bn_modulus);
+	BN_clear_free(bn_result);
 	BN_CTX_free(ctx);
 	return ret;
 }
@@ -378,9 +391,11 @@ struct crypto_cipher * crypto_cipher_init(enum crypto_cipher_alg alg,
 		case 16:
 			cipher = EVP_aes_128_cbc();
 			break;
+#ifndef OPENSSL_IS_BORINGSSL
 		case 24:
 			cipher = EVP_aes_192_cbc();
 			break;
+#endif /* OPENSSL_IS_BORINGSSL */
 		case 32:
 			cipher = EVP_aes_256_cbc();
 			break;
@@ -503,8 +518,8 @@ void * dh5_init(struct wpabuf **priv, struct wpabuf **publ)
 	return dh;
 
 err:
-	wpabuf_free(pubkey);
-	wpabuf_free(privkey);
+	wpabuf_clear_free(pubkey);
+	wpabuf_clear_free(privkey);
 	DH_free(dh);
 	return NULL;
 }
@@ -571,13 +586,13 @@ struct wpabuf * dh5_derive_shared(void *ctx, const struct wpabuf *peer_public,
 	if (keylen < 0)
 		goto err;
 	wpabuf_put(res, keylen);
-	BN_free(pub_key);
+	BN_clear_free(pub_key);
 
 	return res;
 
 err:
-	BN_free(pub_key);
-	wpabuf_free(res);
+	BN_clear_free(pub_key);
+	wpabuf_clear_free(res);
 	return NULL;
 }
 
@@ -634,7 +649,7 @@ struct crypto_hash * crypto_hash_init(enum crypto_hash_alg alg, const u8 *key,
 	HMAC_Init_ex(&ctx->ctx, key, key_len, md, NULL);
 #else /* openssl < 0.9.9 */
 	if (HMAC_Init_ex(&ctx->ctx, key, key_len, md, NULL) != 1) {
-		os_free(ctx);
+		bin_clear_free(ctx, sizeof(*ctx));
 		return NULL;
 	}
 #endif /* openssl < 0.9.9 */
@@ -660,7 +675,7 @@ int crypto_hash_finish(struct crypto_hash *ctx, u8 *mac, size_t *len)
 		return -2;
 
 	if (mac == NULL || len == NULL) {
-		os_free(ctx);
+		bin_clear_free(ctx, sizeof(*ctx));
 		return 0;
 	}
 
@@ -672,7 +687,7 @@ int crypto_hash_finish(struct crypto_hash *ctx, u8 *mac, size_t *len)
 	res = HMAC_Final(&ctx->ctx, mac, &mdlen);
 #endif /* openssl < 0.9.9 */
 	HMAC_CTX_cleanup(&ctx->ctx);
-	os_free(ctx);
+	bin_clear_free(ctx, sizeof(*ctx));
 
 	if (res == 1) {
 		*len = mdlen;
@@ -683,43 +698,26 @@ int crypto_hash_finish(struct crypto_hash *ctx, u8 *mac, size_t *len)
 }
 
 
-int pbkdf2_sha1(const char *passphrase, const u8 *ssid, size_t ssid_len,
-		int iterations, u8 *buf, size_t buflen)
-{
-#if OPENSSL_VERSION_NUMBER < 0x00908000
-	if (PKCS5_PBKDF2_HMAC_SHA1(passphrase, os_strlen(passphrase),
-				   (unsigned char *) ssid,
-				   ssid_len, 4096, buflen, buf) != 1)
-		return -1;
-#else /* openssl < 0.9.8 */
-	if (PKCS5_PBKDF2_HMAC_SHA1(passphrase, os_strlen(passphrase), ssid,
-				   ssid_len, 4096, buflen, buf) != 1)
-		return -1;
-#endif /* openssl < 0.9.8 */
-	return 0;
-}
-
-
-int hmac_sha1_vector(const u8 *key, size_t key_len, size_t num_elem,
-		     const u8 *addr[], const size_t *len, u8 *mac)
+static int openssl_hmac_vector(const EVP_MD *type, const u8 *key,
+			       size_t key_len, size_t num_elem,
+			       const u8 *addr[], const size_t *len, u8 *mac,
+			       unsigned int mdlen)
 {
 	HMAC_CTX ctx;
 	size_t i;
-	unsigned int mdlen;
 	int res;
 
 	HMAC_CTX_init(&ctx);
 #if OPENSSL_VERSION_NUMBER < 0x00909000
-	HMAC_Init_ex(&ctx, key, key_len, EVP_sha1(), NULL);
+	HMAC_Init_ex(&ctx, key, key_len, type, NULL);
 #else /* openssl < 0.9.9 */
-	if (HMAC_Init_ex(&ctx, key, key_len, EVP_sha1(), NULL) != 1)
+	if (HMAC_Init_ex(&ctx, key, key_len, type, NULL) != 1)
 		return -1;
 #endif /* openssl < 0.9.9 */
 
 	for (i = 0; i < num_elem; i++)
 		HMAC_Update(&ctx, addr[i], len[i]);
 
-	mdlen = 20;
 #if OPENSSL_VERSION_NUMBER < 0x00909000
 	HMAC_Final(&ctx, mac, &mdlen);
 	res = 1;
@@ -729,6 +727,43 @@ int hmac_sha1_vector(const u8 *key, size_t key_len, size_t num_elem,
 	HMAC_CTX_cleanup(&ctx);
 
 	return res == 1 ? 0 : -1;
+}
+
+
+#ifndef CONFIG_FIPS
+
+int hmac_md5_vector(const u8 *key, size_t key_len, size_t num_elem,
+		    const u8 *addr[], const size_t *len, u8 *mac)
+{
+	return openssl_hmac_vector(EVP_md5(), key ,key_len, num_elem, addr, len,
+				   mac, 16);
+}
+
+
+int hmac_md5(const u8 *key, size_t key_len, const u8 *data, size_t data_len,
+	     u8 *mac)
+{
+	return hmac_md5_vector(key, key_len, 1, &data, &data_len, mac);
+}
+
+#endif /* CONFIG_FIPS */
+
+
+int pbkdf2_sha1(const char *passphrase, const u8 *ssid, size_t ssid_len,
+		int iterations, u8 *buf, size_t buflen)
+{
+	if (PKCS5_PBKDF2_HMAC_SHA1(passphrase, os_strlen(passphrase), ssid,
+				   ssid_len, iterations, buflen, buf) != 1)
+		return -1;
+	return 0;
+}
+
+
+int hmac_sha1_vector(const u8 *key, size_t key_len, size_t num_elem,
+		     const u8 *addr[], const size_t *len, u8 *mac)
+{
+	return openssl_hmac_vector(EVP_sha1(), key, key_len, num_elem, addr,
+				   len, mac, 20);
 }
 
 
@@ -744,32 +779,8 @@ int hmac_sha1(const u8 *key, size_t key_len, const u8 *data, size_t data_len,
 int hmac_sha256_vector(const u8 *key, size_t key_len, size_t num_elem,
 		       const u8 *addr[], const size_t *len, u8 *mac)
 {
-	HMAC_CTX ctx;
-	size_t i;
-	unsigned int mdlen;
-	int res;
-
-	HMAC_CTX_init(&ctx);
-#if OPENSSL_VERSION_NUMBER < 0x00909000
-	HMAC_Init_ex(&ctx, key, key_len, EVP_sha256(), NULL);
-#else /* openssl < 0.9.9 */
-	if (HMAC_Init_ex(&ctx, key, key_len, EVP_sha256(), NULL) != 1)
-		return -1;
-#endif /* openssl < 0.9.9 */
-
-	for (i = 0; i < num_elem; i++)
-		HMAC_Update(&ctx, addr[i], len[i]);
-
-	mdlen = 32;
-#if OPENSSL_VERSION_NUMBER < 0x00909000
-	HMAC_Final(&ctx, mac, &mdlen);
-	res = 1;
-#else /* openssl < 0.9.9 */
-	res = HMAC_Final(&ctx, mac, &mdlen);
-#endif /* openssl < 0.9.9 */
-	HMAC_CTX_cleanup(&ctx);
-
-	return res == 1 ? 0 : -1;
+	return openssl_hmac_vector(EVP_sha256(), key, key_len, num_elem, addr,
+				   len, mac, 32);
 }
 
 
@@ -782,6 +793,25 @@ int hmac_sha256(const u8 *key, size_t key_len, const u8 *data,
 #endif /* CONFIG_SHA256 */
 
 
+#ifdef CONFIG_SHA384
+
+int hmac_sha384_vector(const u8 *key, size_t key_len, size_t num_elem,
+		       const u8 *addr[], const size_t *len, u8 *mac)
+{
+	return openssl_hmac_vector(EVP_sha384(), key, key_len, num_elem, addr,
+				   len, mac, 32);
+}
+
+
+int hmac_sha384(const u8 *key, size_t key_len, const u8 *data,
+		size_t data_len, u8 *mac)
+{
+	return hmac_sha384_vector(key, key_len, 1, &data, &data_len, mac);
+}
+
+#endif /* CONFIG_SHA384 */
+
+
 int crypto_get_random(void *buf, size_t len)
 {
 	if (RAND_bytes(buf, len) != 1)
@@ -791,8 +821,8 @@ int crypto_get_random(void *buf, size_t len)
 
 
 #ifdef CONFIG_OPENSSL_CMAC
-int omac1_aes_128_vector(const u8 *key, size_t num_elem,
-			 const u8 *addr[], const size_t *len, u8 *mac)
+int omac1_aes_vector(const u8 *key, size_t key_len, size_t num_elem,
+		     const u8 *addr[], const size_t *len, u8 *mac)
 {
 	CMAC_CTX *ctx;
 	int ret = -1;
@@ -802,8 +832,15 @@ int omac1_aes_128_vector(const u8 *key, size_t num_elem,
 	if (ctx == NULL)
 		return -1;
 
-	if (!CMAC_Init(ctx, key, 16, EVP_aes_128_cbc(), NULL))
+	if (key_len == 32) {
+		if (!CMAC_Init(ctx, key, 32, EVP_aes_256_cbc(), NULL))
+			goto fail;
+	} else if (key_len == 16) {
+		if (!CMAC_Init(ctx, key, 16, EVP_aes_128_cbc(), NULL))
+			goto fail;
+	} else {
 		goto fail;
+	}
 	for (i = 0; i < num_elem; i++) {
 		if (!CMAC_Update(ctx, addr[i], len[i]))
 			goto fail;
@@ -818,9 +855,22 @@ fail:
 }
 
 
+int omac1_aes_128_vector(const u8 *key, size_t num_elem,
+			 const u8 *addr[], const size_t *len, u8 *mac)
+{
+	return omac1_aes_vector(key, 16, num_elem, addr, len, mac);
+}
+
+
 int omac1_aes_128(const u8 *key, const u8 *data, size_t data_len, u8 *mac)
 {
 	return omac1_aes_128_vector(key, 1, &data, &data_len, mac);
+}
+
+
+int omac1_aes_256(const u8 *key, const u8 *data, size_t data_len, u8 *mac)
+{
+	return omac1_aes_vector(key, 32, 1, &data, &data_len, mac);
 }
 #endif /* CONFIG_OPENSSL_CMAC */
 
@@ -913,13 +963,6 @@ int crypto_bignum_exptmod(const struct crypto_bignum *a,
 	BN_CTX_free(bnctx);
 
 	return res ? 0 : -1;
-}
-
-
-int crypto_bignum_rshift(const struct crypto_bignum *a, int n,
-			 struct crypto_bignum *b)
-{
-	return BN_rshift((BIGNUM *) b, (const BIGNUM *) a, n) ? 0 : -1;
 }
 
 
@@ -1073,7 +1116,8 @@ void crypto_ec_deinit(struct crypto_ec *e)
 {
 	if (e == NULL)
 		return;
-	BN_free(e->order);
+	BN_clear_free(e->order);
+	BN_clear_free(e->prime);
 	EC_GROUP_free(e->group);
 	BN_CTX_free(e->bnctx);
 	os_free(e);
@@ -1145,8 +1189,8 @@ int crypto_ec_point_to_bin(struct crypto_ec *e,
 		ret = 0;
 	}
 
-	BN_free(x_bn);
-	BN_free(y_bn);
+	BN_clear_free(x_bn);
+	BN_clear_free(y_bn);
 	return ret;
 }
 
@@ -1162,20 +1206,20 @@ struct crypto_ec_point * crypto_ec_point_from_bin(struct crypto_ec *e,
 	y = BN_bin2bn(val + len, len, NULL);
 	elem = EC_POINT_new(e->group);
 	if (x == NULL || y == NULL || elem == NULL) {
-		BN_free(x);
-		BN_free(y);
-		EC_POINT_free(elem);
+		BN_clear_free(x);
+		BN_clear_free(y);
+		EC_POINT_clear_free(elem);
 		return NULL;
 	}
 
 	if (!EC_POINT_set_affine_coordinates_GFp(e->group, elem, x, y,
 						 e->bnctx)) {
-		EC_POINT_free(elem);
+		EC_POINT_clear_free(elem);
 		elem = NULL;
 	}
 
-	BN_free(x);
-	BN_free(y);
+	BN_clear_free(x);
+	BN_clear_free(y);
 
 	return (struct crypto_ec_point *) elem;
 }

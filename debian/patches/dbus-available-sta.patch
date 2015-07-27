@@ -18,15 +18,15 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
 ===================================================================
 --- a/wpa_supplicant/dbus/dbus_new.c
 +++ b/wpa_supplicant/dbus/dbus_new.c
-@@ -24,6 +24,7 @@
- #include "dbus_common_i.h"
+@@ -25,6 +25,7 @@
  #include "dbus_new_handlers_p2p.h"
  #include "p2p/p2p.h"
+ #include "../p2p_supplicant.h"
 +#include "ap/sta_info.h"
  
  #ifdef CONFIG_AP /* until needed by something else */
  
-@@ -878,15 +879,19 @@ nomem:
+@@ -831,15 +832,19 @@ void wpas_dbus_signal_eap_status(struct
   * Notify listeners about event related with station
   */
  static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
@@ -51,7 +51,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
  
  	iface = wpa_s->global->dbus;
  
-@@ -895,19 +900,33 @@ static void wpas_dbus_signal_sta(struct
+@@ -848,19 +853,33 @@ static void wpas_dbus_signal_sta(struct
  		return;
  
  	msg = dbus_message_new_signal(wpa_s->dbus_new_path,
@@ -93,7 +93,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
  }
  
  
-@@ -921,7 +940,7 @@ static void wpas_dbus_signal_sta(struct
+@@ -874,7 +893,7 @@ static void wpas_dbus_signal_sta(struct
  void wpas_dbus_signal_sta_authorized(struct wpa_supplicant *wpa_s,
  				     const u8 *sta)
  {
@@ -102,7 +102,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
  }
  
  
-@@ -935,7 +954,7 @@ void wpas_dbus_signal_sta_authorized(str
+@@ -888,7 +907,7 @@ void wpas_dbus_signal_sta_authorized(str
  void wpas_dbus_signal_sta_deauthorized(struct wpa_supplicant *wpa_s,
  				       const u8 *sta)
  {
@@ -111,7 +111,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
  }
  
  
-@@ -1817,6 +1836,9 @@ void wpas_dbus_signal_prop_changed(struc
+@@ -1823,6 +1842,9 @@ void wpas_dbus_signal_prop_changed(struc
  	case WPAS_DBUS_PROP_BSSS:
  		prop = "BSSs";
  		break;
@@ -121,7 +121,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
  	case WPAS_DBUS_PROP_CURRENT_AUTH_MODE:
  		prop = "CurrentAuthMode";
  		break;
-@@ -1900,6 +1922,39 @@ void wpas_dbus_bss_signal_prop_changed(s
+@@ -1909,6 +1931,39 @@ void wpas_dbus_bss_signal_prop_changed(s
  
  
  /**
@@ -161,7 +161,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
   * wpas_dbus_signal_debug_level_changed - Signals change of debug param
   * @global: wpa_global structure
   *
-@@ -2434,6 +2489,164 @@ err:
+@@ -2445,6 +2500,164 @@ err:
  }
  
  
@@ -325,8 +325,8 @@ Index: b/wpa_supplicant/dbus/dbus_new.c
 +
  static const struct wpa_dbus_method_desc wpas_dbus_interface_methods[] = {
  	{ "Scan", WPAS_DBUS_NEW_IFACE_INTERFACE,
- 	  (WPADBusMethodHandler) &wpas_dbus_handler_scan,
-@@ -2896,6 +3109,10 @@ static const struct wpa_dbus_property_de
+ 	  (WPADBusMethodHandler) wpas_dbus_handler_scan,
+@@ -2918,6 +3131,10 @@ static const struct wpa_dbus_property_de
  	  wpas_dbus_getter_disconnect_reason,
  	  NULL
  	},
@@ -352,7 +352,7 @@ Index: b/wpa_supplicant/dbus/dbus_new_handlers.c
  #include "dbus_new_helpers.h"
  #include "dbus_new.h"
  #include "dbus_new_handlers.h"
-@@ -3385,6 +3389,299 @@ dbus_bool_t wpas_dbus_getter_blobs(DBusM
+@@ -3342,6 +3346,299 @@ dbus_bool_t wpas_dbus_getter_blobs(DBusM
  }
  
  
@@ -668,7 +668,7 @@ Index: b/wpa_supplicant/dbus/dbus_new_handlers.h
  dbus_bool_t wpas_dbus_simple_property_getter(DBusMessageIter *iter,
  					     const int type,
  					     const void *val,
-@@ -232,6 +237,33 @@ dbus_bool_t wpas_dbus_getter_pkcs11_modu
+@@ -238,6 +243,33 @@ dbus_bool_t wpas_dbus_getter_pkcs11_modu
  dbus_bool_t wpas_dbus_getter_blobs(DBusMessageIter *iter, DBusError *error,
  				   void *user_data);
  
@@ -722,8 +722,8 @@ Index: b/wpa_supplicant/dbus/dbus_new.h
  	WPAS_DBUS_PROP_DISCONNECT_REASON,
  };
  
-@@ -43,6 +45,10 @@ enum wpas_dbus_bss_prop {
- 	WPAS_DBUS_BSS_PROP_IES,
+@@ -44,6 +46,10 @@ enum wpas_dbus_bss_prop {
+ 	WPAS_DBUS_BSS_PROP_AGE,
  };
  
 +enum wpas_dbus_sta_prop {
@@ -733,7 +733,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.h
  #define WPAS_DBUS_OBJECT_PATH_MAX 150
  
  #define WPAS_DBUS_NEW_SERVICE		"fi.w1.wpa_supplicant1"
-@@ -59,6 +65,9 @@ enum wpas_dbus_bss_prop {
+@@ -60,6 +66,9 @@ enum wpas_dbus_bss_prop {
  #define WPAS_DBUS_NEW_BSSIDS_PART "BSSs"
  #define WPAS_DBUS_NEW_IFACE_BSS	WPAS_DBUS_NEW_INTERFACE ".BSS"
  
@@ -743,7 +743,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.h
  #define WPAS_DBUS_NEW_IFACE_P2PDEVICE	\
  		WPAS_DBUS_NEW_IFACE_INTERFACE ".P2PDevice"
  
-@@ -157,6 +166,10 @@ int wpas_dbus_unregister_bss(struct wpa_
+@@ -159,6 +168,10 @@ int wpas_dbus_unregister_bss(struct wpa_
  			     u8 bssid[ETH_ALEN], unsigned int id);
  int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  			   u8 bssid[ETH_ALEN], unsigned int id);
@@ -754,7 +754,7 @@ Index: b/wpa_supplicant/dbus/dbus_new.h
  void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  				 const char *name);
  void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
-@@ -316,6 +329,18 @@ static inline int wpas_dbus_register_bss
+@@ -318,6 +331,18 @@ static inline int wpas_dbus_register_bss
  {
  	return 0;
  }
@@ -777,8 +777,8 @@ Index: b/wpa_supplicant/notify.c
 ===================================================================
 --- a/wpa_supplicant/notify.c
 +++ b/wpa_supplicant/notify.c
-@@ -552,6 +552,9 @@ static void wpas_notify_ap_sta_authorize
- 	wpas_dbus_signal_p2p_peer_joined(wpa_s, sta);
+@@ -655,6 +655,9 @@ static void wpas_notify_ap_sta_authorize
+ 		wpas_dbus_signal_p2p_peer_joined(wpa_s, p2p_dev_addr);
  #endif /* CONFIG_P2P */
  
 +	/* Unregister the station */
@@ -787,7 +787,7 @@ Index: b/wpa_supplicant/notify.c
  	/* Notify listeners a new station has been authorized */
  	wpas_dbus_signal_sta_authorized(wpa_s, sta);
  }
-@@ -576,6 +579,9 @@ static void wpas_notify_ap_sta_deauthori
+@@ -675,6 +678,9 @@ static void wpas_notify_ap_sta_deauthori
  
  	/* Notify listeners a station has been deauthorized */
  	wpas_dbus_signal_sta_deauthorized(wpa_s, sta);

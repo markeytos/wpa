@@ -32,7 +32,8 @@ static int ap_list_beacon_olbc(struct hostapd_iface *iface, struct ap_info *ap)
 {
 	int i;
 
-	if (iface->current_mode->mode != HOSTAPD_MODE_IEEE80211G ||
+	if (iface->current_mode == NULL ||
+	    iface->current_mode->mode != HOSTAPD_MODE_IEEE80211G ||
 	    iface->conf->channel != ap->channel)
 		return 0;
 
@@ -110,8 +111,8 @@ static void ap_ap_hash_del(struct hostapd_iface *iface, struct ap_info *ap)
 	if (s->hnext != NULL)
 		s->hnext = s->hnext->hnext;
 	else
-		printf("AP: could not remove AP " MACSTR " from hash table\n",
-		       MAC2STR(ap->addr));
+		wpa_printf(MSG_INFO, "AP: could not remove AP " MACSTR
+			   " from hash table",  MAC2STR(ap->addr));
 }
 
 
@@ -181,7 +182,8 @@ void ap_list_process_beacon(struct hostapd_iface *iface,
 	if (!ap) {
 		ap = ap_ap_add(iface, mgmt->bssid);
 		if (!ap) {
-			printf("Failed to allocate AP information entry\n");
+			wpa_printf(MSG_INFO,
+				   "Failed to allocate AP information entry");
 			return;
 		}
 		new_ap = 1;

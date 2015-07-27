@@ -47,7 +47,7 @@ int wpas_wps_searching(struct wpa_supplicant *wpa_s);
 int wpas_wps_scan_result_text(const u8 *ies, size_t ies_len, char *pos,
 			      char *end);
 int wpas_wps_er_start(struct wpa_supplicant *wpa_s, const char *filter);
-int wpas_wps_er_stop(struct wpa_supplicant *wpa_s);
+void wpas_wps_er_stop(struct wpa_supplicant *wpa_s);
 int wpas_wps_er_add_pin(struct wpa_supplicant *wpa_s, const u8 *addr,
 			const char *uuid, const char *pin);
 int wpas_wps_er_pbc(struct wpa_supplicant *wpa_s, const char *uuid);
@@ -75,10 +75,6 @@ struct wpabuf * wpas_wps_nfc_handover_req(struct wpa_supplicant *wpa_s,
 					  int ndef);
 struct wpabuf * wpas_wps_nfc_handover_sel(struct wpa_supplicant *wpa_s,
 					  int ndef, int cr, const char *uuid);
-int wpas_wps_nfc_rx_handover_req(struct wpa_supplicant *wpa_s,
-				 const struct wpabuf *data);
-int wpas_wps_nfc_rx_handover_sel(struct wpa_supplicant *wpa_s,
-				 const struct wpabuf *data);
 int wpas_wps_nfc_report_handover(struct wpa_supplicant *wpa_s,
 				 const struct wpabuf *req,
 				 const struct wpabuf *sel);

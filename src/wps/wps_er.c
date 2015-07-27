@@ -579,12 +579,15 @@ static void wps_er_parse_device_description(struct wps_er_ap *ap,
 	wpa_printf(MSG_DEBUG, "WPS ER: serialNumber='%s'", ap->serial_number);
 
 	ap->udn = xml_get_first_item(data, "UDN");
-	wpa_printf(MSG_DEBUG, "WPS ER: UDN='%s'", ap->udn);
-	pos = os_strstr(ap->udn, "uuid:");
-	if (pos) {
-		pos += 5;
-		if (uuid_str2bin(pos, ap->uuid) < 0)
-			wpa_printf(MSG_DEBUG, "WPS ER: Invalid UUID in UDN");
+	if (ap->udn) {
+		wpa_printf(MSG_DEBUG, "WPS ER: UDN='%s'", ap->udn);
+		pos = os_strstr(ap->udn, "uuid:");
+		if (pos) {
+			pos += 5;
+			if (uuid_str2bin(pos, ap->uuid) < 0)
+				wpa_printf(MSG_DEBUG,
+					   "WPS ER: Invalid UUID in UDN");
+		}
 	}
 
 	ap->upc = xml_get_first_item(data, "UPC");
@@ -1490,11 +1493,9 @@ static int wps_er_build_sel_reg_config_methods(struct wpabuf *msg,
 
 static int wps_er_build_uuid_r(struct wpabuf *msg, const u8 *uuid_r)
 {
-#ifdef CONFIG_WPS2
 	wpabuf_put_be16(msg, ATTR_UUID_R);
 	wpabuf_put_be16(msg, WPS_UUID_LEN);
 	wpabuf_put_data(msg, uuid_r, WPS_UUID_LEN);
-#endif /* CONFIG_WPS2 */
 	return 0;
 }
 
@@ -1506,9 +1507,7 @@ void wps_er_set_sel_reg(struct wps_er *er, int sel_reg, u16 dev_passwd_id,
 	struct wps_er_ap *ap;
 	struct wps_registrar *reg = er->wps->registrar;
 	const u8 *auth_macs;
-#ifdef CONFIG_WPS2
 	u8 bcast[ETH_ALEN];
-#endif /* CONFIG_WPS2 */
 	size_t count;
 	union wps_event_data data;
 
@@ -1522,13 +1521,11 @@ void wps_er_set_sel_reg(struct wps_er *er, int sel_reg, u16 dev_passwd_id,
 		return;
 
 	auth_macs = wps_authorized_macs(reg, &count);
-#ifdef CONFIG_WPS2
 	if (count == 0) {
 		os_memset(bcast, 0xff, ETH_ALEN);
 		auth_macs = bcast;
 		count = 1;
 	}
-#endif /* CONFIG_WPS2 */
 
 	if (wps_build_version(msg) ||
 	    wps_er_build_selected_registrar(msg, sel_reg) ||

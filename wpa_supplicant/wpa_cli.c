@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - command line interface for wpa_supplicant daemon
- * Copyright (c) 2004-2013, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -28,7 +28,7 @@
 
 static const char *wpa_cli_version =
 "wpa_cli v" VERSION_STR "\n"
-"Copyright (c) 2004-2014, Jouni Malinen <j@w1.fi> and contributors";
+"Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi> and contributors";
 
 
 static const char *wpa_cli_license =
@@ -333,7 +333,7 @@ static int wpa_cli_open_connection(const char *ifname, int attach)
 			return -1;
 		res = os_snprintf(cfile, flen, "%s/%s", ctrl_iface_dir,
 				  ifname);
-		if (res < 0 || res >= flen) {
+		if (os_snprintf_error(flen, res)) {
 			os_free(cfile);
 			return -1;
 		}
@@ -448,13 +448,13 @@ static int write_cmd(char *buf, size_t buflen, const char *cmd, int argc,
 	end = buf + buflen;
 
 	res = os_snprintf(pos, end - pos, "%s", cmd);
-	if (res < 0 || res >= end - pos)
+	if (os_snprintf_error(end - pos, res))
 		goto fail;
 	pos += res;
 
 	for (i = 0; i < argc; i++) {
 		res = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (res < 0 || res >= end - pos)
+		if (os_snprintf_error(end - pos, res))
 			goto fail;
 		pos += res;
 	}
@@ -532,6 +532,13 @@ static int wpa_cli_cmd_pmksa(struct wpa_ctrl *ctrl, int argc, char *argv[])
 }
 
 
+static int wpa_cli_cmd_pmksa_flush(struct wpa_ctrl *ctrl, int argc,
+				   char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "PMKSA_FLUSH");
+}
+
+
 static int wpa_cli_cmd_help(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	print_help(argc > 0 ? argv[0] : NULL);
@@ -577,7 +584,7 @@ static int wpa_cli_cmd_set(struct wpa_ctrl *ctrl, int argc, char *argv[])
 
 	if (argc == 1) {
 		res = os_snprintf(cmd, sizeof(cmd), "SET %s ", argv[0]);
-		if (res < 0 || (size_t) res >= sizeof(cmd) - 1) {
+		if (os_snprintf_error(sizeof(cmd), res)) {
 			printf("Too long SET command.\n");
 			return -1;
 		}
@@ -603,7 +610,8 @@ static char ** wpa_cli_complete_set(const char *str, int pos)
 		/* global configuration parameters */
 		"eapol_version", "ap_scan", "disable_scan_offload",
 		"fast_reauth", "opensc_engine_path", "pkcs11_engine_path",
-		"pkcs11_module_path", "pcsc_reader", "pcsc_pin",
+		"pkcs11_module_path", "openssl_ciphers",
+		"pcsc_reader", "pcsc_pin",
 		"driver_param", "dot11RSNAConfigPMKLifetime",
 		"dot11RSNAConfigPMKReauthThreshold",
 		"dot11RSNAConfigSATimeout",
@@ -628,7 +636,7 @@ static char ** wpa_cli_complete_set(const char *str, int pos)
 		"p2p_go_max_inactivity", "auto_interworking", "okc", "pmf",
 		"sae_groups", "dtim_period", "beacon_int", "ap_vendor_elements",
 		"ignore_old_scan_res", "freq_list", "external_sim",
-		"tdls_external_control"
+		"tdls_external_control", "p2p_search_delay"
 	};
 	int i, num_fields = ARRAY_SIZE(fields);
 
@@ -648,6 +656,11 @@ static char ** wpa_cli_complete_set(const char *str, int pos)
 		return cli_txt_list_array(&bsses);
 
 	return NULL;
+}
+
+static int wpa_cli_cmd_dump(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DUMP");
 }
 
 
@@ -673,6 +686,12 @@ static int wpa_cli_cmd_reassociate(struct wpa_ctrl *ctrl, int argc,
 				   char *argv[])
 {
 	return wpa_ctrl_command(ctrl, "REASSOCIATE");
+}
+
+
+static int wpa_cli_cmd_reattach(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "REATTACH");
 }
 
 
@@ -719,7 +738,7 @@ static int wpa_cli_cmd_bss_flush(struct wpa_ctrl *ctrl, int argc, char *argv[])
 		res = os_snprintf(cmd, sizeof(cmd), "BSS_FLUSH 0");
 	else
 		res = os_snprintf(cmd, sizeof(cmd), "BSS_FLUSH %s", argv[0]);
-	if (res < 0 || (size_t) res >= sizeof(cmd) - 1) {
+	if (os_snprintf_error(sizeof(cmd), res)) {
 		printf("Too long BSS_FLUSH command.\n");
 		return -1;
 	}
@@ -836,58 +855,6 @@ static int wpa_cli_cmd_nfc_get_handover_sel(struct wpa_ctrl *ctrl, int argc,
 }
 
 
-static int wpa_cli_cmd_nfc_rx_handover_req(struct wpa_ctrl *ctrl, int argc,
-					   char *argv[])
-{
-	int ret;
-	char *buf;
-	size_t buflen;
-
-	if (argc != 1) {
-		printf("Invalid 'nfc_rx_handover_req' command - one argument "
-		       "is required.\n");
-		return -1;
-	}
-
-	buflen = 21 + os_strlen(argv[0]);
-	buf = os_malloc(buflen);
-	if (buf == NULL)
-		return -1;
-	os_snprintf(buf, buflen, "NFC_RX_HANDOVER_REQ %s", argv[0]);
-
-	ret = wpa_ctrl_command(ctrl, buf);
-	os_free(buf);
-
-	return ret;
-}
-
-
-static int wpa_cli_cmd_nfc_rx_handover_sel(struct wpa_ctrl *ctrl, int argc,
-					   char *argv[])
-{
-	int ret;
-	char *buf;
-	size_t buflen;
-
-	if (argc != 1) {
-		printf("Invalid 'nfc_rx_handover_sel' command - one argument "
-		       "is required.\n");
-		return -1;
-	}
-
-	buflen = 21 + os_strlen(argv[0]);
-	buf = os_malloc(buflen);
-	if (buf == NULL)
-		return -1;
-	os_snprintf(buf, buflen, "NFC_RX_HANDOVER_SEL %s", argv[0]);
-
-	ret = wpa_ctrl_command(ctrl, buf);
-	os_free(buf);
-
-	return ret;
-}
-
-
 static int wpa_cli_cmd_nfc_report_handover(struct wpa_ctrl *ctrl, int argc,
 					   char *argv[])
 {
@@ -946,7 +913,7 @@ static int wpa_cli_cmd_wps_reg(struct wpa_ctrl *ctrl, int argc, char *argv[])
 		return -1;
 	}
 
-	if (res < 0 || (size_t) res >= sizeof(cmd) - 1) {
+	if (os_snprintf_error(sizeof(cmd), res)) {
 		printf("Too long WPS_REG command.\n");
 		return -1;
 	}
@@ -1071,7 +1038,7 @@ static int wpa_cli_cmd_wps_er_config(struct wpa_ctrl *ctrl, int argc,
 		return -1;
 	}
 
-	if (res < 0 || (size_t) res >= sizeof(cmd) - 1) {
+	if (os_snprintf_error(sizeof(cmd), res)) {
 		printf("Too long WPS_ER_CONFIG command.\n");
 		return -1;
 	}
@@ -1123,14 +1090,14 @@ static int wpa_cli_cmd_identity(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "IDENTITY-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long IDENTITY command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long IDENTITY command.\n");
 			return -1;
 		}
@@ -1156,14 +1123,14 @@ static int wpa_cli_cmd_password(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "PASSWORD-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long PASSWORD command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long PASSWORD command.\n");
 			return -1;
 		}
@@ -1190,14 +1157,14 @@ static int wpa_cli_cmd_new_password(struct wpa_ctrl *ctrl, int argc,
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "NEW_PASSWORD-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long NEW_PASSWORD command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long NEW_PASSWORD command.\n");
 			return -1;
 		}
@@ -1223,14 +1190,14 @@ static int wpa_cli_cmd_pin(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "PIN-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long PIN command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long PIN command.\n");
 			return -1;
 		}
@@ -1255,14 +1222,14 @@ static int wpa_cli_cmd_otp(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "OTP-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long OTP command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long OTP command.\n");
 			return -1;
 		}
@@ -1288,14 +1255,14 @@ static int wpa_cli_cmd_sim(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "SIM-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long SIM command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long SIM command.\n");
 			return -1;
 		}
@@ -1321,14 +1288,14 @@ static int wpa_cli_cmd_passphrase(struct wpa_ctrl *ctrl, int argc,
 	pos = cmd;
 	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "PASSPHRASE-%s:%s",
 			  argv[0], argv[1]);
-	if (ret < 0 || ret >= end - pos) {
+	if (os_snprintf_error(end - pos, ret)) {
 		printf("Too long PASSPHRASE command.\n");
 		return -1;
 	}
 	pos += ret;
 	for (i = 2; i < argc; i++) {
 		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
-		if (ret < 0 || ret >= end - pos) {
+		if (os_snprintf_error(end - pos, ret)) {
 			printf("Too long PASSPHRASE command.\n");
 			return -1;
 		}
@@ -1462,6 +1429,24 @@ static int wpa_cli_cmd_get_network(struct wpa_ctrl *ctrl, int argc,
 }
 
 
+static int wpa_cli_cmd_dup_network(struct wpa_ctrl *ctrl, int argc,
+				   char *argv[])
+{
+	if (argc == 0) {
+		wpa_cli_show_network_variables();
+		return 0;
+	}
+
+	if (argc < 3) {
+		printf("Invalid DUP_NETWORK command: needs three arguments\n"
+		       "(src netid, dest netid, and variable name)\n");
+		return -1;
+	}
+
+	return wpa_cli_cmd(ctrl, "DUP_NETWORK", 3, argc, argv);
+}
+
+
 static int wpa_cli_cmd_list_creds(struct wpa_ctrl *ctrl, int argc,
 				  char *argv[])
 {
@@ -1491,6 +1476,18 @@ static int wpa_cli_cmd_set_cred(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	}
 
 	return wpa_cli_cmd(ctrl, "SET_CRED", 3, argc, argv);
+}
+
+
+static int wpa_cli_cmd_get_cred(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	if (argc != 2) {
+		printf("Invalid GET_CRED command: needs two arguments\n"
+		       "(cred id, variable name)\n");
+		return -1;
+	}
+
+	return wpa_cli_cmd(ctrl, "GET_CRED", 2, argc, argv);
 }
 
 
@@ -1585,8 +1582,12 @@ static int wpa_cli_cmd_interface(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	wpa_cli_close_connection();
 	os_free(ctrl_ifname);
 	ctrl_ifname = os_strdup(argv[0]);
+	if (!ctrl_ifname) {
+		printf("Failed to allocate memory\n");
+		return 0;
+	}
 
-	if (wpa_cli_open_connection(ctrl_ifname, 1)) {
+	if (wpa_cli_open_connection(ctrl_ifname, 1) == 0) {
 		printf("Connected to interface '%s.\n", ctrl_ifname);
 	} else {
 		printf("Could not connect to interface '%s' - re-trying\n",
@@ -1634,7 +1635,7 @@ static int wpa_cli_cmd_interface_add(struct wpa_ctrl *ctrl, int argc,
 			  argc > 1 ? argv[1] : "", argc > 2 ? argv[2] : "",
 			  argc > 3 ? argv[3] : "", argc > 4 ? argv[4] : "",
 			  argc > 5 ? argv[5] : "");
-	if (res < 0 || (size_t) res >= sizeof(cmd))
+	if (os_snprintf_error(sizeof(cmd), res))
 		return -1;
 	cmd[sizeof(cmd) - 1] = '\0';
 	return wpa_ctrl_command(ctrl, cmd);
@@ -1746,16 +1747,43 @@ static int wpa_cli_cmd_resume(struct wpa_ctrl *ctrl, int argc, char *argv[])
 }
 
 
+#ifdef CONFIG_TESTING_OPTIONS
 static int wpa_cli_cmd_drop_sa(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	return wpa_ctrl_command(ctrl, "DROP_SA");
 }
+#endif /* CONFIG_TESTING_OPTIONS */
 
 
 static int wpa_cli_cmd_roam(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	return wpa_cli_cmd(ctrl, "ROAM", 1, argc, argv);
 }
+
+
+#ifdef CONFIG_MESH
+
+static int wpa_cli_cmd_mesh_interface_add(struct wpa_ctrl *ctrl, int argc,
+					  char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "MESH_INTERFACE_ADD", 0, argc, argv);
+}
+
+
+static int wpa_cli_cmd_mesh_group_add(struct wpa_ctrl *ctrl, int argc,
+				      char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "MESH_GROUP_ADD", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_mesh_group_remove(struct wpa_ctrl *ctrl, int argc,
+					 char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "MESH_GROUP_REMOVE", 1, argc, argv);
+}
+
+#endif /* CONFIG_MESH */
 
 
 #ifdef CONFIG_P2P
@@ -1799,6 +1827,20 @@ static int wpa_cli_cmd_p2p_stop_find(struct wpa_ctrl *ctrl, int argc,
 				     char *argv[])
 {
 	return wpa_ctrl_command(ctrl, "P2P_STOP_FIND");
+}
+
+
+static int wpa_cli_cmd_p2p_asp_provision(struct wpa_ctrl *ctrl, int argc,
+					 char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "P2P_ASP_PROVISION", 3, argc, argv);
+}
+
+
+static int wpa_cli_cmd_p2p_asp_provision_resp(struct wpa_ctrl *ctrl, int argc,
+					      char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "P2P_ASP_PROVISION_RESP", 2, argc, argv);
 }
 
 
@@ -1886,11 +1928,9 @@ static int wpa_cli_cmd_p2p_serv_disc_req(struct wpa_ctrl *ctrl, int argc,
 {
 	char cmd[4096];
 
-	if (argc != 2 && argc != 4) {
+	if (argc < 2) {
 		printf("Invalid P2P_SERV_DISC_REQ command: needs two "
-		       "arguments (address and TLVs) or four arguments "
-		       "(address, \"upnp\", version, search target "
-		       "(SSDP ST:)\n");
+		       "or more arguments (address and TLVs)\n");
 		return -1;
 	}
 
@@ -1921,7 +1961,7 @@ static int wpa_cli_cmd_p2p_serv_disc_resp(struct wpa_ctrl *ctrl, int argc,
 
 	res = os_snprintf(cmd, sizeof(cmd), "P2P_SERV_DISC_RESP %s %s %s %s",
 			  argv[0], argv[1], argv[2], argv[3]);
-	if (res < 0 || (size_t) res >= sizeof(cmd))
+	if (os_snprintf_error(sizeof(cmd), res))
 		return -1;
 	cmd[sizeof(cmd) - 1] = '\0';
 	return wpa_ctrl_command(ctrl, cmd);
@@ -1952,27 +1992,25 @@ static int wpa_cli_cmd_p2p_service_flush(struct wpa_ctrl *ctrl, int argc,
 static int wpa_cli_cmd_p2p_service_add(struct wpa_ctrl *ctrl, int argc,
 				       char *argv[])
 {
-	char cmd[4096];
-	int res;
+	if (argc < 3) {
+		printf("Invalid P2P_SERVICE_ADD command: needs 3-6 arguments\n");
+		return -1;
+	}
 
-	if (argc != 3 && argc != 4) {
-		printf("Invalid P2P_SERVICE_ADD command: needs three or four "
+	return wpa_cli_cmd(ctrl, "P2P_SERVICE_ADD", 3, argc, argv);
+}
+
+
+static int wpa_cli_cmd_p2p_service_rep(struct wpa_ctrl *ctrl, int argc,
+				       char *argv[])
+{
+	if (argc < 5 || argc > 6) {
+		printf("Invalid P2P_SERVICE_REP command: needs 5-6 "
 		       "arguments\n");
 		return -1;
 	}
 
-	if (argc == 4)
-		res = os_snprintf(cmd, sizeof(cmd),
-				  "P2P_SERVICE_ADD %s %s %s %s",
-				  argv[0], argv[1], argv[2], argv[3]);
-	else
-		res = os_snprintf(cmd, sizeof(cmd),
-				  "P2P_SERVICE_ADD %s %s %s",
-				  argv[0], argv[1], argv[2]);
-	if (res < 0 || (size_t) res >= sizeof(cmd))
-		return -1;
-	cmd[sizeof(cmd) - 1] = '\0';
-	return wpa_ctrl_command(ctrl, cmd);
+	return wpa_cli_cmd(ctrl, "P2P_SERVICE_REP", 5, argc, argv);
 }
 
 
@@ -1996,7 +2034,7 @@ static int wpa_cli_cmd_p2p_service_del(struct wpa_ctrl *ctrl, int argc,
 		res = os_snprintf(cmd, sizeof(cmd),
 				  "P2P_SERVICE_DEL %s %s",
 				  argv[0], argv[1]);
-	if (res < 0 || (size_t) res >= sizeof(cmd))
+	if (os_snprintf_error(sizeof(cmd), res))
 		return -1;
 	cmd[sizeof(cmd) - 1] = '\0';
 	return wpa_ctrl_command(ctrl, cmd);
@@ -2218,7 +2256,7 @@ static int wpa_cli_cmd_wfd_subelem_set(struct wpa_ctrl *ctrl, int argc,
 
 	res = os_snprintf(cmd, sizeof(cmd), "WFD_SUBELEM_SET %s %s",
 			  argv[0], argc > 1 ? argv[1] : "");
-	if (res < 0 || (size_t) res >= sizeof(cmd))
+	if (os_snprintf_error(sizeof(cmd), res))
 		return -1;
 	cmd[sizeof(cmd) - 1] = '\0';
 	return wpa_ctrl_command(ctrl, cmd);
@@ -2239,7 +2277,7 @@ static int wpa_cli_cmd_wfd_subelem_get(struct wpa_ctrl *ctrl, int argc,
 
 	res = os_snprintf(cmd, sizeof(cmd), "WFD_SUBELEM_GET %s",
 			  argv[0]);
-	if (res < 0 || (size_t) res >= sizeof(cmd))
+	if (os_snprintf_error(sizeof(cmd), res))
 		return -1;
 	cmd[sizeof(cmd) - 1] = '\0';
 	return wpa_ctrl_command(ctrl, cmd);
@@ -2273,6 +2311,13 @@ static int wpa_cli_cmd_interworking_connect(struct wpa_ctrl *ctrl, int argc,
 					    char *argv[])
 {
 	return wpa_cli_cmd(ctrl, "INTERWORKING_CONNECT", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_interworking_add_network(struct wpa_ctrl *ctrl, int argc,
+						char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "INTERWORKING_ADD_NETWORK", 1, argc, argv);
 }
 
 
@@ -2324,6 +2369,37 @@ static int wpa_cli_cmd_get_nai_home_realm_list(struct wpa_ctrl *ctrl, int argc,
 	return wpa_ctrl_command(ctrl, cmd);
 }
 
+
+static int wpa_cli_cmd_hs20_icon_request(struct wpa_ctrl *ctrl, int argc,
+					 char *argv[])
+{
+	char cmd[512];
+
+	if (argc < 2) {
+		printf("Command needs two arguments (dst mac addr and "
+		       "icon name)\n");
+		return -1;
+	}
+
+	if (write_cmd(cmd, sizeof(cmd), "HS20_ICON_REQUEST", argc, argv) < 0)
+		return -1;
+
+	return wpa_ctrl_command(ctrl, cmd);
+}
+
+
+static int wpa_cli_cmd_fetch_osu(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "FETCH_OSU");
+}
+
+
+static int wpa_cli_cmd_cancel_fetch_osu(struct wpa_ctrl *ctrl, int argc,
+					char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "CANCEL_FETCH_OSU");
+}
+
 #endif /* CONFIG_HS20 */
 
 
@@ -2352,6 +2428,41 @@ static int wpa_cli_cmd_tdls_teardown(struct wpa_ctrl *ctrl, int argc,
 				     char *argv[])
 {
 	return wpa_cli_cmd(ctrl, "TDLS_TEARDOWN", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_wmm_ac_addts(struct wpa_ctrl *ctrl, int argc,
+				    char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "WMM_AC_ADDTS", 3, argc, argv);
+}
+
+
+static int wpa_cli_cmd_wmm_ac_delts(struct wpa_ctrl *ctrl, int argc,
+				    char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "WMM_AC_DELTS", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_wmm_ac_status(struct wpa_ctrl *ctrl, int argc,
+				    char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "WMM_AC_STATUS");
+}
+
+
+static int wpa_cli_cmd_tdls_chan_switch(struct wpa_ctrl *ctrl, int argc,
+					char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "TDLS_CHAN_SWITCH", 2, argc, argv);
+}
+
+
+static int wpa_cli_cmd_tdls_cancel_chan_switch(struct wpa_ctrl *ctrl, int argc,
+					       char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "TDLS_CANCEL_CHAN_SWITCH", 1, argc, argv);
 }
 
 
@@ -2421,6 +2532,12 @@ static int wpa_cli_cmd_driver(struct wpa_ctrl *ctrl, int argc, char *argv[])
 #endif /* ANDROID */
 
 
+static int wpa_cli_cmd_vendor(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "VENDOR", 1, argc, argv);
+}
+
+
 static int wpa_cli_cmd_flush(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	return wpa_ctrl_command(ctrl, "FLUSH");
@@ -2430,6 +2547,26 @@ static int wpa_cli_cmd_flush(struct wpa_ctrl *ctrl, int argc, char *argv[])
 static int wpa_cli_cmd_radio_work(struct wpa_ctrl *ctrl, int argc, char *argv[])
 {
 	return wpa_cli_cmd(ctrl, "RADIO_WORK", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_neighbor_rep_request(struct wpa_ctrl *ctrl, int argc,
+					    char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "NEIGHBOR_REP_REQUEST", 0, argc, argv);
+}
+
+
+static int wpa_cli_cmd_erp_flush(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "ERP_FLUSH");
+}
+
+
+static int wpa_cli_cmd_mac_rand_scan(struct wpa_ctrl *ctrl, int argc,
+				     char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "MAC_RAND_SCAN", 1, argc, argv);
 }
 
 
@@ -2484,6 +2621,9 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	  cli_cmd_flag_none,
 	  "= set variables (shows list of variables when run without "
 	  "arguments)" },
+	{ "dump", wpa_cli_cmd_dump, NULL,
+	  cli_cmd_flag_none,
+	  "= dump config variables" },
 	{ "get", wpa_cli_cmd_get, NULL,
 	  cli_cmd_flag_none,
 	  "<name> = get information" },
@@ -2496,9 +2636,15 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "pmksa", wpa_cli_cmd_pmksa, NULL,
 	  cli_cmd_flag_none,
 	  "= show PMKSA cache" },
+	{ "pmksa_flush", wpa_cli_cmd_pmksa_flush, NULL,
+	  cli_cmd_flag_none,
+	  "= flush PMKSA cache entries" },
 	{ "reassociate", wpa_cli_cmd_reassociate, NULL,
 	  cli_cmd_flag_none,
 	  "= force reassociation" },
+	{ "reattach", wpa_cli_cmd_reattach, NULL,
+	  cli_cmd_flag_none,
+	  "= force reassociation back to the same BSS" },
 	{ "preauthenticate", wpa_cli_cmd_preauthenticate, wpa_cli_complete_bss,
 	  cli_cmd_flag_none,
 	  "<BSSID> = force preauthentication" },
@@ -2562,6 +2708,10 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "get_network", wpa_cli_cmd_get_network, NULL,
 	  cli_cmd_flag_none,
 	  "<network id> <variable> = get network variables" },
+	{ "dup_network", wpa_cli_cmd_dup_network, NULL,
+	  cli_cmd_flag_none,
+	  "<src network id> <dst network id> <variable> = duplicate network variables"
+	},
 	{ "list_creds", wpa_cli_cmd_list_creds, NULL,
 	  cli_cmd_flag_none,
 	  "= list configured credentials" },
@@ -2574,6 +2724,9 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "set_cred", wpa_cli_cmd_set_cred, NULL,
 	  cli_cmd_flag_sensitive,
 	  "<cred id> <variable> <value> = set credential variables" },
+	{ "get_cred", wpa_cli_cmd_get_cred, NULL,
+	  cli_cmd_flag_none,
+	  "<cred id> <variable> = get credential variables" },
 	{ "save_config", wpa_cli_cmd_save_config, NULL,
 	  cli_cmd_flag_none,
 	  "= save the current configuration" },
@@ -2667,12 +2820,6 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "nfc_get_handover_sel", wpa_cli_cmd_nfc_get_handover_sel, NULL,
 	  cli_cmd_flag_none,
 	  "<NDEF> <WPS> = create NFC handover select" },
-	{ "nfc_rx_handover_req", wpa_cli_cmd_nfc_rx_handover_req, NULL,
-	  cli_cmd_flag_none,
-	  "<hexdump of payload> = report received NFC handover request" },
-	{ "nfc_rx_handover_sel", wpa_cli_cmd_nfc_rx_handover_sel, NULL,
-	  cli_cmd_flag_none,
-	  "<hexdump of payload> = report received NFC handover select" },
 	{ "nfc_report_handover", wpa_cli_cmd_nfc_report_handover, NULL,
 	  cli_cmd_flag_none,
 	  "<role> <type> <hexdump of req> <hexdump of sel> = report completed "
@@ -2736,17 +2883,36 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	  "= notification of suspend/hibernate" },
 	{ "resume", wpa_cli_cmd_resume, NULL, cli_cmd_flag_none,
 	  "= notification of resume/thaw" },
+#ifdef CONFIG_TESTING_OPTIONS
 	{ "drop_sa", wpa_cli_cmd_drop_sa, NULL, cli_cmd_flag_none,
 	  "= drop SA without deauth/disassoc (test command)" },
+#endif /* CONFIG_TESTING_OPTIONS */
 	{ "roam", wpa_cli_cmd_roam, wpa_cli_complete_bss,
 	  cli_cmd_flag_none,
 	  "<addr> = roam to the specified BSS" },
+#ifdef CONFIG_MESH
+	{ "mesh_interface_add", wpa_cli_cmd_mesh_interface_add, NULL,
+	  cli_cmd_flag_none,
+	  "[ifname] = Create a new mesh interface" },
+	{ "mesh_group_add", wpa_cli_cmd_mesh_group_add, NULL,
+	  cli_cmd_flag_none,
+	  "<network id> = join a mesh network (disable others)" },
+	{ "mesh_group_remove", wpa_cli_cmd_mesh_group_remove, NULL,
+	  cli_cmd_flag_none,
+	  "<ifname> = Remove mesh group interface" },
+#endif /* CONFIG_MESH */
 #ifdef CONFIG_P2P
 	{ "p2p_find", wpa_cli_cmd_p2p_find, wpa_cli_complete_p2p_find,
 	  cli_cmd_flag_none,
 	  "[timeout] [type=*] = find P2P Devices for up-to timeout seconds" },
 	{ "p2p_stop_find", wpa_cli_cmd_p2p_stop_find, NULL, cli_cmd_flag_none,
 	  "= stop P2P Devices search" },
+	{ "p2p_asp_provision", wpa_cli_cmd_p2p_asp_provision, NULL,
+	  cli_cmd_flag_none,
+	  "<addr> adv_id=<adv_id> conncap=<conncap> [info=<infodata>] = provision with a P2P ASP Device" },
+	{ "p2p_asp_provision_resp", wpa_cli_cmd_p2p_asp_provision_resp, NULL,
+	  cli_cmd_flag_none,
+	  "<addr> adv_id=<adv_id> [role<conncap>] [info=<infodata>] = provision with a P2P ASP Device" },
 	{ "p2p_connect", wpa_cli_cmd_p2p_connect, wpa_cli_complete_p2p_connect,
 	  cli_cmd_flag_none,
 	  "<addr> <\"pbc\"|PIN> [ht40] = connect to a P2P Device" },
@@ -2783,8 +2949,12 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	  "= remove all stored service entries" },
 	{ "p2p_service_add", wpa_cli_cmd_p2p_service_add, NULL,
 	  cli_cmd_flag_none,
-	  "<bonjour|upnp> <query|version> <response|service> = add a local "
+	  "<bonjour|upnp|asp> <query|version> <response|service> = add a local "
 	  "service" },
+	{ "p2p_service_rep", wpa_cli_cmd_p2p_service_rep, NULL,
+	  cli_cmd_flag_none,
+	  "asp <auto> <adv_id> <svc_state> <svc_string> [<svc_info>] = replace "
+	  "local ASP service" },
 	{ "p2p_service_del", wpa_cli_cmd_p2p_service_del, NULL,
 	  cli_cmd_flag_none,
 	  "<bonjour|upnp> <query|version> [|service] = remove a local "
@@ -2842,6 +3012,9 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "interworking_connect", wpa_cli_cmd_interworking_connect,
 	  wpa_cli_complete_bss, cli_cmd_flag_none,
 	  "<BSSID> = connect using Interworking credentials" },
+	{ "interworking_add_network", wpa_cli_cmd_interworking_add_network,
+	  wpa_cli_complete_bss, cli_cmd_flag_none,
+	  "<BSSID> = connect using Interworking credentials" },
 	{ "anqp_get", wpa_cli_cmd_anqp_get, wpa_cli_complete_bss,
 	  cli_cmd_flag_none,
 	  "<addr> <info id>[,<info id>]... = request ANQP information" },
@@ -2860,6 +3033,14 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "nai_home_realm_list", wpa_cli_cmd_get_nai_home_realm_list,
 	  wpa_cli_complete_bss, cli_cmd_flag_none,
 	  "<addr> <home realm> = get HS20 nai home realm list" },
+	{ "hs20_icon_request", wpa_cli_cmd_hs20_icon_request,
+	  wpa_cli_complete_bss, cli_cmd_flag_none,
+	  "<addr> <icon name> = get Hotspot 2.0 OSU icon" },
+	{ "fetch_osu", wpa_cli_cmd_fetch_osu, NULL, cli_cmd_flag_none,
+	  "= fetch OSU provider information from all APs" },
+	{ "cancel_fetch_osu", wpa_cli_cmd_cancel_fetch_osu, NULL,
+	  cli_cmd_flag_none,
+	  "= cancel fetch_osu command" },
 #endif /* CONFIG_HS20 */
 	{ "sta_autoconnect", wpa_cli_cmd_sta_autoconnect, NULL,
 	  cli_cmd_flag_none,
@@ -2873,6 +3054,25 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "tdls_teardown", wpa_cli_cmd_tdls_teardown, NULL,
 	  cli_cmd_flag_none,
 	  "<addr> = tear down TDLS with <addr>" },
+	{ "wmm_ac_addts", wpa_cli_cmd_wmm_ac_addts, NULL,
+	  cli_cmd_flag_none,
+	  "<uplink/downlink/bidi> <tsid=0..7> <up=0..7> [nominal_msdu_size=#] "
+	  "[mean_data_rate=#] [min_phy_rate=#] [sba=#] [fixed_nominal_msdu] "
+	  "= add WMM-AC traffic stream" },
+	{ "wmm_ac_delts", wpa_cli_cmd_wmm_ac_delts, NULL,
+	  cli_cmd_flag_none,
+	  "<tsid> = delete WMM-AC traffic stream" },
+	{ "wmm_ac_status", wpa_cli_cmd_wmm_ac_status, NULL,
+	  cli_cmd_flag_none,
+	  "= show status for Wireless Multi-Media Admission-Control" },
+	{ "tdls_chan_switch", wpa_cli_cmd_tdls_chan_switch, NULL,
+	  cli_cmd_flag_none,
+	  "<addr> <oper class> <freq> [sec_channel_offset=] [center_freq1=] "
+	  "[center_freq2=] [bandwidth=] [ht|vht] = enable channel switching "
+	  "with TDLS peer" },
+	{ "tdls_cancel_chan_switch", wpa_cli_cmd_tdls_cancel_chan_switch, NULL,
+	  cli_cmd_flag_none,
+	  "<addr> = disable channel switching with TDLS peer <addr>" },
 	{ "signal_poll", wpa_cli_cmd_signal_poll, NULL,
 	  cli_cmd_flag_none,
 	  "= get signal parameters" },
@@ -2902,6 +3102,21 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 #endif /* ANDROID */
 	{ "radio_work", wpa_cli_cmd_radio_work, NULL, cli_cmd_flag_none,
 	  "= radio_work <show/add/done>" },
+	{ "vendor", wpa_cli_cmd_vendor, NULL, cli_cmd_flag_none,
+	  "<vendor id> <command id> [<hex formatted command argument>] = Send vendor command"
+	},
+	{ "neighbor_rep_request",
+	  wpa_cli_cmd_neighbor_rep_request, NULL, cli_cmd_flag_none,
+	  "[ssid=<SSID>] = Trigger request to AP for neighboring AP report "
+	  "(with optional given SSID, default: current SSID)"
+	},
+	{ "erp_flush", wpa_cli_cmd_erp_flush, NULL, cli_cmd_flag_none,
+	  "= flush ERP keys" },
+	{ "mac_rand_scan",
+	  wpa_cli_cmd_mac_rand_scan, NULL, cli_cmd_flag_none,
+	  "<scan|sched|pno|all> enable=<0/1> [addr=mac-address "
+	  "mask=mac-address-mask] = scan MAC randomization"
+	},
 	{ NULL, NULL, NULL, cli_cmd_flag_none, NULL }
 };
 
@@ -3109,28 +3324,19 @@ static int str_match(const char *a, const char *b)
 static int wpa_cli_exec(const char *program, const char *arg1,
 			const char *arg2)
 {
-	char *cmd;
+	char *arg;
 	size_t len;
 	int res;
-	int ret = 0;
 
-	len = os_strlen(program) + os_strlen(arg1) + os_strlen(arg2) + 3;
-	cmd = os_malloc(len);
-	if (cmd == NULL)
+	len = os_strlen(arg1) + os_strlen(arg2) + 2;
+	arg = os_malloc(len);
+	if (arg == NULL)
 		return -1;
-	res = os_snprintf(cmd, len, "%s %s %s", program, arg1, arg2);
-	if (res < 0 || (size_t) res >= len) {
-		os_free(cmd);
-		return -1;
-	}
-	cmd[len - 1] = '\0';
-#ifndef _WIN32_WCE
-	if (system(cmd) < 0)
-		ret = -1;
-#endif /* _WIN32_WCE */
-	os_free(cmd);
+	os_snprintf(arg, len, "%s %s", arg1, arg2);
+	res = os_exec(program, arg, 1);
+	os_free(arg);
 
-	return ret;
+	return res;
 }
 
 
@@ -3138,15 +3344,29 @@ static void wpa_cli_action_process(const char *msg)
 {
 	const char *pos;
 	char *copy = NULL, *id, *pos2;
+	const char *ifname = ctrl_ifname;
+	char ifname_buf[100];
 
 	pos = msg;
+	if (os_strncmp(pos, "IFNAME=", 7) == 0) {
+		const char *end;
+		end = os_strchr(pos + 7, ' ');
+		if (end && (unsigned int) (end - pos) < sizeof(ifname_buf)) {
+			pos += 7;
+			os_memcpy(ifname_buf, pos, end - pos);
+			ifname_buf[end - pos] = '\0';
+			ifname = ifname_buf;
+			pos = end + 1;
+		}
+	}
 	if (*pos == '<') {
+		const char *prev = pos;
 		/* skip priority */
 		pos = os_strchr(pos, '>');
 		if (pos)
 			pos++;
 		else
-			pos = msg;
+			pos = prev;
 	}
 
 	if (str_match(pos, WPA_EVENT_CONNECTED)) {
@@ -3183,33 +3403,45 @@ static void wpa_cli_action_process(const char *msg)
 		if (wpa_cli_connected <= 0 || new_id != wpa_cli_last_id) {
 			wpa_cli_connected = 1;
 			wpa_cli_last_id = new_id;
-			wpa_cli_exec(action_file, ctrl_ifname, "CONNECTED");
+			wpa_cli_exec(action_file, ifname, "CONNECTED");
 		}
 	} else if (str_match(pos, WPA_EVENT_DISCONNECTED)) {
 		if (wpa_cli_connected) {
 			wpa_cli_connected = 0;
-			wpa_cli_exec(action_file, ctrl_ifname, "DISCONNECTED");
+			wpa_cli_exec(action_file, ifname, "DISCONNECTED");
 		}
+	} else if (str_match(pos, MESH_GROUP_STARTED)) {
+		wpa_cli_exec(action_file, ctrl_ifname, pos);
+	} else if (str_match(pos, MESH_GROUP_REMOVED)) {
+		wpa_cli_exec(action_file, ctrl_ifname, pos);
+	} else if (str_match(pos, MESH_PEER_CONNECTED)) {
+		wpa_cli_exec(action_file, ctrl_ifname, pos);
+	} else if (str_match(pos, MESH_PEER_DISCONNECTED)) {
+		wpa_cli_exec(action_file, ctrl_ifname, pos);
 	} else if (str_match(pos, P2P_EVENT_GROUP_STARTED)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, P2P_EVENT_GROUP_REMOVED)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, P2P_EVENT_CROSS_CONNECT_ENABLE)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, P2P_EVENT_CROSS_CONNECT_DISABLE)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, P2P_EVENT_GO_NEG_FAILURE)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, WPS_EVENT_SUCCESS)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, WPS_EVENT_FAIL)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, AP_STA_CONNECTED)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, AP_STA_DISCONNECTED)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, ESS_DISASSOC_IMMINENT)) {
-		wpa_cli_exec(action_file, ctrl_ifname, pos);
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_match(pos, HS20_SUBSCRIPTION_REMEDIATION)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_match(pos, HS20_DEAUTH_IMMINENT_NOTICE)) {
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_match(pos, WPA_EVENT_TERMINATING)) {
 		printf("wpa_supplicant is terminating - stop monitoring\n");
 		wpa_cli_quit = 1;
@@ -3341,7 +3573,7 @@ static void wpa_cli_recv_pending(struct wpa_ctrl *ctrl, int action_monitor)
 		return;
 	}
 	while (wpa_ctrl_pending(ctrl) > 0) {
-		char buf[256];
+		char buf[4096];
 		size_t len = sizeof(buf) - 1;
 		if (wpa_ctrl_recv(ctrl, buf, &len) == 0) {
 			buf[len] = '\0';
@@ -3405,10 +3637,18 @@ static int tokenize_cmd(char *cmd, char *argv[])
 
 static void wpa_cli_ping(void *eloop_ctx, void *timeout_ctx)
 {
-	if (ctrl_conn && _wpa_ctrl_command(ctrl_conn, "PING", 0)) {
-		printf("Connection to wpa_supplicant lost - trying to "
-		       "reconnect\n");
-		wpa_cli_close_connection();
+	if (ctrl_conn) {
+		int res;
+		char *prefix = ifname_prefix;
+
+		ifname_prefix = NULL;
+		res = _wpa_ctrl_command(ctrl_conn, "PING", 0);
+		ifname_prefix = prefix;
+		if (res) {
+			printf("Connection to wpa_supplicant lost - trying to "
+			       "reconnect\n");
+			wpa_cli_close_connection();
+		}
 	}
 	if (!ctrl_conn)
 		wpa_cli_reconnect();
@@ -3527,7 +3767,7 @@ static void update_ifnames(struct wpa_ctrl *ctrl)
 			break;
 		*end = '\0';
 		ret = os_snprintf(txt, sizeof(txt), "ifname=%s", pos);
-		if (ret > 0 && ret < (int) sizeof(txt))
+		if (!os_snprintf_error(sizeof(txt), ret))
 			cli_txt_list_add(&ifnames, txt);
 		pos = end + 1;
 	}
@@ -3545,7 +3785,8 @@ static void try_connection(void *eloop_ctx, void *timeout_ctx)
 	if (!wpa_cli_open_connection(ctrl_ifname, 1) == 0) {
 		if (!warning_displayed) {
 			printf("Could not connect to wpa_supplicant: "
-			       "%s - re-trying\n", ctrl_ifname);
+			       "%s - re-trying\n",
+			       ctrl_ifname ? ctrl_ifname : "(nil)");
 			warning_displayed = 1;
 		}
 		eloop_register_timeout(1, 0, try_connection, NULL, NULL);
@@ -3806,7 +4047,8 @@ int main(int argc, char *argv[])
 		    wpa_cli_open_connection(ctrl_ifname, 0) < 0) {
 			fprintf(stderr, "Failed to connect to non-global "
 				"ctrl_ifname: %s  error: %s\n",
-				ctrl_ifname, strerror(errno));
+				ctrl_ifname ? ctrl_ifname : "(nil)",
+				strerror(errno));
 			return -1;
 		}
 

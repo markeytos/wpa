@@ -9,3 +9,7 @@ include-ieee802_11_common.c-in-wpa_supplicant-build-.patch
 hostapd_fix-hostapd-operation-without-hw_mode-driver-data.patch
 wpasupplicant_fix-systemd-unit-dependencies.patch
 wpasupplicant_P2P-Validate-SSID-element-length-before-copying-it-C.patch
+wpasupplicant_band_selection_f0d0a5d2.patch
+wpasupplicant_band_selection_a1b790eb.patch
+wpasupplicant_band_selection_8b2b718d.patch
+wpasupplicant_band_selection_aa517ae2.patch

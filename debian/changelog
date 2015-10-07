@@ -1,3 +1,10 @@
+wpa (2.4-0ubuntu3) wily; urgency=medium
+
+  * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations
+    when P2P management interface is used (LP: #1482439)
+
+ -- Ricardo Salveti de Araujo <rsalveti@rsalveti.net>  Wed, 07 Oct 2015 10:21:39 -0300
+
 wpa (2.4-0ubuntu2) wily; urgency=medium
 
   * debian/config/wpasupplicant/linux:

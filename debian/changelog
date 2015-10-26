@@ -1,3 +1,11 @@
+wpa (2.4-0ubuntu4) xenial; urgency=medium
+
+  * Add debian/system-sleep/wpasupplicant: Call wpa_cli suspend/resume
+    before/after suspend, like the pm-utils hook. In some cases this brings
+    back missing Wifi connection after resuming. (LP: #1422143)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Mon, 26 Oct 2015 14:24:30 +0100
+
 wpa (2.4-0ubuntu3) wily; urgency=medium
 
   * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations

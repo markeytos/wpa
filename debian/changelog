@@ -1,3 +1,22 @@
+wpa (2.3-2.2) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Add patch to address CVE-2015-4141.
+    CVE-2015-4141: WPS UPnP vulnerability with HTTP chunked transfer
+    encoding. (Closes: #787372)
+  * Add patch to address CVE-2015-4142.
+    CVE-2015-4142: Integer underflow in AP mode WMM Action frame processing.
+    (Closes: #787373)
+  * Add patches to address CVE-2015-414{3,4,5,6}
+    CVE-2015-4143 CVE-2015-4144 CVE-2015-4145 CVE-2015-4146: EAP-pwd missing
+    payload length validation. (Closes: #787371)
+  * Add patch to address 2015-5 vulnerability.
+    NFC: Fix payload length validation in NDEF record parser (Closes: #795740)
+  * Thanks to Julian Wollrath <jwollrath@web.de> for the initial debdiff
+    provided in #787371.
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sat, 31 Oct 2015 14:13:50 +0100
+
 wpa (2.3-2.1) unstable; urgency=medium
 
   * Non-maintainer upload.

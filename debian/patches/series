@@ -13,3 +13,11 @@ wpasupplicant_band_selection_f0d0a5d2.patch
 wpasupplicant_band_selection_a1b790eb.patch
 wpasupplicant_band_selection_8b2b718d.patch
 wpasupplicant_band_selection_aa517ae2.patch
+2015-2/0001-WPS-Fix-HTTP-chunked-transfer-encoding-parser.patch
+2015-3/0001-AP-WMM-Fix-integer-underflow-in-WMM-Action-frame-par.patch
+2015-4/0001-EAP-pwd-peer-Fix-payload-length-validation-for-Commi.patch
+2015-4/0002-EAP-pwd-server-Fix-payload-length-validation-for-Com.patch
+2015-4/0003-EAP-pwd-peer-Fix-Total-Length-parsing-for-fragment-r.patch
+2015-4/0004-EAP-pwd-server-Fix-Total-Length-parsing-for-fragment.patch
+2015-4/0005-EAP-pwd-peer-Fix-asymmetric-fragmentation-behavior.patch
+2015-5/0001-NFC-Fix-payload-length-validation-in-NDEF-record-par.patch

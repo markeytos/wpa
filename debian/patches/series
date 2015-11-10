@@ -13,3 +13,8 @@ CVE-2015-4142.patch
 CVE-2015-4143-4146.patch
 android_hal_fw_path_change.patch
 dbus-fix-operations-for-p2p-mgmt.patch
+CVE-2015-5310.patch
+CVE-2015-5315-1.patch
+CVE-2015-5315-2.patch
+CVE-2015-5316.patch
+CVE-2015-8041.patch

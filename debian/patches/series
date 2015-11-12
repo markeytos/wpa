@@ -21,3 +21,7 @@ wpasupplicant_band_selection_aa517ae2.patch
 2015-4/0004-EAP-pwd-server-Fix-Total-Length-parsing-for-fragment.patch
 2015-4/0005-EAP-pwd-peer-Fix-asymmetric-fragmentation-behavior.patch
 2015-5/0001-NFC-Fix-payload-length-validation-in-NDEF-record-par.patch
+2015-6/backported-WNM-Ignore-Key-Data-in-WNM-Sleep-Mode-Response-frame.patch
+2015-7/0001-EAP-pwd-server-Fix-last-fragment-length-validation.patch
+2015-7/0001-EAP-pwd-peer-Fix-last-fragment-length-validation.patch
+2015-8/0001-EAP-pwd-peer-Fix-error-path-for-unexpected-Confirm-m.patch

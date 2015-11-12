@@ -1,3 +1,19 @@
+wpa (2.3-2.3) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Add patch to address CVE-2015-5310.
+    CVE-2015-5310: wpa_supplicant unauthorized WNM Sleep Mode GTK control.
+    (Closes: #804707)
+  * Add patches to address CVE-2015-5314 and CVE-2015-5315.
+    CVE-2015-5314: hostapd: EAP-pwd missing last fragment length validation.
+    CVE-2015-5315: wpa_supplicant: EAP-pwd missing last fragment length
+    validation. (Closes: #804708)
+  * Add patch to address CVE-2015-5316.
+    CVE-2015-5316: EAP-pwd peer error path failure on unexpected Confirm
+    message. (Closes: #804710)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 12 Nov 2015 20:54:12 +0100
+
 wpa (2.3-2.2) unstable; urgency=high
 
   * Non-maintainer upload.

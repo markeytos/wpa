@@ -4,7 +4,7 @@ Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
 
 --- a/wpa_supplicant/systemd/wpa_supplicant.service.arg.in
 +++ b/wpa_supplicant/systemd/wpa_supplicant.service.arg.in
-@@ -7,7 +7,7 @@ After=sys-subsystem-net-devices-%i.devic
+@@ -9,7 +9,7 @@ Wants=network.target
  
  [Service]
  Type=simple

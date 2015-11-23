@@ -7,8 +7,6 @@ wpa_gui_desktop_add-keywords-entry.patch
 wpa_supplicant-MACsec-fix-build-failure-for-IEEE8021.patch
 include-ieee802_11_common.c-in-wpa_supplicant-build-.patch
 hostapd_fix-hostapd-operation-without-hw_mode-driver-data.patch
-networkd-driver-fallback.patch
-wpasupplicant_fix-systemd-unit-dependencies.patch
 2015-01/0001-P2P-Validate-SSID-element-length-before-copying-it-C.patch
 2015-02/0001-WPS-Fix-HTTP-chunked-transfer-encoding-parser.patch
 2015-03/0001-AP-WMM-Fix-integer-underflow-in-WMM-Action-frame-par.patch
@@ -17,3 +15,11 @@ wpasupplicant_fix-systemd-unit-dependencies.patch
 2015-04/0003-EAP-pwd-peer-Fix-Total-Length-parsing-for-fragment-r.patch
 2015-04/0004-EAP-pwd-server-Fix-Total-Length-parsing-for-fragment.patch
 2015-04/0005-EAP-pwd-peer-Fix-asymmetric-fragmentation-behavior.patch
+2015-05/0001-NFC-Fix-payload-length-validation-in-NDEF-record-par.patch
+improve-BSS-selection-with-default-noise-floor-value.patch
+select-AP-based-on-estimated-maximum-throughput.patch
+fix-minor-issue-in-HT40-max-rate-determination.patch
+wpa_supplicant-Fix-a-typo-in-wpa_scan_result_compar.patch
+systemd_order-wpa_supplicant-before-network.target.patch
+networkd-driver-fallback.patch
+wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch

@@ -3,21 +3,41 @@ wpa (2.3-3) unstable; urgency=medium
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.
   * import changelogs from the security queues.
-  * import upstream security fixes for wpa (no CVEs yet):
-    - WPS UPnP vulnerability with HTTP chunked transfer encoding (2015-2)
+  * import upstream security fixes for wpa:
+    - WPS UPnP vulnerability with HTTP chunked transfer encoding (2015-2,
+      CVE-2015-4141, Closes: #787372).
       +  WPS: Fix HTTP chunked transfer encoding parser
-    - Integer underflow in AP mode WMM Action frame processing (2015-3)
+    - Integer underflow in AP mode WMM Action frame processing (2015-3,
+      CVE-2015-4142, Closes: #787373)
       + AP WMM: Fix integer underflow in WMM Action frame parser
-    - EAP-pwd missing payload length validation (2015-4)
+    - EAP-pwd missing payload length validation (2015-4, CVE-2015-4143,
+      CVE-2015-4144, CVE-2015-4145, CVE-2015-4146, Closes: 787371).
       + EAP-pwd peer: Fix payload length validation for Commit and Confirm
       + EAP-pwd server: Fix payload length validation for Commit and Confirm
       + EAP-pwd peer: Fix Total-Length parsing for fragment reassembly
       + EAP-pwd server: Fix Total-Length parsing for fragment reassembly
       + EAP-pwd peer: Fix asymmetric fragmentation behavior
+    - Incomplete WPS and P2P NFC NDEF record payload length validation (2015-5,
+      no CVE yet)
+      + NFC: Fix payload length validation in NDEF record parser
   * move previous patch for CVE-2015-1863 into a new subdirectory,
     debian/patches/2015-1/ and add the upstream advisory.
+  * backport band selection patches from upstream, thanks to Steinar H.
+    Gunderson <sgunderson@bigfoot.com> (Closes: #795722):
+    - Improve BSS selection with default noise floor values.
+    - Select AP based on estimated maximum throughput
+    - Fix minor issue in HT40 max rate determination
+    - wpa_supplicant: Fix a typo in wpa_scan_result_compar()
+  * replace the Debian specific patch "wpasupplicant: fix systemd unit
+    dependencies" with a backport of its official upstream change "systemd:
+    Order wpa_supplicant before network.target".
+  * fix dependency odering when invoked with DBus, by making sure that DBus
+    isn't shut down before wpa_supplicant, as that would also bring down
+    wireless links which are still holding open NFS shares. Thanks to Facundo
+    Gaich <facugaich@gmail.com> and Michael Biebl <biebl@debian.org>
+    (Closes: #785579).
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 08 May 2015 00:50:57 +0200
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 
 wpa (2.3-2) unstable; urgency=high
 

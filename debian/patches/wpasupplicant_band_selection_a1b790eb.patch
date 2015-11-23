@@ -1,26 +1,21 @@
-From a1b790eb9d7514d1a6e0582a07f695a1564caa59 Mon Sep 17 00:00:00 2001
-From: Jouni Malinen <j@w1.fi>
-Date: Sat, 21 Feb 2015 22:53:42 +0200
-Subject: Select AP based on estimated maximum throughput
+commit a1b790eb9d7514d1a6e0582a07f695a1564caa59
+Author: Jouni Malinen <j@w1.fi>
+Date:   Sat Feb 21 22:53:42 2015 +0200
 
-This modifies the BSS selection routines to calculate SNR and estimated
-throughput for each scan result and then use the estimated throughput as
-a criteria for sorting the results. This extends the earlier design by
-taking into account higher throughput rates if both the AP and local
-device supports HT20, HT40, or VHT80. In addition, the maximum rate is
-restricted based on SNR.
-
-In practice, this gives significantly higher probability of selecting
-HT/VHT APs when there are multiple BSSes in the same ESS and SNR is not
-low enough to prevent higher MCS use.
-
-Signed-off-by: Jouni Malinen <j@w1.fi>
----
- src/drivers/driver.h              |   5 +
- wpa_supplicant/scan.c             | 219 +++++++++++++++++++++++++++++++++-----
- wpa_supplicant/wpa_supplicant.c   |  17 +++
- wpa_supplicant/wpa_supplicant_i.h |   6 ++
- 4 files changed, 223 insertions(+), 24 deletions(-)
+    Select AP based on estimated maximum throughput
+    
+    This modifies the BSS selection routines to calculate SNR and estimated
+    throughput for each scan result and then use the estimated throughput as
+    a criteria for sorting the results. This extends the earlier design by
+    taking into account higher throughput rates if both the AP and local
+    device supports HT20, HT40, or VHT80. In addition, the maximum rate is
+    restricted based on SNR.
+    
+    In practice, this gives significantly higher probability of selecting
+    HT/VHT APs when there are multiple BSSes in the same ESS and SNR is not
+    low enough to prevent higher MCS use.
+    
+    Signed-off-by: Jouni Malinen <j@w1.fi>
 
 --- a/src/drivers/driver.h
 +++ b/src/drivers/driver.h

@@ -1,33 +1,11 @@
-wpa (2.3-3) unstable; urgency=medium
+wpa (2.3-4) UNRELEASED; urgency=medium
 
+  * NOT RELEASED YET
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.
   * import changelogs from the security queues.
-  * import upstream security fixes for wpa:
-    - WPS UPnP vulnerability with HTTP chunked transfer encoding (2015-2,
-      CVE-2015-4141, Closes: #787372).
-      +  WPS: Fix HTTP chunked transfer encoding parser
-    - Integer underflow in AP mode WMM Action frame processing (2015-3,
-      CVE-2015-4142, Closes: #787373)
-      + AP WMM: Fix integer underflow in WMM Action frame parser
-    - EAP-pwd missing payload length validation (2015-4, CVE-2015-4143,
-      CVE-2015-4144, CVE-2015-4145, CVE-2015-4146, Closes: 787371).
-      + EAP-pwd peer: Fix payload length validation for Commit and Confirm
-      + EAP-pwd server: Fix payload length validation for Commit and Confirm
-      + EAP-pwd peer: Fix Total-Length parsing for fragment reassembly
-      + EAP-pwd server: Fix Total-Length parsing for fragment reassembly
-      + EAP-pwd peer: Fix asymmetric fragmentation behavior
-    - Incomplete WPS and P2P NFC NDEF record payload length validation (2015-5,
-      no CVE yet)
-      + NFC: Fix payload length validation in NDEF record parser
   * move previous patch for CVE-2015-1863 into a new subdirectory,
-    debian/patches/2015-1/ and add the upstream advisory.
-  * backport band selection patches from upstream, thanks to Steinar H.
-    Gunderson <sgunderson@bigfoot.com> (Closes: #795722):
-    - Improve BSS selection with default noise floor values.
-    - Select AP based on estimated maximum throughput
-    - Fix minor issue in HT40 max rate determination
-    - wpa_supplicant: Fix a typo in wpa_scan_result_compar()
+    debian/patches/2015-1/.
   * replace the Debian specific patch "wpasupplicant: fix systemd unit
     dependencies" with a backport of its official upstream change "systemd:
     Order wpa_supplicant before network.target".
@@ -36,8 +14,52 @@ wpa (2.3-3) unstable; urgency=medium
     wireless links which are still holding open NFS shares. Thanks to Facundo
     Gaich <facugaich@gmail.com> and Michael Biebl <biebl@debian.org>
     (Closes: #785579).
+  * import NMU changelogs and integrate NMU changes.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
+
+wpa (2.3-2.3) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Add patch to address CVE-2015-5310.
+    CVE-2015-5310: wpa_supplicant unauthorized WNM Sleep Mode GTK control.
+    (Closes: #804707)
+  * Add patches to address CVE-2015-5314 and CVE-2015-5315.
+    CVE-2015-5314: hostapd: EAP-pwd missing last fragment length validation.
+    CVE-2015-5315: wpa_supplicant: EAP-pwd missing last fragment length
+    validation. (Closes: #804708)
+  * Add patch to address CVE-2015-5316.
+    CVE-2015-5316: EAP-pwd peer error path failure on unexpected Confirm
+    message. (Closes: #804710)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 12 Nov 2015 20:54:12 +0100
+
+wpa (2.3-2.2) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Add patch to address CVE-2015-4141.
+    CVE-2015-4141: WPS UPnP vulnerability with HTTP chunked transfer
+    encoding. (Closes: #787372)
+  * Add patch to address CVE-2015-4142.
+    CVE-2015-4142: Integer underflow in AP mode WMM Action frame processing.
+    (Closes: #787373)
+  * Add patches to address CVE-2015-414{3,4,5,6}
+    CVE-2015-4143 CVE-2015-4144 CVE-2015-4145 CVE-2015-4146: EAP-pwd missing
+    payload length validation. (Closes: #787371)
+  * Add patch to address 2015-5 vulnerability.
+    NFC: Fix payload length validation in NDEF record parser (Closes: #795740)
+  * Thanks to Julian Wollrath <jwollrath@web.de> for the initial debdiff
+    provided in #787371.
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sat, 31 Oct 2015 14:13:50 +0100
+
+wpa (2.3-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Import four patches from upstream git (wpasupplicant_band_selection_*.patch),
+    manually unfuzzed, to improve 2.4/5 GHz band selection. (Closes: #795722)
+
+ -- Steinar H. Gunderson <sesse@debian.org>  Sun, 30 Aug 2015 14:47:56 +0200
 
 wpa (2.3-2) unstable; urgency=high
 

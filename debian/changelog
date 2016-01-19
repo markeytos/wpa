@@ -1,3 +1,11 @@
+wpa (2.4-0ubuntu6) xenial; urgency=medium
+
+  * debian/patches/wpasupplicant_band_selection_aa517ae2.patch: add the last 
+    missing 5 GHz band selection related cherry-pick from Debian that was not 
+    included in wpa 2.4 (LP: #1517040)
+
+ -- Timo Jyrinki <timo-jyrinki@ubuntu.com>  Tue, 19 Jan 2016 12:36:00 +0200
+
 wpa (2.4-0ubuntu5) xenial; urgency=medium
 
   * SECURITY UPDATE: unauthorized WNM Sleep Mode GTK control

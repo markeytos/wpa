@@ -15,6 +15,13 @@ wpa (2.3-3) UNRELEASED; urgency=medium
     Gaich <facugaich@gmail.com> and Michael Biebl <biebl@debian.org>
     (Closes: #785579).
   * import NMU changelogs and integrate NMU changes.
+  * Add patches to address CVE-2016-4476 and CVE-2016-4477, thanks to Salvatore
+    Bonaccorso <carnil@debian.org> (Closes: #823411):
+    - WPS: Reject a Credential with invalid passphrase
+    - Reject psk parameter set with invalid passphrase character
+    - Remove newlines from wpa_supplicant config network output
+    - Reject SET_CRED commands with newline characters in the string values
+    - Reject SET commands with newline characters in the string values
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

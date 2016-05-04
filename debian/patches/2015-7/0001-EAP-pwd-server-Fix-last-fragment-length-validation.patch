@@ -19,7 +19,7 @@ diff --git a/src/eap_server/eap_server_pwd.c b/src/eap_server/eap_server_pwd.c
 index cb83ff7..9f787ab 100644
 --- a/src/eap_server/eap_server_pwd.c
 +++ b/src/eap_server/eap_server_pwd.c
-@@ -970,7 +970,7 @@ static void eap_pwd_process(struct eap_sm *sm, void *priv,
+@@ -947,7 +947,7 @@
  	/*
  	 * the first and all intermediate fragments have the M bit set
  	 */
@@ -28,7 +28,7 @@ index cb83ff7..9f787ab 100644
  		if ((data->in_frag_pos + len) > wpabuf_size(data->inbuf)) {
  			wpa_printf(MSG_DEBUG, "EAP-pwd: Buffer overflow "
  				   "attack detected! (%d+%d > %d)",
-@@ -981,6 +981,8 @@ static void eap_pwd_process(struct eap_sm *sm, void *priv,
+@@ -958,6 +958,8 @@
  		}
  		wpabuf_put_data(data->inbuf, pos, len);
  		data->in_frag_pos += len;
@@ -37,7 +37,7 @@ index cb83ff7..9f787ab 100644
  		wpa_printf(MSG_DEBUG, "EAP-pwd: Got a %d byte fragment",
  			   (int) len);
  		return;
-@@ -990,8 +992,6 @@ static void eap_pwd_process(struct eap_sm *sm, void *priv,
+@@ -967,8 +969,6 @@
  	 * buffering fragments so that's how we know it's the last)
  	 */
  	if (data->in_frag_pos) {

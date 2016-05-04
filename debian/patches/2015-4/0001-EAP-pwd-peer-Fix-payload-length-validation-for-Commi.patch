@@ -25,7 +25,7 @@ diff --git a/src/eap_peer/eap_pwd.c b/src/eap_peer/eap_pwd.c
 index f2b0926..a629437 100644
 --- a/src/eap_peer/eap_pwd.c
 +++ b/src/eap_peer/eap_pwd.c
-@@ -355,6 +355,23 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
+@@ -301,6 +301,23 @@
  	BIGNUM *mask = NULL, *x = NULL, *y = NULL, *cofactor = NULL;
  	u16 offset;
  	u8 *ptr, *scalar = NULL, *element = NULL;
@@ -49,7 +49,7 @@ index f2b0926..a629437 100644
  
  	if (((data->private_value = BN_new()) == NULL) ||
  	    ((data->my_element = EC_POINT_new(data->grp->group)) == NULL) ||
-@@ -554,6 +571,18 @@ eap_pwd_perform_confirm_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
+@@ -500,6 +517,18 @@
  	u8 conf[SHA256_MAC_LEN], *cruft = NULL, *ptr;
  	int offset;
  

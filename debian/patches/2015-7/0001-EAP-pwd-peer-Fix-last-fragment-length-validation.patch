@@ -19,7 +19,7 @@ diff --git a/src/eap_peer/eap_pwd.c b/src/eap_peer/eap_pwd.c
 index 1f78544..75ceef1 100644
 --- a/src/eap_peer/eap_pwd.c
 +++ b/src/eap_peer/eap_pwd.c
-@@ -903,7 +903,7 @@ eap_pwd_process(struct eap_sm *sm, void *priv, struct eap_method_ret *ret,
+@@ -841,7 +841,7 @@
  	/*
  	 * buffer and ACK the fragment
  	 */
@@ -28,7 +28,7 @@ index 1f78544..75ceef1 100644
  		data->in_frag_pos += len;
  		if (data->in_frag_pos > wpabuf_size(data->inbuf)) {
  			wpa_printf(MSG_INFO, "EAP-pwd: Buffer overflow attack "
-@@ -916,7 +916,8 @@ eap_pwd_process(struct eap_sm *sm, void *priv, struct eap_method_ret *ret,
+@@ -854,7 +854,8 @@
  			return NULL;
  		}
  		wpabuf_put_data(data->inbuf, pos, len);
@@ -38,7 +38,7 @@ index 1f78544..75ceef1 100644
  		resp = eap_msg_alloc(EAP_VENDOR_IETF, EAP_TYPE_PWD,
  				     EAP_PWD_HDR_SIZE,
  				     EAP_CODE_RESPONSE, eap_get_id(reqData));
-@@ -930,10 +931,8 @@ eap_pwd_process(struct eap_sm *sm, void *priv, struct eap_method_ret *ret,
+@@ -868,10 +869,8 @@
  	 * we're buffering and this is the last fragment
  	 */
  	if (data->in_frag_pos) {

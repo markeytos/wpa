@@ -25,3 +25,8 @@ wpasupplicant_band_selection_aa517ae2.patch
 2015-7/0001-EAP-pwd-server-Fix-last-fragment-length-validation.patch
 2015-7/0001-EAP-pwd-peer-Fix-last-fragment-length-validation.patch
 2015-8/0001-EAP-pwd-peer-Fix-error-path-for-unexpected-Confirm-m.patch
+2016-1/0001-WPS-Reject-a-Credential-with-invalid-passphrase.patch
+2016-1/0002-Reject-psk-parameter-set-with-invalid-passphrase-cha.patch
+2016-1/0003-Remove-newlines-from-wpa_supplicant-config-network-o.patch
+2016-1/0004-Reject-SET_CRED-commands-with-newline-characters-in-.patch
+2016-1/0005-Reject-SET-commands-with-newline-characters-in-the-s.patch

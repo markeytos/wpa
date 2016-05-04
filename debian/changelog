@@ -1,3 +1,17 @@
+wpa (2.3-2.4) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add patches to address CVE-2016-4476 and CVE-2016-4477, thanks to
+    Salvatore Bonaccorso <carnil@debian.org> (Closes: #823411):
+    - WPS: Reject a Credential with invalid passphrase
+    - Reject psk parameter set with invalid passphrase character
+    - Remove newlines from wpa_supplicant config network output
+    - Reject SET_CRED commands with newline characters in the string values
+    - Reject SET commands with newline characters in the string values
+  * Refresh patches to apply cleanly.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 21 Jul 2016 09:01:51 +0200
+
 wpa (2.3-2.3) unstable; urgency=high
 
   * Non-maintainer upload.

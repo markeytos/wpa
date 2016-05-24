@@ -22,10 +22,9 @@ wpa (2.3-3) UNRELEASED; urgency=medium
     - Remove newlines from wpa_supplicant config network output
     - Reject SET_CRED commands with newline characters in the string values
     - Reject SET commands with newline characters in the string values
-  * use --buildsystem=qmake_qt4 for debhelper (Closes: #823171).
+  * use --buildsystem=qmake_qt4 (available since dh 8.9.1) for debhelper
+    (Closes: #823171).
   * fix clean target, by splitting the find call into individual searches.
-
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 
 wpa (2.3-2.3) unstable; urgency=high
 

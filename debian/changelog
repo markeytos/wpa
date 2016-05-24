@@ -84,13 +84,6 @@ wpa (2.3-2) unstable; urgency=high
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Apr 2015 05:02:21 +0200
 
-wpa (2.3-1+deb8u1) jessie-security; urgency=high
-
-  * import "P2P: Validate SSID element length before copying it
-    (CVE-2015-1863)" from upstream (Closes: #783148).
-
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Apr 2015 19:32:29 +0200
-
 wpa (2.3-1) unstable; urgency=medium
 
   * New upstream release:
@@ -223,24 +216,6 @@ wpa (1.0-3.1) unstable; urgency=low
     (Closes: #678147).
 
  -- Daniel Kahn Gillmor <dkg@fifthhorseman.net>  Thu, 05 Dec 2013 13:56:15 -0500
-
-wpa (1.0-3+deb7u2) wheezy-security; urgency=high
-
-  * import "P2P: Validate SSID element length before copying it
-    (CVE-2015-1863)" from upstream (Closes: #783148); this is essentially a
-    no-op for the wheezy binaries distributed by Debian, as CONFIG_P2P is
-    disabled there.
-
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Apr 2015 19:56:11 +0200
-
-wpa (1.0-3+deb7u1) wheezy-security; urgency=high
-
-  * Apply upstream patches for CVE-2014-3686 (Closes: #765352):
-    - add os_exec() helper to run external programs
-    - wpa_cli: Use os_exec() for action script execution
-    - hostapd_cli: Use os_exec() for action script execution
-
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 15 Oct 2014 23:32:54 +0200
 
 wpa (1.0-3) unstable; urgency=high
 

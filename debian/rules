@@ -32,7 +32,7 @@ VERSION                       := $(shell dpkg-parsechangelog | sed -ne 's,^Versi
 ### start dh overrides
 override_dh_auto_configure:
 	dh_auto_configure --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
-	                  --buildsystem=qmake
+	                  --buildsystem=qmake_qt4
 
 override_dh_auto_build:
 	# build documentation
@@ -55,7 +55,7 @@ override_dh_auto_build:
 		      --parallel
 	# build wpa_gui-qt4
 	dh_auto_build --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
-	              --buildsystem=qmake \
+	              --buildsystem=qmake_qt4 \
 		      --parallel
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
 	# build hostapd
@@ -71,9 +71,10 @@ override_dh_auto_clean:
 	dh_auto_clean --sourcedirectory=wpa_supplicant \
 	              --buildsystem=makefile
 	dh_auto_clean --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
-	              --buildsystem=qmake
-	-find wpa_supplicant/wpa_gui-qt4 -type d \
-		-name \.moc -o -name \.ui -o -name \.obj -exec rm -rf {} \;
+	              --buildsystem=qmake_qt4
+	-find wpa_supplicant/wpa_gui-qt4 -type d -name \.moc -exec rm -rf {} \;
+	-find wpa_supplicant/wpa_gui-qt4 -type d -name \.ui  -exec rm -rf {} \;
+	-find wpa_supplicant/wpa_gui-qt4 -type d -name \.obj -exec rm -rf {} \;
 	dh_auto_clean --sourcedirectory=hostapd \
 	              --buildsystem=makefile
 

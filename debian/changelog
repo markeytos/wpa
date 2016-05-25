@@ -30,6 +30,10 @@ wpa (2.3-3) UNRELEASED; urgency=medium
     the requested debug packages for stretch and upwards (Closes: #729934).
     Don't add a versioned build-dependency in order to avoid unecessary
     complications with backports.
+  * change Vcs-Browser location to prefer https, but keep the unsecure tag for
+    Vcs-Svn, as there is no option allowing to pull from the svn+ssh:// 
+    location without an alioth account, this only makes lintian partially happy
+    in regards to vcs-field-uses-insecure-uri.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

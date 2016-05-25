@@ -25,6 +25,11 @@ wpa (2.3-3) UNRELEASED; urgency=medium
   * use --buildsystem=qmake_qt4 (available since dh 8.9.1) for debhelper
     (Closes: #823171).
   * fix clean target, by splitting the find call into individual searches.
+  * building wpa in a current unstable chroot using debhelper >= 9.20151219
+    will introduce automatic dbgsym packages, thereby indirectly providing
+    the requested debug packages for stretch and upwards (Closes: #729934).
+    Don't add a versioned build-dependency in order to avoid unecessary
+    complications with backports.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

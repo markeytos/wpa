@@ -9,7 +9,12 @@ else
 fi
 
 # parse versions
-VERSION="$(dpkg-parsechangelog -l${CURDIR}/debian/changelog | sed -ne 's,^Version: *\([0-9]*:\)\?\(.*\)$,\2,p')"
+if [ -n "${2}" ]; then
+	VERSION="${2}"
+else
+	VERSION="$(dpkg-parsechangelog -l${CURDIR}/debian/changelog | sed -ne 's,^Version: *\([0-9]*:\)\?\(.*\)$,\2,p')"
+fi
+
 DEB_VER="$(echo ${VERSION} | sed 's,\-[0-9a-z\~\.]*,,')"
 UP_VER="$(echo ${DEB_VER} | sed 's,\~,\-,g')"
 SNAPDATE="$(echo ${DEB_VER} | sed 's/.*\+git\([0-9]*\).*/\1/')"
@@ -72,13 +77,22 @@ elif dpkg --compare-versions "${DEB_VER}" ge "2.1+" && [ "${SNAPDATE}" -ge "2014
 	HS20="hs20"
 fi
 
+# add drop patches/ for wpa 2.6~, it's no longer available.
+if dpkg --compare-versions "${DEB_VER}" ge "2.6~"; then
+	PATCHES=""
+elif dpkg --compare-versions "${DEB_VER}" ge "2.5+" && [ "${SNAPDATE}" -ge "20160108" ]; then
+	PATCHES=""
+else
+	PATCHES="patches"
+fi
+
 # create new upstream tarball
 cd "${TEMP_SOURCE}" && \
 	git archive \
 		--format=tar \
 		--prefix="wpa-${UP_VER}/" \
 		"${UP_VER_TAG}" \
-			README COPYING $CONTRIBUTIONS patches src wpa_supplicant hostapd $HS20 | \
+			README COPYING $CONTRIBUTIONS $PATCHES src wpa_supplicant hostapd $HS20 | \
 				xz -c6 > "${ORIG_TARBALL}"
 if [ "$?" -ne 0 ] || [ ! -e "${ORIG_TARBALL}" ]; then
 	echo "ERROR: failure to create ${ORIG_TARBALL}" >&2

@@ -37,6 +37,8 @@ wpa (2.3-3) UNRELEASED; urgency=medium
   * debian/*: fix spelling errors noticed by lintian.
   * drop the obsolete Debian menu entry for wpa_gui, according to the tech-ctte
     decision on #741573.
+  * fix debian/get-orig-source for wpa 2.6~.
+  * add debian/watch file for the custom tarball generation.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

@@ -26,6 +26,8 @@ wpa (2.3-3) UNRELEASED; urgency=medium
     (Closes: #823171).
   * fix clean target, by splitting the find call into individual searches.
 
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
+
 wpa (2.3-2.3) unstable; urgency=high
 
   * Non-maintainer upload.

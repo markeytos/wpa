@@ -50,7 +50,7 @@ Driver         Description
 ======         ===========
 nl80211        Linux 802.11 netlink interface
 wext           Linux wireless extensions (generic)
-wired          wired Ethernet driver
+wired          driver for wired Ethernet
 
 Choosing driver backend
 =======================
@@ -103,7 +103,7 @@ iface wlan0 inet dhcp
         wpa-psk 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
 
 # Connect to access point of ssid 'HotSpot1' and bssid of '00:1a:2b:3c:4d:5e'
-# with an encryption type of WPA-PSK/WPA2-PSK, using the the 'nl80211' driver
+# with an encryption type of WPA-PSK/WPA2-PSK, using the 'nl80211' driver
 # backend of wpa_supplicant. The passphrase is given as a plaintext string.
 # A static network address assignment is used.
 #
@@ -528,7 +528,7 @@ circumstances. In some cases, setting the parameter 'ap_scan=2' in the
 config file, (or using a 'wpa-ap-scan 2' stanza, which is equivalent) can
 greatly help to speed up association. Please note that setting ap_scan to the
 value of 2 also requires that all networks have a precisely defined security
-policy for for key_mgmt, pairwise, group and proto network policy variables.
+policy for key_mgmt, pairwise, group and proto network policy variables.
 
 [1] http://bugs.debian.org/358137
 [2] http://bugs.debian.org/368770

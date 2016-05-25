@@ -35,6 +35,8 @@ wpa (2.3-3) UNRELEASED; urgency=medium
     location without an alioth account, this only makes lintian partially happy
     in regards to vcs-field-uses-insecure-uri.
   * debian/*: fix spelling errors noticed by lintian.
+  * drop the obsolete Debian menu entry for wpa_gui, according to the tech-ctte
+    decision on #741573.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

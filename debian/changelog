@@ -1,3 +1,11 @@
+wpa (2.4-0ubuntu7) yakkety; urgency=medium
+
+  * debian/ifupdown/functions.sh: Fix handling for "wpa-roam". Call ifquery
+    instead of directly parsing /run/*/ifstate files to work with current
+    ifupdown. (Closes: #545766, LP: #1545363)
+
+ -- Paul Donohue <ubuntu@PaulSD.com>  Fri, 01 Jul 2016 09:16:21 +0200
+
 wpa (2.4-0ubuntu6) xenial; urgency=medium
 
   * debian/patches/wpasupplicant_band_selection_aa517ae2.patch: add the last 

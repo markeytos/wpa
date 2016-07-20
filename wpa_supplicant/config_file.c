@@ -22,6 +22,7 @@
 #include "config.h"
 #include "base64.h"
 #include "uuid.h"
+#include "p2p/p2p.h"
 
 
 /**
@@ -495,6 +496,18 @@ static void write_wep_key(FILE *f, int idx, struct wpa_ssid *ssid)
 }
 
 
+#ifdef CONFIG_P2P
+static void write_p2p_client_list(FILE *f, struct wpa_ssid *ssid)
+{
+	char *value = wpa_config_get(ssid, "p2p_client_list");
+	if (value == NULL)
+		return;
+	fprintf(f, "\tp2p_client_list=%s\n", value);
+	os_free(value);
+}
+#endif /* CONFIG_P2P */
+
+
 static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 {
 	int i;
@@ -514,6 +527,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	write_pairwise(f, ssid);
 	write_group(f, ssid);
 	write_auth_alg(f, ssid);
+	STR(bgscan);
 #ifdef IEEE8021X_EAPOL
 	write_eap(f, ssid);
 	STR(identity);
@@ -569,6 +583,9 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT(ieee80211w);
 #endif /* CONFIG_IEEE80211W */
 	STR(id_str);
+#ifdef CONFIG_P2P
+	write_p2p_client_list(f, ssid);
+#endif /* CONFIG_P2P */
 
 #undef STR
 #undef INT
@@ -684,6 +701,16 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 		fprintf(f, "p2p_intra_bss=%u\n", config->p2p_intra_bss);
 	if (config->p2p_group_idle)
 		fprintf(f, "p2p_group_idle=%u\n", config->p2p_group_idle);
+	if (config->p2p_pref_chan) {
+		unsigned int i;
+		fprintf(f, "p2p_pref_chan=");
+		for (i = 0; i < config->num_p2p_pref_chan; i++) {
+			fprintf(f, "%s%u:%u", i > 0 ? "," : "",
+				config->p2p_pref_chan[i].op_class,
+				config->p2p_pref_chan[i].chan);
+		}
+		fprintf(f, "\n");
+	}
 #endif /* CONFIG_P2P */
 	if (config->country[0] && config->country[1]) {
 		fprintf(f, "country=%c%c\n",

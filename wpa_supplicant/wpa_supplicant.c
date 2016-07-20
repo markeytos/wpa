@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant
- * Copyright (c) 2003-2011, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2012, Jouni Malinen <j@w1.fi>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -370,7 +370,7 @@ void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 }
 
 
-static void free_hw_features(struct wpa_supplicant *wpa_s)
+void free_hw_features(struct wpa_supplicant *wpa_s)
 {
 	int i;
 	if (wpa_s->hw.modes == NULL)
@@ -1284,11 +1284,10 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 		u8 *pos;
 		size_t len;
 		int res;
-		int p2p_group;
-		p2p_group = wpa_s->drv_flags & WPA_DRIVER_FLAGS_P2P_CAPABLE;
 		pos = wpa_ie + wpa_ie_len;
 		len = sizeof(wpa_ie) - wpa_ie_len;
-		res = wpas_p2p_assoc_req_ie(wpa_s, bss, pos, len, p2p_group);
+		res = wpas_p2p_assoc_req_ie(wpa_s, bss, pos, len,
+					    ssid->p2p_group);
 		if (res >= 0)
 			wpa_ie_len += res;
 	}
@@ -1669,10 +1668,13 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 {
 
 	struct wpa_ssid *other_ssid;
+	int disconnected = 0;
 
-	if (ssid && ssid != wpa_s->current_ssid && wpa_s->current_ssid)
+	if (ssid && ssid != wpa_s->current_ssid && wpa_s->current_ssid) {
 		wpa_supplicant_disassociate(
 			wpa_s, WLAN_REASON_DEAUTH_LEAVING);
+		disconnected = 1;
+	}
 
 	/*
 	 * Mark all other networks disabled or mark all networks enabled if no
@@ -1700,7 +1702,7 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 	wpa_s->connect_without_scan = NULL;
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
-	wpa_supplicant_req_scan(wpa_s, 0, 0);
+	wpa_supplicant_req_scan(wpa_s, 0, disconnected ? 100000 : 0);
 
 	if (ssid)
 		wpas_notify_network_selected(wpa_s, ssid);
@@ -1941,8 +1943,11 @@ static int wpa_supplicant_set_driver(struct wpa_supplicant *wpa_s,
 		for (i = 0; wpa_drivers[i]; i++) {
 			if (os_strlen(wpa_drivers[i]->name) == len &&
 			    os_strncmp(driver, wpa_drivers[i]->name, len) ==
-			    0)
-				return select_driver(wpa_s, i);
+			    0) {
+				/* First driver that succeeds wins */
+				if (select_driver(wpa_s, i) == 0)
+					return 0;
+			}
 		}
 
 		driver = pos + 1;

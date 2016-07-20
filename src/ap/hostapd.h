@@ -82,6 +82,7 @@ struct hostapd_data {
 				 struct sta_info *sta, int reassoc);
 
 	void *msg_ctx; /* ctx for wpa_msg() calls */
+	void *msg_ctx_parent; /* parent interface ctx for wpa_msg() calls */
 
 	struct radius_client_data *radius;
 	u32 acct_session_id_hi, acct_session_id_lo;
@@ -124,6 +125,7 @@ struct hostapd_data {
 	struct wpabuf *wps_probe_resp_ie;
 #ifdef CONFIG_WPS
 	unsigned int ap_pin_failures;
+	unsigned int ap_pin_failures_consecutive;
 	struct upnp_wps_device_sm *wps_upnp;
 	unsigned int ap_pin_lockout_time;
 #endif /* CONFIG_WPS */
@@ -148,7 +150,7 @@ struct hostapd_data {
 	void *wps_event_cb_ctx;
 
 	void (*sta_authorized_cb)(void *ctx, const u8 *mac_addr,
-				  int authorized);
+				  int authorized, const u8 *p2p_dev_addr);
 	void *sta_authorized_cb_ctx;
 
 	void (*setup_complete_cb)(void *ctx);

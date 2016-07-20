@@ -224,6 +224,11 @@ enum p2p_prov_disc_status {
 	P2P_PROV_DISC_REJECTED,
 };
 
+struct p2p_channel {
+	u8 op_class;
+	u8 chan;
+};
+
 /**
  * struct p2p_config - P2P configuration
  *
@@ -269,6 +274,16 @@ struct p2p_config {
 	 * numbering of the clases depends on the configured country code.
 	 */
 	struct p2p_channels channels;
+
+	/**
+	 * num_pref_chan - Number of pref_chan entries
+	 */
+	unsigned int num_pref_chan;
+
+	/**
+	 * pref_chan - Preferred channels for GO Negotiation
+	 */
+	struct p2p_channel *pref_chan;
 
 	/**
 	 * pri_dev_type - Primary Device Type (see WPS)
@@ -1051,6 +1066,28 @@ void p2p_wps_success_cb(struct p2p_data *p2p, const u8 *mac_addr);
  */
 void p2p_group_formation_failed(struct p2p_data *p2p);
 
+/**
+ * p2p_get_provisioning_info - Get any stored provisioning info
+ * @p2p: P2P module context from p2p_init()
+ * @addr: Peer P2P Device Address
+ * Returns: WPS provisioning information (WPS config method) or 0 if no
+ * information is available
+ *
+ * This function is used to retrieve stored WPS provisioning info for the given
+ * peer.
+ */
+u16 p2p_get_provisioning_info(struct p2p_data *p2p, const u8 *addr);
+
+/**
+ * p2p_clear_provisioning_info - Clear any stored provisioning info
+ * @p2p: P2P module context from p2p_init()
+ * @iface_addr: Peer P2P Device Address
+ *
+ * This function is used to clear stored WPS provisioning info for the given
+ * peer.
+ */
+void p2p_clear_provisioning_info(struct p2p_data *p2p, const u8 *addr);
+
 
 /* Event notifications from lower layer driver operations */
 
@@ -1355,6 +1392,15 @@ int p2p_ie_text(struct wpabuf *p2p_ie, char *buf, char *end);
 int p2p_scan_result_text(const u8 *ies, size_t ies_len, char *buf, char *end);
 
 /**
+ * p2p_parse_dev_addr - Parse P2P Device Address from P2P IE(s)
+ * @ies: Information elements from scan results
+ * @ies_len: ies buffer length in octets
+ * @dev_addr: Buffer for returning P2P Device Address
+ * Returns: 0 on success or -1 if P2P Device Address could not be parsed
+ */
+int p2p_parse_dev_addr(const u8 *ies, size_t ies_len, u8 *dev_addr);
+
+/**
  * p2p_assoc_req_ie - Build P2P IE for (Re)Association Request frame
  * @p2p: P2P module context from p2p_init()
  * @bssid: BSSID
@@ -1481,9 +1527,6 @@ void p2p_set_cross_connect(struct p2p_data *p2p, int enabled);
 
 int p2p_get_oper_freq(struct p2p_data *p2p, const u8 *iface_addr);
 
-int p2p_add_device(struct p2p_data *p2p, const u8 *addr, int freq, int level,
-		   const u8 *ies, size_t ies_len);
-
 /**
  * p2p_set_intra_bss_dist - Set intra BSS distribution
  * @p2p: P2P module context from p2p_init()
@@ -1584,6 +1627,16 @@ int p2p_add_wps_vendor_extension(struct p2p_data *p2p,
  */
 int p2p_set_oper_channel(struct p2p_data *p2p, u8 op_reg_class, u8 op_channel,
 			 int cfg_op_channel);
+
+/**
+ * p2p_set_pref_chan - Set P2P preferred channel list
+ * @p2p: P2P module context from p2p_init()
+ * @num_pref_chan: Number of entries in pref_chan list
+ * @pref_chan: Preferred channels or %NULL to remove preferences
+ * Returns: 0 on success, -1 on failure
+ */
+int p2p_set_pref_chan(struct p2p_data *p2p, unsigned int num_pref_chan,
+		      const struct p2p_channel *pref_chan);
 
 /**
  * p2p_in_progress - Check whether a P2P operation is progress

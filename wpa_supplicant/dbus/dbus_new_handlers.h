@@ -41,6 +41,12 @@ dbus_bool_t wpas_dbus_simple_array_property_getter(DBusMessageIter *iter,
 						   size_t array_len,
 						   DBusError *error);
 
+dbus_bool_t wpas_dbus_simple_array_array_property_getter(DBusMessageIter *iter,
+							 const int type,
+							 struct wpabuf **array,
+							 size_t array_len,
+							 DBusError *error);
+
 DBusMessage * wpas_dbus_handler_create_interface(DBusMessage *message,
 						 struct wpa_global *global);
 
@@ -132,6 +138,14 @@ dbus_bool_t wpas_dbus_getter_ap_scan(DBusMessageIter *iter, DBusError *error,
 
 dbus_bool_t wpas_dbus_setter_ap_scan(DBusMessageIter *iter, DBusError *error,
 				     void *user_data);
+
+dbus_bool_t wpas_dbus_getter_fast_reauth(DBusMessageIter *iter,
+					 DBusError *error,
+					 void *user_data);
+
+dbus_bool_t wpas_dbus_setter_fast_reauth(DBusMessageIter *iter,
+					 DBusError *error,
+					 void *user_data);
 
 dbus_bool_t wpas_dbus_getter_bss_expire_age(DBusMessageIter *iter,
 					    DBusError *error, void *user_data);

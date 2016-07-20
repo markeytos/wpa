@@ -19,6 +19,7 @@
 #include "crypto/sha1.h"
 #include "rsn_supp/wpa.h"
 #include "eap_peer/eap.h"
+#include "p2p/p2p.h"
 #include "config.h"
 
 
@@ -1116,6 +1117,7 @@ static int wpa_config_parse_eap(const struct parse_data *data,
 
 	wpa_hexdump(MSG_MSGDUMP, "eap methods",
 		    (u8 *) methods, num_methods * sizeof(*methods));
+	os_free(ssid->eap.eap_methods);
 	ssid->eap.eap_methods = methods;
 	return errors ? -1 : 0;
 }
@@ -1351,6 +1353,90 @@ static char * wpa_config_write_wep_key3(const struct parse_data *data,
 #endif /* NO_CONFIG_WRITE */
 
 
+#ifdef CONFIG_P2P
+
+static int wpa_config_parse_p2p_client_list(const struct parse_data *data,
+					    struct wpa_ssid *ssid, int line,
+					    const char *value)
+{
+	const char *pos;
+	u8 *buf, *n, addr[ETH_ALEN];
+	size_t count;
+
+	buf = NULL;
+	count = 0;
+
+	pos = value;
+	while (pos && *pos) {
+		while (*pos == ' ')
+			pos++;
+
+		if (hwaddr_aton(pos, addr)) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid "
+				   "p2p_client_list address '%s'.",
+				   line, value);
+			/* continue anyway */
+		} else {
+			n = os_realloc(buf, (count + 1) * ETH_ALEN);
+			if (n == NULL) {
+				os_free(buf);
+				return -1;
+			}
+			buf = n;
+			os_memcpy(buf + count * ETH_ALEN, addr, ETH_ALEN);
+			count++;
+			wpa_hexdump(MSG_MSGDUMP, "p2p_client_list",
+				    addr, ETH_ALEN);
+		}
+
+		pos = os_strchr(pos, ' ');
+	}
+
+	os_free(ssid->p2p_client_list);
+	ssid->p2p_client_list = buf;
+	ssid->num_p2p_clients = count;
+
+	return 0;
+}
+
+
+#ifndef NO_CONFIG_WRITE
+static char * wpa_config_write_p2p_client_list(const struct parse_data *data,
+					       struct wpa_ssid *ssid)
+{
+	char *value, *end, *pos;
+	int res;
+	size_t i;
+
+	if (ssid->p2p_client_list == NULL || ssid->num_p2p_clients == 0)
+		return NULL;
+
+	value = os_malloc(20 * ssid->num_p2p_clients);
+	if (value == NULL)
+		return NULL;
+	pos = value;
+	end = value + 20 * ssid->num_p2p_clients;
+
+	for (i = 0; i < ssid->num_p2p_clients; i++) {
+		res = os_snprintf(pos, end - pos, MACSTR " ",
+				  MAC2STR(ssid->p2p_client_list +
+					  i * ETH_ALEN));
+		if (res < 0 || res >= end - pos) {
+			os_free(value);
+			return NULL;
+		}
+		pos += res;
+	}
+
+	if (pos > value)
+		pos[-1] = '\0';
+
+	return value;
+}
+#endif /* NO_CONFIG_WRITE */
+
+#endif /* CONFIG_P2P */
+
 /* Helper macros for network block parser */
 
 #ifdef OFFSET
@@ -1511,6 +1597,9 @@ static const struct parse_data ssid_fields[] = {
 	{ INT_RANGE(frequency, 0, 10000) },
 	{ INT(wpa_ptk_rekey) },
 	{ STR(bgscan) },
+#ifdef CONFIG_P2P
+	{ FUNC(p2p_client_list) },
+#endif /* CONFIG_P2P */
 };
 
 #undef OFFSET
@@ -1677,6 +1766,7 @@ void wpa_config_free_ssid(struct wpa_ssid *ssid)
 	os_free(ssid->scan_freq);
 	os_free(ssid->freq_list);
 	os_free(ssid->bgscan);
+	os_free(ssid->p2p_client_list);
 	os_free(ssid);
 }
 
@@ -1732,6 +1822,7 @@ void wpa_config_free(struct wpa_config *config)
 	os_free(config->home_ca_cert);
 	os_free(config->home_imsi);
 	os_free(config->home_milenage);
+	os_free(config->p2p_pref_chan);
 	os_free(config);
 }
 
@@ -2406,6 +2497,55 @@ static int wpa_config_process_sec_device_type(
 	config->num_sec_device_types++;
 	return 0;
 }
+
+
+static int wpa_config_process_p2p_pref_chan(
+	const struct global_parse_data *data,
+	struct wpa_config *config, int line, const char *pos)
+{
+	struct p2p_channel *pref = NULL, *n;
+	unsigned int num = 0;
+	const char *pos2;
+	u8 op_class, chan;
+
+	/* format: class:chan,class:chan,... */
+
+	while (*pos) {
+		op_class = atoi(pos);
+		pos2 = os_strchr(pos, ':');
+		if (pos2 == NULL)
+			goto fail;
+		pos2++;
+		chan = atoi(pos2);
+
+		n = os_realloc(pref, (num + 1) * sizeof(struct p2p_channel));
+		if (n == NULL)
+			goto fail;
+		pref = n;
+		pref[num].op_class = op_class;
+		pref[num].chan = chan;
+		num++;
+
+		pos = os_strchr(pos2, ',');
+		if (pos == NULL)
+			break;
+		pos++;
+	}
+
+	os_free(config->p2p_pref_chan);
+	config->p2p_pref_chan = pref;
+	config->num_p2p_pref_chan = num;
+	wpa_hexdump(MSG_DEBUG, "P2P: Preferred class/channel pairs",
+		    (u8 *) config->p2p_pref_chan,
+		    config->num_p2p_pref_chan * sizeof(struct p2p_channel));
+
+	return 0;
+
+fail:
+	os_free(pref);
+	wpa_printf(MSG_ERROR, "Line %d: Invalid p2p_pref_chan list", line);
+	return -1;
+}
 #endif /* CONFIG_P2P */
 
 
@@ -2480,6 +2620,7 @@ static const struct global_parse_data global_fields[] = {
 	{ INT_RANGE(persistent_reconnect, 0, 1), 0 },
 	{ INT_RANGE(p2p_intra_bss, 0, 1), CFG_CHANGED_P2P_INTRA_BSS },
 	{ INT(p2p_group_idle), 0 },
+	{ FUNC(p2p_pref_chan), CFG_CHANGED_P2P_PREF_CHAN },
 #endif /* CONFIG_P2P */
 	{ FUNC(country), CFG_CHANGED_COUNTRY },
 	{ INT(bss_max_count), 0 },

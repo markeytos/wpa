@@ -267,6 +267,10 @@ void p2p_process_prov_disc_resp(struct p2p_data *p2p, const u8 *sa,
 			MAC2STR(sa));
 		dev->flags |= P2P_DEV_PD_PEER_KEYPAD;
 	}
+
+	/* Store the provisioning info */
+	dev->wps_prov_info = msg.wps_config_methods;
+
 	p2p_parse_free(&msg);
 
 out:
@@ -318,6 +322,8 @@ int p2p_send_prov_disc_req(struct p2p_data *p2p, struct p2p_device *dev,
 	if (req == NULL)
 		return -1;
 
+	if (p2p->state != P2P_IDLE)
+		p2p_stop_listen_for_freq(p2p, freq);
 	p2p->pending_action_state = P2P_PENDING_PD;
 	if (p2p_send_action(p2p, freq, dev->info.p2p_device_addr,
 			    p2p->cfg->dev_addr, dev->info.p2p_device_addr,
@@ -356,15 +362,17 @@ int p2p_prov_disc_req(struct p2p_data *p2p, const u8 *peer_addr,
 	if (config_methods == 0)
 		return -1;
 
+	/* Reset provisioning info */
+	dev->wps_prov_info = 0;
+
 	dev->req_config_methods = config_methods;
 	if (join)
 		dev->flags |= P2P_DEV_PD_FOR_JOIN;
 	else
 		dev->flags &= ~P2P_DEV_PD_FOR_JOIN;
 
-	if (p2p->go_neg_peer ||
-	    (p2p->state != P2P_IDLE && p2p->state != P2P_SEARCH &&
-	     p2p->state != P2P_LISTEN_ONLY)) {
+	if (p2p->state != P2P_IDLE && p2p->state != P2P_SEARCH &&
+	    p2p->state != P2P_LISTEN_ONLY) {
 		wpa_msg(p2p->cfg->msg_ctx, MSG_DEBUG, "P2P: Busy with other "
 			"operations; postpone Provision Discovery Request "
 			"with " MACSTR " (config methods 0x%x)",

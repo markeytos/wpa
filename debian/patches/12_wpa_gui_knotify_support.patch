@@ -19,15 +19,15 @@ Bug-Debian: http://bugs.debian.org/582793
  
  #include "wpagui.h"
  #include "dirent.h"
-@@ -1329,10 +1332,21 @@ void WpaGui::createTrayIcon(bool trayOnl
+@@ -1336,10 +1339,21 @@ void WpaGui::createTrayIcon(bool trayOnl
  void WpaGui::showTrayMessage(QSystemTrayIcon::MessageIcon type, int sec,
  			     const QString & msg)
  {
 -	if (!QSystemTrayIcon::supportsMessages())
-+	if (isVisible() || !tray_icon || !tray_icon->isVisible())
++	if (isVisible() || !tray_icon || !tray_icon->isVisible() || quietMode)
  		return;
  
--	if (isVisible() || !tray_icon || !tray_icon->isVisible())
+-	if (isVisible() || !tray_icon || !tray_icon->isVisible() || quietMode)
 +	/* first try to use KDE's notifications system if running under
 +	 * a KDE session */
 +	if (getenv("KDE_FULL_SESSION") != NULL) {

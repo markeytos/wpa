@@ -1,5 +1,10 @@
-wpa (2.3-3) UNRELEASED; urgency=medium
+wpa (2.4-1) UNRELEASED; urgency=medium
 
+  [ Ricardo Salveti de Araujo ]
+  * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations
+    when P2P management interface is used (LP: #1482439)
+
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.

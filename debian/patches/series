@@ -4,9 +4,6 @@
 07_dbus_service_syslog.patch
 12_wpa_gui_knotify_support.patch
 wpa_gui_desktop_add-keywords-entry.patch
-wpa_supplicant-MACsec-fix-build-failure-for-IEEE8021.patch
-include-ieee802_11_common.c-in-wpa_supplicant-build-.patch
-hostapd_fix-hostapd-operation-without-hw_mode-driver-data.patch
 wpasupplicant_band_selection_f0d0a5d2.patch
 wpasupplicant_band_selection_a1b790eb.patch
 wpasupplicant_band_selection_8b2b718d.patch
@@ -32,3 +29,4 @@ wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 2016-1/0003-Remove-newlines-from-wpa_supplicant-config-network-o.patch
 2016-1/0004-Reject-SET_CRED-commands-with-newline-characters-in-.patch
 2016-1/0005-Reject-SET-commands-with-newline-characters-in-the-s.patch
+dbus-fix-operations-for-p2p-mgmt.patch

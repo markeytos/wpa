@@ -2,6 +2,8 @@ wpa (2.5-2+v2.4-2) UNRELEASED; urgency=medium
 
   * Apply patches from upstream to unbreak dedicated P2P Device support
     (closes: #833402).
+  * Reapply an accidentally lost patch to fix pkcs11 OpenSSL engine
+    initialisation (Closes: #827253).
 
  -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:02:00 +0200
 

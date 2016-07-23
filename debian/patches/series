@@ -30,3 +30,4 @@ dbus-fix-operations-for-p2p-mgmt.patch
 nl80211_dont_call_linux_iface_up_for_a_dedicated_p2p_device.patch
 do_not_wait_for_monitor_to_attach_if_no_control_interface.patch
 wpa_supplicant_do_not_wait_for_monitor_on_p2p_device_interface.patch
+openssl-initialise-pkcs-11.patch

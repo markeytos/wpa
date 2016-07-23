@@ -15,7 +15,7 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
 
 --- a/wpa_supplicant/wnm_sta.c
 +++ b/wpa_supplicant/wnm_sta.c
-@@ -186,6 +186,12 @@ static void wnm_sleep_mode_exit_success(
+@@ -187,6 +187,12 @@
  	end = ptr + key_len_total;
  	wpa_hexdump_key(MSG_DEBUG, "WNM: Key Data", ptr, key_len_total);
  

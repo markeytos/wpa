@@ -30,7 +30,7 @@ Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
 
 --- a/wpa_supplicant/config.c
 +++ b/wpa_supplicant/config.c
-@@ -2572,6 +2572,8 @@ int wpa_config_set_cred(struct wpa_cred
+@@ -2807,6 +2807,8 @@
  
  	if (os_strcmp(var, "password") == 0 &&
  	    os_strncmp(value, "ext:", 4) == 0) {
@@ -39,7 +39,7 @@ Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
  		str_clear_free(cred->password);
  		cred->password = os_strdup(value);
  		cred->ext_password = 1;
-@@ -2622,9 +2624,14 @@ int wpa_config_set_cred(struct wpa_cred
+@@ -2857,9 +2859,14 @@
  	}
  
  	val = wpa_config_parse_string(value, &len);

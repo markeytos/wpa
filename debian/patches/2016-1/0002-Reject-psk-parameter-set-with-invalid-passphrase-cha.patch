@@ -31,7 +31,7 @@ Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
 
 --- a/wpa_supplicant/config.c
 +++ b/wpa_supplicant/config.c
-@@ -318,6 +318,12 @@ static int wpa_config_parse_psk(const st
+@@ -456,6 +456,12 @@
  		}
  		wpa_hexdump_ascii_key(MSG_MSGDUMP, "PSK (ASCII passphrase)",
  				      (u8 *) value, len);

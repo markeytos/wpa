@@ -1,8 +1,4 @@
-wpa (2.4-1) UNRELEASED; urgency=medium
-
-  [ Ricardo Salveti de Araujo ]
-  * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations
-    when P2P management interface is used (LP: #1482439)
+wpa (2.5-1) UNRELEASED; urgency=medium
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -11,10 +7,7 @@ wpa (2.4-1) UNRELEASED; urgency=medium
   * import changelogs from the security queues.
   * move previous patch for CVE-2015-1863 into a new subdirectory,
     debian/patches/2015-1/.
-  * replace the Debian specific patch "wpasupplicant: fix systemd unit
-    dependencies" with a backport of its official upstream change "systemd:
-    Order wpa_supplicant before network.target".
-  * fix dependency odering when invoked with DBus, by making sure that DBus
+  * fix dependency ordering when invoked with DBus, by making sure that DBus
     isn't shut down before wpa_supplicant, as that would also bring down
     wireless links which are still holding open NFS shares. Thanks to Facundo
     Gaich <facugaich@gmail.com> and Michael Biebl <biebl@debian.org>
@@ -44,6 +37,10 @@ wpa (2.4-1) UNRELEASED; urgency=medium
     decision on #741573.
   * fix debian/get-orig-source for wpa 2.6~.
   * add debian/watch file for the custom tarball generation.
+
+  [ Andrew Shadura ]
+  * New upstream release.
+  * Refresh patches, drop patches applied upstream.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

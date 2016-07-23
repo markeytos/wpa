@@ -15,11 +15,9 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  src/eap_peer/eap_pwd.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/src/eap_peer/eap_pwd.c b/src/eap_peer/eap_pwd.c
-index 75ceef1..892b590 100644
 --- a/src/eap_peer/eap_pwd.c
 +++ b/src/eap_peer/eap_pwd.c
-@@ -713,7 +713,8 @@ eap_pwd_perform_confirm_exchange(struct
+@@ -774,7 +774,8 @@
  	wpabuf_put_data(data->outbuf, conf, SHA256_MAC_LEN);
  
  fin:
@@ -29,6 +27,3 @@ index 75ceef1..892b590 100644
  	BN_clear_free(x);
  	BN_clear_free(y);
  	if (data->outbuf == NULL) {
--- 
-1.9.1
-

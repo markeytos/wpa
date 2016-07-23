@@ -19,6 +19,8 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  src/eap_peer/eap_pwd.c | 12 ++++++++++++
  1 file changed, 12 insertions(+)
 
+diff --git a/src/eap_peer/eap_pwd.c b/src/eap_peer/eap_pwd.c
+index a629437..1d2079b 100644
 --- a/src/eap_peer/eap_pwd.c
 +++ b/src/eap_peer/eap_pwd.c
 @@ -812,11 +812,23 @@ eap_pwd_process(struct eap_sm *sm, void
@@ -45,3 +47,6 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  		data->inbuf = wpabuf_alloc(tot_len);
  		if (data->inbuf == NULL) {
  			wpa_printf(MSG_INFO, "Out of memory to buffer "
+-- 
+1.9.1
+

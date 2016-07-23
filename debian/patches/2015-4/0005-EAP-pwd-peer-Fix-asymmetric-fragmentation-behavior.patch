@@ -15,6 +15,8 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  src/eap_peer/eap_pwd.c | 1 +
  1 file changed, 1 insertion(+)
 
+diff --git a/src/eap_peer/eap_pwd.c b/src/eap_peer/eap_pwd.c
+index 1d2079b..e58b13a 100644
 --- a/src/eap_peer/eap_pwd.c
 +++ b/src/eap_peer/eap_pwd.c
 @@ -914,6 +914,7 @@ eap_pwd_process(struct eap_sm *sm, void
@@ -25,3 +27,6 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  	len = wpabuf_len(data->outbuf);
  	if ((len + EAP_PWD_HDR_SIZE) > data->mtu) {
  		resp = eap_msg_alloc(EAP_VENDOR_IETF, EAP_TYPE_PWD, data->mtu,
+-- 
+1.9.1
+

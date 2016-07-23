@@ -41,6 +41,7 @@ wpa (2.5-1) UNRELEASED; urgency=medium
   [ Andrew Shadura ]
   * New upstream release.
   * Refresh patches, drop patches applied upstream.
+  * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
 

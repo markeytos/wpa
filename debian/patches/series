@@ -14,3 +14,4 @@ wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 2016-1/0003-Remove-newlines-from-wpa_supplicant-config-network-o.patch
 2016-1/0004-Reject-SET_CRED-commands-with-newline-characters-in-.patch
 2016-1/0005-Reject-SET-commands-with-newline-characters-in-the-s.patch
+openssl-initialise-pkcs-11.patch

@@ -21,8 +21,8 @@ Build-Depends: debhelper (>> 9.20120115),
  docbook-to-man,
  docbook-utils
 Standards-Version: 3.9.6
-Vcs-Browser: https://anonscm.debian.org/viewvc/pkg-wpa/wpa/trunk/
-Vcs-Svn: svn://anonscm.debian.org/pkg-wpa/wpa/trunk/
+Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/wpa.git
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/wpa.git
 Homepage: http://w1.fi/wpa_supplicant/
 
 Package: hostapd

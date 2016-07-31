@@ -1,7 +1,9 @@
 Source: wpa
 Maintainer: Debian wpasupplicant Maintainers <pkg-wpa-devel@lists.alioth.debian.org>
-Uploaders: Stefan Lippers-Hollmann <s.l-h@gmx.de>,
- Jan Dittberner <jandd@debian.org>
+Uploaders:
+ Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+ Jan Dittberner <jandd@debian.org>,
+ Andrew Shadura <andrewsh@debian.org>
 Section: net
 Priority: optional
 Build-Depends: debhelper (>> 9.20120115),

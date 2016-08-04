@@ -1,3 +1,10 @@
+wpa (2.5-2) unstable; urgency=medium
+
+  * Apply patches from upstream to unbreak dedicated P2P Device support
+    (hopefully closes: #833402).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 04 Aug 2016 11:17:37 +0300
+
 wpa (2.5-1) unstable; urgency=medium
 
   [ Stefan Lippers-Hollmann ]

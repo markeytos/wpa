@@ -59,6 +59,7 @@ wpa (2.4-1) UNRELEASED; urgency=medium
   * New upstream release (Closes: #806889).
   * Refresh patches, drop patches applied upstream.
   * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
+  * Update Vcs-* to point to Git.
 
  -- Andrew Shadura <andrewsh@debian.org>  Sun, 31 Jul 2016 18:05:59 +0300
 

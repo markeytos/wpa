@@ -30,7 +30,7 @@ Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
 
 --- a/wpa_supplicant/config.c
 +++ b/wpa_supplicant/config.c
-@@ -3418,6 +3418,12 @@ static int wpa_global_config_parse_str(c
+@@ -3649,6 +3649,12 @@
  		return -1;
  	}
  

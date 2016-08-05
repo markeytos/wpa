@@ -45,7 +45,22 @@ wpa (2.4-1) UNRELEASED; urgency=medium
   * fix debian/get-orig-source for wpa 2.6~.
   * add debian/watch file for the custom tarball generation.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 19 Aug 2015 03:00:19 +0200
+  [ Paul Donohue ]
+  * debian/ifupdown/functions.sh: Fix handling for "wpa-roam". Call ifquery
+    instead of directly parsing /run/*/ifstate files to work with current
+    ifupdown. (Closes: #545766, LP: #1545363)
+
+  [ Martin Pitt ]
+  * Add debian/system-sleep/wpasupplicant: Call wpa_cli suspend/resume
+    before/after suspend, like the pm-utils hook. In some cases this brings
+    back missing Wifi connection after resuming. (LP: #1422143)
+
+  [ Andrew Shadura ]
+  * New upstream release (Closes: #806889).
+  * Refresh patches, drop patches applied upstream.
+  * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Sun, 31 Jul 2016 18:05:59 +0300
 
 wpa (2.3-2.4) unstable; urgency=medium
 

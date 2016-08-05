@@ -4,9 +4,6 @@
 07_dbus_service_syslog.patch
 12_wpa_gui_knotify_support.patch
 wpa_gui_desktop_add-keywords-entry.patch
-wpasupplicant_band_selection_f0d0a5d2.patch
-wpasupplicant_band_selection_a1b790eb.patch
-wpasupplicant_band_selection_8b2b718d.patch
 wpasupplicant_band_selection_aa517ae2.patch
 2015-1/0001-P2P-Validate-SSID-element-length-before-copying-it-C.patch
 2015-2/0001-WPS-Fix-HTTP-chunked-transfer-encoding-parser.patch

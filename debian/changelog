@@ -1,3 +1,67 @@
+wpa (2.5-2+v2.4-1) unstable; urgency=medium
+
+  [ Ricardo Salveti de Araujo ]
+  * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations
+    when P2P management interface is used (LP: #1482439)
+
+  [ Stefan Lippers-Hollmann ]
+  * wpasupplicant: install systemd unit (Closes: #766746).
+  * wpasupplicant: configure driver fallback for networkd.
+  * import changelogs from the security queues.
+  * move previous patch for CVE-2015-1863 into a new subdirectory,
+    debian/patches/2015-1/.
+  * replace the Debian specific patch "wpasupplicant: fix systemd unit
+    dependencies" with a backport of its official upstream change "systemd:
+    Order wpa_supplicant before network.target".
+  * fix dependency odering when invoked with DBus, by making sure that DBus
+    isn't shut down before wpa_supplicant, as that would also bring down
+    wireless links which are still holding open NFS shares. Thanks to Facundo
+    Gaich <facugaich@gmail.com> and Michael Biebl <biebl@debian.org>
+    (Closes: #785579).
+  * import NMU changelogs and integrate NMU changes.
+  * Add patches to address CVE-2016-4476 and CVE-2016-4477, thanks to Salvatore
+    Bonaccorso <carnil@debian.org> (Closes: #823411):
+    - WPS: Reject a Credential with invalid passphrase
+    - Reject psk parameter set with invalid passphrase character
+    - Remove newlines from wpa_supplicant config network output
+    - Reject SET_CRED commands with newline characters in the string values
+    - Reject SET commands with newline characters in the string values
+  * use --buildsystem=qmake_qt4 (available since dh 8.9.1) for debhelper
+    (Closes: #823171).
+  * fix clean target, by splitting the find call into individual searches.
+  * building wpa in a current unstable chroot using debhelper >= 9.20151219
+    will introduce automatic dbgsym packages, thereby indirectly providing
+    the requested debug packages for stretch and upwards (Closes: #729934).
+    Don't add a versioned build-dependency in order to avoid unnecessary
+    complications with backports.
+  * change Vcs-Browser location to prefer https, but keep the unsecure tag for
+    Vcs-Svn, as there is no option allowing to pull from the svn+ssh:// 
+    location without an alioth account, this only makes lintian partially happy
+    in regards to vcs-field-uses-insecure-uri.
+  * debian/*: fix spelling errors noticed by lintian.
+  * drop the obsolete Debian menu entry for wpa_gui, according to the tech-ctte
+    decision on #741573.
+  * fix debian/get-orig-source for wpa 2.6~.
+  * add debian/watch file for the custom tarball generation.
+
+  [ Paul Donohue ]
+  * debian/ifupdown/functions.sh: Fix handling for "wpa-roam". Call ifquery
+    instead of directly parsing /run/*/ifstate files to work with current
+    ifupdown. (Closes: #545766, LP: #1545363)
+
+  [ Martin Pitt ]
+  * Add debian/system-sleep/wpasupplicant: Call wpa_cli suspend/resume
+    before/after suspend, like the pm-utils hook. In some cases this brings
+    back missing Wifi connection after resuming. (LP: #1422143)
+
+  [ Andrew Shadura ]
+  * New upstream release (Closes: #806889).
+  * Refresh patches, drop patches applied upstream.
+  * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
+  * Update Vcs-* to point to Git.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Fri, 05 Aug 2016 20:45:14 +0200
+
 wpa (2.5-2) unstable; urgency=medium
 
   * Apply patches from upstream to unbreak dedicated P2P Device support

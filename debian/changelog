@@ -1,11 +1,10 @@
-wpa (2.4-1) UNRELEASED; urgency=medium
+wpa (2.5-2+v2.4-1) unstable; urgency=medium
 
   [ Ricardo Salveti de Araujo ]
   * debian/patches/dbus-fix-operations-for-p2p-mgmt.patch: fix operations
     when P2P management interface is used (LP: #1482439)
 
   [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
   * wpasupplicant: install systemd unit (Closes: #766746).
   * wpasupplicant: configure driver fallback for networkd.
   * import changelogs from the security queues.
@@ -61,7 +60,7 @@ wpa (2.4-1) UNRELEASED; urgency=medium
   * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
   * Update Vcs-* to point to Git.
 
- -- Andrew Shadura <andrewsh@debian.org>  Sun, 31 Jul 2016 18:05:59 +0300
+ -- Andrew Shadura <andrewsh@debian.org>  Fri, 05 Aug 2016 20:45:14 +0200
 
 wpa (2.3-2.4) unstable; urgency=medium
 

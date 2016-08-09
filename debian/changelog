@@ -1,3 +1,9 @@
+wpa (2.5-3) experimental; urgency=medium
+
+  * Upload to experimental.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:24:16 +0200
+
 wpa (2.5-2+v2.4-2) unstable; urgency=medium
 
   * Apply patches from upstream to unbreak dedicated P2P Device support

@@ -27,3 +27,6 @@ wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 2016-1/0004-Reject-SET_CRED-commands-with-newline-characters-in-.patch
 2016-1/0005-Reject-SET-commands-with-newline-characters-in-the-s.patch
 dbus-fix-operations-for-p2p-mgmt.patch
+nl80211_dont_call_linux_iface_up_for_a_dedicated_p2p_device.patch
+do_not_wait_for_monitor_to_attach_if_no_control_interface.patch
+wpa_supplicant_do_not_wait_for_monitor_on_p2p_device_interface.patch

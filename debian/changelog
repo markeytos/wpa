@@ -1,3 +1,10 @@
+wpa (2.5-2+v2.4-2) UNRELEASED; urgency=medium
+
+  * Apply patches from upstream to unbreak dedicated P2P Device support
+    (closes: #833402).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:02:00 +0200
+
 wpa (2.5-2+v2.4-1) unstable; urgency=medium
 
   [ Ricardo Salveti de Araujo ]
@@ -55,9 +62,9 @@ wpa (2.5-2+v2.4-1) unstable; urgency=medium
     back missing Wifi connection after resuming. (LP: #1422143)
 
   [ Andrew Shadura ]
+  * Backout 2.5 release, switch to 2.4 (see #833507 for details).
   * New upstream release (Closes: #806889).
   * Refresh patches, drop patches applied upstream.
-  * Fix pkcs11 OpenSSL engine initialisation (Closes: #827253).
   * Update Vcs-* to point to Git.
 
  -- Andrew Shadura <andrewsh@debian.org>  Fri, 05 Aug 2016 20:45:14 +0200

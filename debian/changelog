@@ -1,11 +1,13 @@
-wpa (2.5-2+v2.4-2) UNRELEASED; urgency=medium
+wpa (2.5-2+v2.4-2) unstable; urgency=medium
 
   * Apply patches from upstream to unbreak dedicated P2P Device support
     (closes: #833402).
   * Reapply an accidentally lost patch to fix pkcs11 OpenSSL engine
     initialisation (Closes: #827253).
+  * Retroactively redact the last changelog entry to represent the actual
+    upload more accurately.
 
- -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:02:00 +0200
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:11:27 +0200
 
 wpa (2.5-2+v2.4-1) unstable; urgency=medium
 

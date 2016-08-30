@@ -10,7 +10,7 @@ Author: Reinhard Tartler <siretart@tauware.de>
  #LIBS += -lwinscard
  else
 -LIBS += -lpcsclite -lpthread
-+LIBS += $(shell pkg-config --libs libpcsclite)
++LIBS += $(shell $(PKG_CONFIG) --libs libpcsclite)
  endif
  endif
  

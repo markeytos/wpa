@@ -1,3 +1,9 @@
+wpa (2.5-2+v2.4-3) UNRELEASED; urgency=medium
+
+  * Address FTCBFS: Set PKG_CONFIG (Closes: #836074).
+
+ -- Helmut Grohne <helmut@subdivi.de>  Tue, 30 Aug 2016 14:19:27 +0200
+
 wpa (2.5-2+v2.4-2) unstable; urgency=medium
 
   * Apply patches from upstream to unbreak dedicated P2P Device support

@@ -1,8 +1,13 @@
-wpa (2.5-2+v2.4-3) UNRELEASED; urgency=medium
+wpa (2.5-2+v2.4-4) UNRELEASED; urgency=medium
 
+  [ Helmut Grohne ]
   * Address FTCBFS: Set PKG_CONFIG (Closes: #836074).
 
- -- Helmut Grohne <helmut@subdivi.de>  Tue, 30 Aug 2016 14:19:27 +0200
+  [ Andrew Shadura ]
+  * Don't run wpa_cli suspend/resume if /run/wpa_supplicant isn't around
+    (Closes: #835648).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Wed, 14 Sep 2016 10:35:56 +0200
 
 wpa (2.5-2+v2.4-2) unstable; urgency=medium
 

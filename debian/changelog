@@ -1,8 +1,13 @@
-wpa (2.5-3) experimental; urgency=medium
+wpa (2.5-2+v2.4-3) unstable; urgency=medium
 
-  * Upload to experimental.
+  [ Helmut Grohne ]
+  * Address FTCBFS: Set PKG_CONFIG (Closes: #836074).
 
- -- Andrew Shadura <andrewsh@debian.org>  Tue, 09 Aug 2016 20:24:16 +0200
+  [ Andrew Shadura ]
+  * Don't run wpa_cli suspend/resume if /run/wpa_supplicant isn't around
+    (Closes: #835648).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Wed, 14 Sep 2016 11:11:01 +0200
 
 wpa (2.5-2+v2.4-2) unstable; urgency=medium
 

@@ -1,3 +1,14 @@
+wpa (2.6-1) experimental; urgency=medium
+
+  [ Andrew Shadura ]
+  * New upstream version (Closes: #828601,  #832034).
+  * Add gbp.conf.
+
+  [ Julian Wollrath ]
+  * Refresh patches.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 20 Oct 2016 18:28:10 +0200
+
 wpa (2.5-2+v2.4-3) unstable; urgency=medium
 
   [ Helmut Grohne ]

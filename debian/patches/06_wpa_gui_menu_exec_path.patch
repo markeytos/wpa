@@ -1,6 +1,8 @@
-Description: Debian specific patch to desktop meny entry, so that we may exec
- wpa_gui which being in /usr/sbin may not be in the PATH
-Author: Kel Modderman <kel@otaku42.de>
+From: Kel Modderman <kel@otaku42.de>
+Subject: Use full executable path into wpa_gui.desktop
+
+Debian specific patch to desktop meny entry, so that we may exec
+wpa_gui which being in /usr/sbin may not be in the PATH
 ---
 --- a/wpa_supplicant/wpa_gui-qt4/wpa_gui.desktop
 +++ b/wpa_supplicant/wpa_gui-qt4/wpa_gui.desktop

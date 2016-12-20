@@ -1,3 +1,14 @@
+wpa (2.6-2) unstable; urgency=medium
+
+  * Upload to unstable.
+  * Restore the patch descriptions.
+  * Don't install debian/system-sleep/wpasupplicant (originally introduced
+    to fix LP: #1422143), it doesn't improve the state of the things,
+    introduces regressions in some cases, and at all isn't supposed to
+    work with how wpa-supplicant is started these days.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 20 Dec 2016 21:50:26 +0100
+
 wpa (2.6-1) experimental; urgency=medium
 
   [ Andrew Shadura ]

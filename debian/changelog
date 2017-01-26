@@ -1,3 +1,17 @@
+wpa (2.6-3) unstable; urgency=medium
+
+  * Cherry-pick the following patches from the upstream:
+    - WPS: Force BSSID for WPS provisioning step connection
+    - Check for NULL qsort() base pointers
+    - Always propagate scan results to all interfaces
+    - wpa_supplicant: Restore permanent MAC address on reassociation
+    - nl80211: Update channel information after channel switch notification
+    - Extend ieee80211_freq_to_channel_ext() to cover channels 52-64
+    - Use estimated throughput to avoid signal based roaming decision
+    - Use random MAC address for scanning only in non-connected state
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 26 Jan 2017 17:53:41 +0100
+
 wpa (2.6-2) unstable; urgency=medium
 
   * Upload to unstable.

@@ -7,7 +7,6 @@ Subject: [PATCH] Extend ieee80211_freq_to_channel_ext() to cover channels
 Add frequency to channel conversion for the 5 GHz channels 52-64.
 
 Signed-off-by: Avraham Stern <avraham.stern@intel.com>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  src/common/ieee802_11_common.c | 19 +++++++++++++++++++
  1 file changed, 19 insertions(+)

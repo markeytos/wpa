@@ -18,7 +18,6 @@ selection process to the debug log to make it easier to determine whaty
 happened and why.
 
 Signed-off-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  wpa_supplicant/events.c | 52 +++++++++++++++++++++++++++++++++++++++----------
  1 file changed, 42 insertions(+), 10 deletions(-)

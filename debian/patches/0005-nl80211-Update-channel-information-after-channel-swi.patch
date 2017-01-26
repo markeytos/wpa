@@ -13,7 +13,6 @@ drv->assoc_freq at least as a fallback mechanism for getting the current
 operating frequency.
 
 Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  src/drivers/driver_nl80211_event.c | 1 +
  1 file changed, 1 insertion(+)

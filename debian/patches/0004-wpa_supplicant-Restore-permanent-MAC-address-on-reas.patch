@@ -9,7 +9,6 @@ should be restored for association. Previously this did not happen when
 reassociating to the same ESS.
 
 Signed-off-by: Benjamin Richter <br@waldteufel.eu>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  wpa_supplicant/wpa_supplicant.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)

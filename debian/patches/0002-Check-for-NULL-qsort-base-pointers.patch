@@ -10,7 +10,6 @@ according to the C standard and with some standard C libraries (ARM RVCT
 calls since there is nothing needing to be sorted.
 
 Signed-off-by: Joel Cunningham <joel.cunningham@me.com>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  hostapd/config_file.c | 3 ++-
  wpa_supplicant/scan.c | 6 ++++--

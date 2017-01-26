@@ -12,7 +12,6 @@ this. The real MAC address of the STA is already revealed in the
 association, so this is an acceptable fallback mechanism for now.
 
 Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  wpa_supplicant/scan.c | 9 ++++++---
  1 file changed, 6 insertions(+), 3 deletions(-)

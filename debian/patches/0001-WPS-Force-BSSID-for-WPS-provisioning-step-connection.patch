@@ -19,7 +19,6 @@ driver from selecting an incorrect AP for the WPS provisioning
 association.
 
 Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: Andrew Shadura <andrew.shadura@collabora.co.uk>
 ---
  wpa_supplicant/wpa_supplicant.c | 8 +++++---
  1 file changed, 5 insertions(+), 3 deletions(-)

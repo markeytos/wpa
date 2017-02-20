@@ -1,3 +1,20 @@
+wpa (2:2.4-1) UNRELEASED; urgency=medium
+
+  [ Vincent Danjean ]
+  * Build with libssl1.0-dev (Closes: #828601).
+  * Add an upstream patch to fix hostapd in SMPS mode (Closes: #854719).
+
+  [ Andrew Shadura ]
+  * Don't install debian/system-sleep/wpasupplicant (originally introduced
+    to fix LP: #1422143), it doesn't improve the state of the things,
+    introduces regressions in some cases, and at all isn't supposed to
+    work with how wpa-supplicant is started these days (Closes: #835648).
+  * Bump the epoch to 2:, so that we can set the upstream version to
+    what we really mean. It also has to be higher than 2.6 in unstable
+    and 1:2.6 (what hostapd binary package in unstable has).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Mon, 20 Feb 2017 11:51:47 +0100
+
 wpa (2.5-2+v2.4-3) unstable; urgency=medium
 
   [ Helmut Grohne ]

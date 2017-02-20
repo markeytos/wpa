@@ -1,4 +1,4 @@
-wpa (2:2.4-1) UNRELEASED; urgency=medium
+wpa (2:2.4-1) unstable; urgency=medium
 
   [ Vincent Danjean ]
   * Build with libssl1.0-dev (Closes: #828601).
@@ -12,8 +12,9 @@ wpa (2:2.4-1) UNRELEASED; urgency=medium
   * Bump the epoch to 2:, so that we can set the upstream version to
     what we really mean. It also has to be higher than 2.6 in unstable
     and 1:2.6 (what hostapd binary package in unstable has).
+  * Drop the binary package epoch override.
 
- -- Andrew Shadura <andrewsh@debian.org>  Mon, 20 Feb 2017 11:51:47 +0100
+ -- Andrew Shadura <andrewsh@debian.org>  Mon, 20 Feb 2017 11:55:11 +0100
 
 wpa (2.5-2+v2.4-3) unstable; urgency=medium
 

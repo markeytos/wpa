@@ -1,3 +1,10 @@
+wpa (2:2.6-4) experimental; urgency=medium
+
+  * Upload to experimental.
+  * Bump the epoch to 2:, as the upload to unstable had to bump epoch.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Fri, 24 Feb 2017 16:45:48 +0100
+
 wpa (2.6-3) unstable; urgency=medium
 
   * Cherry-pick the following patches from the upstream:

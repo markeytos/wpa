@@ -1,4 +1,4 @@
-wpa (2:2.4-1+deb9u1) UNRELEASED; urgency=high
+wpa (2:2.4-1.1) unstable; urgency=high
 
   * Non-maintainer upload by the Security Team.
   * Fix multiple issues in WPA protocol (CVE-2017-13077, CVE-2017-13078,
@@ -16,7 +16,7 @@ wpa (2:2.4-1+deb9u1) UNRELEASED; urgency=high
     - FT: Do not allow multiple Reassociation Response frames
     - TDLS: Ignore incoming TDLS Setup Response retries
 
- -- Yves-Alexis Perez <corsac@debian.org>  Thu, 12 Oct 2017 16:27:36 +0200
+ -- Yves-Alexis Perez <corsac@debian.org>  Mon, 16 Oct 2017 10:28:41 +0200
 
 wpa (2:2.4-1) unstable; urgency=medium
 

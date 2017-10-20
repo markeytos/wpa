@@ -1,5 +1,6 @@
-wpa (2:2.6-5) UNRELEASED; urgency=medium
+wpa (2:2.6-5) experimental; urgency=medium
 
+  [ Yves-Alexis Perez ]
   * Fix multiple issues in WPA protocol (CVE-2017-13077, CVE-2017-13078,
     CVE-2017-13079, CVE-2017-13080, CVE-2017-13081, CVE-2017-13082,
     CVE-2017-13086, CVE-2017-13087, CVE-2017-13088):
@@ -15,7 +16,7 @@ wpa (2:2.6-5) UNRELEASED; urgency=medium
     - FT: Do not allow multiple Reassociation Response frames
     - TDLS: Ignore incoming TDLS Setup Response retries
 
- -- Yves-Alexis Perez <corsac@debian.org>  Thu, 12 Oct 2017 16:27:36 +0200
+ -- Andrew Shadura <andrewsh@debian.org>  Fri, 20 Oct 2017 15:34:09 +0100
 
 wpa (2:2.6-4) experimental; urgency=medium
 

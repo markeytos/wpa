@@ -9,7 +9,7 @@ Priority: optional
 Build-Depends: debhelper (>> 9.20120115),
  libdbus-1-dev,
  libssl-dev,
- libqt4-dev,
+ qtbase5-dev,
  libncurses5-dev,
  libpcsclite-dev,
  libnl-3-dev [linux-any],
@@ -19,7 +19,6 @@ Build-Depends: debhelper (>> 9.20120115),
  libbsd-dev [kfreebsd-any],
  libreadline-dev,
  pkg-config,
- qt4-qmake,
  docbook-to-man,
  docbook-utils
 Standards-Version: 3.9.6
@@ -60,7 +59,7 @@ Multi-Arch: foreign
 Depends: ${shlibs:Depends},
  ${misc:Depends},
  wpasupplicant (>= 0.7.3~),
- libqt4-svg
+ libqt5svg5
 Recommends: menu
 Description: graphical user interface for wpa_supplicant
  wpagui provides a Qt interface for choosing which configured network

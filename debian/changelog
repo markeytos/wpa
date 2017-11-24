@@ -49,6 +49,44 @@ wpa (2:2.6-4) experimental; urgency=medium
 
  -- Andrew Shadura <andrewsh@debian.org>  Fri, 24 Feb 2017 16:45:48 +0100
 
+wpa (2:2.4-1.1) unstable; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Fix multiple issues in WPA protocol (CVE-2017-13077, CVE-2017-13078,
+    CVE-2017-13079, CVE-2017-13080, CVE-2017-13081, CVE-2017-13082,
+    CVE-2017-13086, CVE-2017-13087, CVE-2017-13088):
+    - hostapd: Avoid key reinstallation in FT handshake
+    - Prevent reinstallation of an already in-use group key
+    - Extend protection of GTK/IGTK reinstallation of
+    - Fix TK configuration to the driver in EAPOL-Key 3/4
+    - Prevent installation of an all-zero TK
+    - Fix PTK rekeying to generate a new ANonce
+    - TDLS: Reject TPK-TK reconfiguration
+    - WNM: Ignore WNM-Sleep Mode Response if WNM-Sleep Mode
+    - WNM: Ignore WNM-Sleep Mode Response without pending
+    - FT: Do not allow multiple Reassociation Response frames
+    - TDLS: Ignore incoming TDLS Setup Response retries
+
+ -- Yves-Alexis Perez <corsac@debian.org>  Mon, 16 Oct 2017 10:28:41 +0200
+
+wpa (2:2.4-1) unstable; urgency=medium
+
+  [ Vincent Danjean ]
+  * Build with libssl1.0-dev (Closes: #828601).
+  * Add an upstream patch to fix hostapd in SMPS mode (Closes: #854719).
+
+  [ Andrew Shadura ]
+  * Don't install debian/system-sleep/wpasupplicant (originally introduced
+    to fix LP: #1422143), it doesn't improve the state of the things,
+    introduces regressions in some cases, and at all isn't supposed to
+    work with how wpa-supplicant is started these days (Closes: #835648).
+  * Bump the epoch to 2:, so that we can set the upstream version to
+    what we really mean. It also has to be higher than 2.6 in unstable
+    and 1:2.6 (what hostapd binary package in unstable has).
+  * Drop the binary package epoch override.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Mon, 20 Feb 2017 11:55:11 +0100
+
 wpa (2.6-3) unstable; urgency=medium
 
   * Cherry-pick the following patches from the upstream:

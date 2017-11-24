@@ -1,5 +1,6 @@
 wpa (2:2.6-7) unstable; urgency=medium
 
+  * Upload to unstable.
   * Optional AP side workaround for key reinstallation attacks (LP: #1730399).
 
  -- Andrew Shadura <andrewsh@debian.org>  Fri, 24 Nov 2017 16:29:25 +0000

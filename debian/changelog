@@ -1,3 +1,21 @@
+wpa (2:2.6-6) experimental; urgency=medium
+
+  [ Reiner Herrmann ]
+  * Port wpa_gui to Qt5 (Closes: #875233).
+
+  [ Andrew Shadura ]
+  * Add a service file for hostapd.
+  * Build wpa_supplicant with interface matching support (Closes: #879208).
+
+  [ Benedikt Wildenhain (BO) ]
+  * Install wpa_supplicant-wired@.service (Closes: #871488).
+
+  [ Jan-Benedict Glaw ]
+  * Consider all ifupdown configuration, not only /etc/network/interfaces
+    (Closes: #853293).
+
+ -- Andrew Shadura <andrewsh@debian.org>  Fri, 24 Nov 2017 16:00:19 +0000
+
 wpa (2:2.6-5) experimental; urgency=medium
 
   [ Yves-Alexis Perez ]

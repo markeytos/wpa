@@ -1,0 +1,9 @@
+wpa (2:2.6-8) unstable; urgency=medium
+
+  Since 2:2.6-6, hostapd ships a systemd .service file. As hostapd comes
+  with /etc/default/hostapd file, which by default doesn't specify any
+  config file, to prevent installation or boot failures, the package's
+  postinst script masks the hostapd.service unit on the first install.
+  After editing the default file, users need to unmask it themselves.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Sun, 26 Nov 2017 19:25:50 +0000

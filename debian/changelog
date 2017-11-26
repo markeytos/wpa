@@ -1,3 +1,16 @@
+wpa (2:2.6-8) unstable; urgency=medium
+
+  * Revert "Build wpa_supplicant with interface matching support."
+    (Closes: #882716).
+  * Drop override_dh_builddeb.
+  * Use dh 10.
+  * Prevent hostapd from failing on the package install when there
+    isn't a valid configuration file yet:
+    - Don't enable hostapd.service by default.
+    - Mask hostapd.service on the first install.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Sun, 26 Nov 2017 19:38:57 +0000
+
 wpa (2:2.6-7) unstable; urgency=medium
 
   * Upload to unstable.

@@ -5,7 +5,7 @@ wpa (2:2.6-8) unstable; urgency=medium
   * Drop override_dh_builddeb.
   * Use dh 10.
   * Prevent hostapd from failing on the package install when there
-    isn't a valid configuration file yet:
+    isn't a valid configuration file yet (Closes: #882740):
     - Don't enable hostapd.service by default.
     - Mask hostapd.service on the first install.
 

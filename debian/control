@@ -6,7 +6,7 @@ Uploaders:
  Andrew Shadura <andrewsh@debian.org>
 Section: net
 Priority: optional
-Build-Depends: debhelper (>> 9.20120115),
+Build-Depends: debhelper (>> 10),
  libdbus-1-dev,
  libssl-dev,
  qtbase5-dev,

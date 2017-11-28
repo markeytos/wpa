@@ -1,3 +1,14 @@
+wpa (2:2.6-10) unstable; urgency=medium
+
+  The hostapd .service file is now automatically masked every time the
+  package is upgraded with no valid configuration.
+
+  The plan is to deprecate /etc/default/hostapd at some point, making
+  /etc/hostapd/hostapd.conf the standard location for the configuration
+  file.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 28 Nov 2017 12:29:21 +0100
+
 wpa (2:2.6-8) unstable; urgency=medium
 
   Since 2:2.6-6, hostapd ships a systemd .service file. As hostapd comes

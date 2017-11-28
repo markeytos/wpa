@@ -1,3 +1,10 @@
+wpa (2:2.6-9) unstable; urgency=medium
+
+  * Tell NetworkManager to not touch MAC addresses on unsupported drivers.
+    Hopefully, this will fix #849077.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 28 Nov 2017 11:27:52 +0100
+
 wpa (2:2.6-8) unstable; urgency=medium
 
   * Revert "Build wpa_supplicant with interface matching support."

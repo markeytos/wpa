@@ -22,3 +22,4 @@ VU-228519/rebased-v2.6-0006-TDLS-Reject-TPK-TK-reconfiguration.patch
 VU-228519/rebased-v2.6-0007-WNM-Ignore-WNM-Sleep-Mode-Response-without-pending-r.patch
 VU-228519/rebased-v2.6-0008-FT-Do-not-allow-multiple-Reassociation-Response-fram.patch
 wpa_disable_eapol_key_retries.patch
+fix-pem-decryption.patch

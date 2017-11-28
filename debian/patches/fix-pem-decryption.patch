@@ -1,0 +1,29 @@
+From: Lukasz Siudut <lsiudut@gmail.com>
+Date: Fri, 2 Jun 2017 11:29:58 +0100
+
+This patch fixes this is semi-proper way that should be compatible with both
+older versions of OpenSSH and newer one. Basically I'm doing what @mattcaswell
+suggested here:
+https://github.com/openssl/openssl/issues/3594#issuecomment-305493300 -
+calling both SSL_CTX_() functions and the SSL_() functions. Works for me,
+would be nice to get feedback from bigger group of testers.
+
+--- a/src/crypto/tls_openssl.c	2016-10-02 19:51:11.000000000 +0100
++++ b/src/crypto/tls_openssl.c	2017-06-02 11:17:37.303222333 +0100
+@@ -2779,6 +2779,8 @@
+ 	} else
+ 		passwd = NULL;
+ 
++	SSL_set_default_passwd_cb(conn->ssl, tls_passwd_cb);
++	SSL_set_default_passwd_cb_userdata(conn->ssl, passwd);
+ 	SSL_CTX_set_default_passwd_cb(ssl_ctx, tls_passwd_cb);
+ 	SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, passwd);
+ 
+@@ -2869,6 +2871,7 @@
+ 		return -1;
+ 	}
+ 	ERR_clear_error();
++	SSL_set_default_passwd_cb(conn->ssl, NULL);
+ 	SSL_CTX_set_default_passwd_cb(ssl_ctx, NULL);
+ 	os_free(passwd);
+ 

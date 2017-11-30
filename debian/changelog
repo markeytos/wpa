@@ -1,3 +1,10 @@
+wpa (2:2.6-11) unstable; urgency=medium
+
+  * Unbreak EAP-TLS.
+    Thanks to Dmitry Borodaenko <angdraug@debian.org>
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 30 Nov 2017 11:21:43 +0100
+
 wpa (2:2.6-10) unstable; urgency=medium
 
   * Mask hostapd every time it has no valid configuration.

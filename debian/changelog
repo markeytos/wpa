@@ -1,3 +1,10 @@
+wpa (2:2.6-12) unstable; urgency=medium
+
+  * Add wl to the blacklist for MAC randomisation. (Closes: #833507)
+  * Blacklist an out-of-tree driver for Realtek RTL8188EU too.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Tue, 05 Dec 2017 12:32:27 +0100
+
 wpa (2:2.6-11) unstable; urgency=medium
 
   * Unbreak EAP-TLS.

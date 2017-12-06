@@ -931,7 +931,7 @@ ifup () {
 	fi
 
 	if [ -n "$WPA_LOGICAL_IFACE" ]; then
-		if ! /sbin/ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2/&1; then
+		if ! /sbin/ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2>&1; then
 			wpa_msg log "network settings not defined for $WPA_LOGICAL_IFACE in $INTERFACES_FILE and included files."
 			WPA_LOGICAL_IFACE="default"
 		fi

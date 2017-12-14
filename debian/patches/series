@@ -23,3 +23,4 @@ VU-228519/rebased-v2.6-0007-WNM-Ignore-WNM-Sleep-Mode-Response-without-pending-r
 VU-228519/rebased-v2.6-0008-FT-Do-not-allow-multiple-Reassociation-Response-fram.patch
 wpa_disable_eapol_key_retries.patch
 fix-pem-decryption.patch
+nl80211-Fix-race-condition-in-detecting-MAC-change.patch

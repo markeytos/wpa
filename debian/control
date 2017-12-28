@@ -1,8 +1,6 @@
 Source: wpa
-Maintainer: Debian wpasupplicant Maintainers <pkg-wpa-devel@lists.alioth.debian.org>
+Maintainer: Debian wpasupplicant Maintainers <wpa@packages.debian.org>
 Uploaders:
- Stefan Lippers-Hollmann <s.l-h@gmx.de>,
- Jan Dittberner <jandd@debian.org>,
  Andrew Shadura <andrewsh@debian.org>
 Section: net
 Priority: optional
@@ -22,8 +20,8 @@ Build-Depends: debhelper (>> 10),
  docbook-to-man,
  docbook-utils
 Standards-Version: 3.9.6
-Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/wpa.git
-Vcs-Git: https://anonscm.debian.org/git/collab-maint/wpa.git
+Vcs-Browser: https://salsa.debian.org/debian/wpa.git
+Vcs-Git: https://salsa.debian.org/debian/wpa.git
 Homepage: http://w1.fi/wpa_supplicant/
 
 Package: hostapd

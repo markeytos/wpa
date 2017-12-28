@@ -1,3 +1,16 @@
+wpa (2:2.6-14) unstable; urgency=medium
+
+  * Replace the PEM fix patch by Lukasz Siudut with an upstream patch.
+    Thanks to David Benjamin <davidben@google.com>.
+  * Apply patches from Beniamino Galvani:
+    - Fix race condition in detecting MAC address change
+    - Update MAC address when driver detects a change
+  * Disable WNM to resolve a compatibility issue with wl.
+    Thanks to YOSHINO Yoshihito <yy.y.ja.jp@gmail.com>.
+    Hopefully really closes: #833507.
+
+ -- Andrew Shadura <andrewsh@debian.org>  Thu, 28 Dec 2017 09:51:29 +0100
+
 wpa (2:2.6-13) unstable; urgency=medium
 
   * Fix a typo in functions.sh (Closes: #883659).

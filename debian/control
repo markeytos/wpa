@@ -1,5 +1,6 @@
 Source: wpa
-Maintainer: Debian wpasupplicant Maintainers <wpa@packages.debian.org>
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Debian wpasupplicant Maintainers <wpa@packages.debian.org>
 Uploaders:
  Andrew Shadura <andrewsh@debian.org>
 Section: net
@@ -18,7 +19,8 @@ Build-Depends: debhelper (>> 10),
  libreadline-dev,
  pkg-config,
  docbook-to-man,
- docbook-utils
+ docbook-utils,
+ android-headers,
 Standards-Version: 3.9.6
 Vcs-Browser: https://salsa.debian.org/debian/wpa.git
 Vcs-Git: https://salsa.debian.org/debian/wpa.git

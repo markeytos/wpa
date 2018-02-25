@@ -5,6 +5,8 @@ After=network.target
 [Service]
 Type=forking
 PIDFile=/run/hostapd.pid
+Restart=on-failure
+RestartSec=2
 EnvironmentFile=/etc/default/hostapd
 ExecStart=/usr/sbin/hostapd -P /run/hostapd.pid -B $DAEMON_OPTS ${DAEMON_CONF}
 

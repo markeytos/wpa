@@ -80,7 +80,7 @@ NOTE: the 'wpa-psk' value is only valid if:
            length
         2) It is a hexadecimal string of 64 characters
 
-# Connect to access point of ssid 'NETBEER' with an encryption type of
+# Connect to access point of ssid 'NyNetWork' with an encryption type of
 # WPA-PSK/WPA2-PSK. It assumes the driver will use the 'wext' driver backend
 # of wpa_supplicant because no wpa-driver option has been specified. 
 # The passphrase is given as a ASCII (plaintext) string. DHCP is used to

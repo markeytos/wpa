@@ -1,6 +1,6 @@
 # Debian's wpa_supplicant build time configuration
 CONFIG_DRIVER_BSD=y
-LIBS += -lbsd
+LIBS += -ldl
 CONFIG_CTRL_IFACE=y
 CONFIG_BACKEND=file
 CONFIG_MAIN=main

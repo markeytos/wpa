@@ -11,9 +11,11 @@
 
 #include "common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/wpa_ctrl.h"
 #include "hostapd.h"
 #include "ap_config.h"
 #include "ap_drv_ops.h"
+#include "sta_info.h"
 #include "hs20.h"
 
 
@@ -174,4 +176,70 @@ int hs20_send_wnm_notification_deauth_req(struct hostapd_data *hapd,
 	wpabuf_free(buf);
 
 	return ret;
+}
+
+
+int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
+				   const u8 *addr)
+{
+	struct wpabuf *buf;
+	int ret;
+	const char *url = hapd->conf->t_c_server_url, *pos;
+	size_t url_len;
+
+	if (!url)
+		return -1;
+	pos = os_strstr(url, "@1@");
+	if (!pos)
+		return -1;
+
+	url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
+	buf = wpabuf_alloc(4 + 7 + url_len);
+	if (!buf)
+		return -1;
+
+	wpabuf_put_u8(buf, WLAN_ACTION_WNM);
+	wpabuf_put_u8(buf, WNM_NOTIFICATION_REQ);
+	wpabuf_put_u8(buf, 1); /* Dialog token */
+	wpabuf_put_u8(buf, 1); /* Type - 1 reserved for WFA */
+
+	/* Terms and Conditions Acceptance subelement */
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 4 + 1 + url_len);
+	wpabuf_put_be24(buf, OUI_WFA);
+	wpabuf_put_u8(buf, HS20_WNM_T_C_ACCEPTANCE);
+	wpabuf_put_u8(buf, url_len);
+	wpabuf_put_data(buf, url, pos - url);
+	wpabuf_printf(buf, MACSTR, MAC2STR(addr));
+	wpabuf_put_str(buf, pos + 3);
+
+	ret = hostapd_drv_send_action(hapd, hapd->iface->freq, 0, addr,
+				      wpabuf_head(buf), wpabuf_len(buf));
+
+	wpabuf_free(buf);
+
+	return ret;
+}
+
+
+void hs20_t_c_filtering(struct hostapd_data *hapd, struct sta_info *sta,
+			int enabled)
+{
+	if (enabled) {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Terms and Conditions filtering required for "
+			   MACSTR, MAC2STR(sta->addr));
+		sta->hs20_t_c_filtering = 1;
+		/* TODO: Enable firewall filtering for the STA */
+		wpa_msg(hapd->msg_ctx, MSG_INFO, HS20_T_C_FILTERING_ADD MACSTR,
+			MAC2STR(sta->addr));
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Terms and Conditions filtering not required for "
+			   MACSTR, MAC2STR(sta->addr));
+		sta->hs20_t_c_filtering = 0;
+		/* TODO: Disable firewall filtering for the STA */
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			HS20_T_C_FILTERING_REMOVE MACSTR, MAC2STR(sta->addr));
+	}
 }

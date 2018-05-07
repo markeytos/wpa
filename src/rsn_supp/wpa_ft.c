@@ -151,8 +151,10 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	struct rsn_ftie *ftie;
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
+	int mdie_len;
 
 	sm->ft_completed = 0;
+	sm->ft_reassoc_completed = 0;
 
 	buf_len = 2 + sizeof(struct rsn_mdie) + 2 + sizeof(struct rsn_ftie) +
 		2 + sm->r0kh_id_len + ric_ies_len + 100;
@@ -204,6 +206,12 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_PSK);
 	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_SAE)
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_SAE);
+#ifdef CONFIG_FILS
+	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_FILS_SHA256)
+		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_FILS_SHA256);
+	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_FILS_SHA384)
+		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_FILS_SHA384);
+#endif /* CONFIG_FILS */
 	else {
 		wpa_printf(MSG_WARNING, "FT: Invalid key management type (%d)",
 			   sm->key_mgmt);
@@ -240,14 +248,13 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	rsnie->len = (pos - (u8 *) rsnie) - 2;
 
 	/* MDIE */
-	*pos++ = WLAN_EID_MOBILITY_DOMAIN;
-	*pos++ = sizeof(*mdie);
-	mdie = (struct rsn_mdie *) pos;
-	pos += sizeof(*mdie);
-	os_memcpy(mdie->mobility_domain, sm->mobility_domain,
-		  MOBILITY_DOMAIN_ID_LEN);
-	mdie->ft_capab = ap_mdie && ap_mdie[1] >= 3 ? ap_mdie[4] :
-		sm->mdie_ft_capab;
+	mdie_len = wpa_ft_add_mdie(sm, pos, buf_len - (pos - buf), ap_mdie);
+	if (mdie_len <= 0) {
+		os_free(buf);
+		return NULL;
+	}
+	mdie = (struct rsn_mdie *) (pos + 2);
+	pos += mdie_len;
 
 	/* FTIE[SNonce, [R1KH-ID,] R0KH-ID ] */
 	ftie_pos = pos;
@@ -366,6 +373,37 @@ int wpa_ft_prepare_auth_request(struct wpa_sm *sm, const u8 *mdie)
 }
 
 
+int wpa_ft_add_mdie(struct wpa_sm *sm, u8 *buf, size_t buf_len,
+		    const u8 *ap_mdie)
+{
+	u8 *pos = buf;
+	struct rsn_mdie *mdie;
+
+	if (buf_len < 2 + sizeof(*mdie)) {
+		wpa_printf(MSG_INFO,
+			   "FT: Failed to add MDIE: short buffer, length=%zu",
+			   buf_len);
+		return 0;
+	}
+
+	*pos++ = WLAN_EID_MOBILITY_DOMAIN;
+	*pos++ = sizeof(*mdie);
+	mdie = (struct rsn_mdie *) pos;
+	os_memcpy(mdie->mobility_domain, sm->mobility_domain,
+		  MOBILITY_DOMAIN_ID_LEN);
+	mdie->ft_capab = ap_mdie && ap_mdie[1] >= 3 ? ap_mdie[4] :
+		sm->mdie_ft_capab;
+
+	return 2 + sizeof(*mdie);
+}
+
+
+const u8 * wpa_sm_get_ft_md(struct wpa_sm *sm)
+{
+	return sm->mobility_domain;
+}
+
+
 int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 			    int ft_action, const u8 *target_ap,
 			    const u8 *ric_ies, size_t ric_ies_len)
@@ -378,6 +416,8 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 	u8 ptk_name[WPA_PMK_NAME_LEN];
 	int ret;
 	const u8 *bssid;
+	const u8 *kck;
+	size_t kck_len;
 
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", ies, ies_len);
 	wpa_hexdump(MSG_DEBUG, "FT: RIC IEs", ric_ies, ric_ies_len);
@@ -478,9 +518,16 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 			      ptk_name, sm->key_mgmt, sm->pairwise_cipher) < 0)
 		return -1;
 
+	if (wpa_key_mgmt_fils(sm->key_mgmt)) {
+		kck = sm->ptk.kck2;
+		kck_len = sm->ptk.kck2_len;
+	} else {
+		kck = sm->ptk.kck;
+		kck_len = sm->ptk.kck_len;
+	}
 	ft_ies = wpa_ft_gen_req_ies(sm, &ft_ies_len, ftie->anonce,
 				    sm->pmk_r1_name,
-				    sm->ptk.kck, sm->ptk.kck_len, bssid,
+				    kck, kck_len, bssid,
 				    ric_ies, ric_ies_len,
 				    parse.mdie ? parse.mdie - 2 : NULL);
 	if (ft_ies) {
@@ -672,6 +719,8 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 	struct rsn_ftie *ftie;
 	unsigned int count;
 	u8 mic[WPA_EAPOL_KEY_MIC_MAX_LEN];
+	const u8 *kck;
+	size_t kck_len;
 
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", ies, ies_len);
 
@@ -679,6 +728,11 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		wpa_printf(MSG_DEBUG, "FT: Reject FT IEs since FT is not "
 			   "enabled for this connection");
 		return -1;
+	}
+
+	if (sm->ft_reassoc_completed) {
+		wpa_printf(MSG_DEBUG, "FT: Reassociation has already been completed for this FT protocol instance - ignore unexpected retransmission");
+		return 0;
 	}
 
 	if (wpa_ft_parse_ies(ies, ies_len, &parse) < 0) {
@@ -764,7 +818,15 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
-	if (wpa_ft_mic(sm->ptk.kck, sm->ptk.kck_len, sm->own_addr, src_addr, 6,
+	if (wpa_key_mgmt_fils(sm->key_mgmt)) {
+		kck = sm->ptk.kck2;
+		kck_len = sm->ptk.kck2_len;
+	} else {
+		kck = sm->ptk.kck;
+		kck_len = sm->ptk.kck_len;
+	}
+
+	if (wpa_ft_mic(kck, kck_len, sm->own_addr, src_addr, 6,
 		       parse.mdie - 2, parse.mdie_len + 2,
 		       parse.ftie - 2, parse.ftie_len + 2,
 		       parse.rsn - 2, parse.rsn_len + 2,
@@ -780,6 +842,8 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		wpa_hexdump(MSG_MSGDUMP, "FT: Calculated MIC", mic, 16);
 		return -1;
 	}
+
+	sm->ft_reassoc_completed = 1;
 
 	if (wpa_ft_process_gtk_subelem(sm, parse.gtk, parse.gtk_len) < 0)
 		return -1;

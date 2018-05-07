@@ -552,7 +552,7 @@ CONFIG_AUTOSCAN_PERIODIC=y
 #
 # For more details refer to:
 # http://wireless.kernel.org/en/users/Documentation/acs
-#CONFIG_ACS=y
+CONFIG_ACS=y
 
 # Support Multi Band Operation
 #CONFIG_MBO=y

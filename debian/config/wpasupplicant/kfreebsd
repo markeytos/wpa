@@ -550,7 +550,7 @@ CONFIG_AUTOSCAN_PERIODIC=y
 #
 # For more details refer to:
 # http://wireless.kernel.org/en/users/Documentation/acs
-#CONFIG_ACS=y
+CONFIG_ACS=y
 
 # XXX: Debian #737465
 # fix FTBS using gcc-4.8 by linking with -ldl on kfreebsd-any. This is

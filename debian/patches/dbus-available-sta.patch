@@ -1,10 +1,17 @@
 From: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
-Subject: [PATCH] Expose connected stations on DBus.
+Subject: [PATCH] dbus: Expose connected stations on D-Bus
 
-Make it possible to list connected stations in AP mode over DBus, along
-with some of their properties.
+Make it possible to list connected stations in AP mode over D-Bus, along
+with some of their properties: rx/tx packets, bytes, capabilities, etc.
 
 Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
+
+Rebased by Julian Andres Klode <juliank@ubuntu.com> and updated to use
+the new getter API.
+
+Further modified by Andrej Shadura to not error out when not in AP mode.
+
+Signed-off-by: Andrej Shadura <andrewsh@debian.org>
 
 ---
  wpa_supplicant/dbus/dbus_new.c          |  247 ++++++++++++++++++++++++--
@@ -24,7 +31,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  
  #ifdef CONFIG_AP /* until needed by something else */
  
-@@ -878,15 +879,19 @@ void wpas_dbus_signal_eap_status(struct
+@@ -878,15 +879,19 @@ void wpas_dbus_signal_eap_status(struct wpa_supplicant *wpa_s,
   * Notify listeners about event related with station
   */
  static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
@@ -49,13 +56,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  
  	iface = wpa_s->global->dbus;
  
-@@ -895,19 +900,33 @@ static void wpas_dbus_signal_sta(struct
- 		return;
- 
- 	msg = dbus_message_new_signal(wpa_s->dbus_new_path,
--				      WPAS_DBUS_NEW_IFACE_INTERFACE, sig_name);
-+				      WPAS_DBUS_NEW_IFACE_INTERFACE,
-+				      sig_name);
+@@ -899,15 +904,28 @@ static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
  	if (msg == NULL)
  		return;
  
@@ -91,7 +92,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  }
  
  
-@@ -921,7 +940,7 @@ static void wpas_dbus_signal_sta(struct
+@@ -921,7 +939,7 @@ static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
  void wpas_dbus_signal_sta_authorized(struct wpa_supplicant *wpa_s,
  				     const u8 *sta)
  {
@@ -100,7 +101,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  }
  
  
-@@ -935,7 +954,7 @@ void wpas_dbus_signal_sta_authorized(str
+@@ -935,7 +953,7 @@ void wpas_dbus_signal_sta_authorized(struct wpa_supplicant *wpa_s,
  void wpas_dbus_signal_sta_deauthorized(struct wpa_supplicant *wpa_s,
  				       const u8 *sta)
  {
@@ -109,7 +110,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  }
  
  
-@@ -1992,6 +2011,9 @@ void wpas_dbus_signal_prop_changed(struc
+@@ -1992,6 +2010,9 @@ void wpas_dbus_signal_prop_changed(struct wpa_supplicant *wpa_s,
  	case WPAS_DBUS_PROP_BSSS:
  		prop = "BSSs";
  		break;
@@ -119,10 +120,11 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  	case WPAS_DBUS_PROP_CURRENT_AUTH_MODE:
  		prop = "CurrentAuthMode";
  		break;
-@@ -2085,6 +2107,39 @@ void wpas_dbus_bss_signal_prop_changed(s
+@@ -2084,6 +2105,39 @@ void wpas_dbus_bss_signal_prop_changed(struct wpa_supplicant *wpa_s,
+ }
  
  
- /**
++/**
 + * wpas_dbus_sta_signal_prop_changed - Signals change of STA property
 + * @wpa_s: %wpa_supplicant network interface data
 + * @property: indicates which property has changed
@@ -155,11 +157,10 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
 +	wpa_dbus_mark_property_changed(wpa_s->global->dbus, path,
 +				       WPAS_DBUS_NEW_IFACE_STA, prop);
 +}
-+/**
+ /**
   * wpas_dbus_signal_debug_level_changed - Signals change of debug param
   * @global: wpa_global structure
-  *
-@@ -2708,6 +2763,164 @@ err:
+@@ -2698,6 +2752,164 @@ err:
  }
  
  
@@ -324,7 +325,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  static const struct wpa_dbus_method_desc wpas_dbus_interface_methods[] = {
  	{ "Scan", WPAS_DBUS_NEW_IFACE_INTERFACE,
  	  (WPADBusMethodHandler) wpas_dbus_handler_scan,
-@@ -3277,6 +3490,10 @@ static const struct wpa_dbus_property_de
+@@ -3267,6 +3479,10 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
  	  NULL,
  	  NULL
  	},
@@ -348,7 +349,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  #include "dbus_new_helpers.h"
  #include "dbus_new.h"
  #include "dbus_new_handlers.h"
-@@ -3663,6 +3667,308 @@ dbus_bool_t wpas_dbus_setter_iface_globa
+@@ -3571,6 +3575,315 @@ dbus_bool_t wpas_dbus_setter_iface_global(
  }
  
  
@@ -367,24 +368,31 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
 +{
 +	struct wpa_supplicant *wpa_s = user_data;
 +	struct hostapd_data *hapd;
-+	struct sta_info *sta;
++	struct sta_info *sta = NULL;
 +	char **paths = NULL;
-+	unsigned int i = 0;
++	unsigned int i = 0, num = 0;
 +	dbus_bool_t success = FALSE;
 +
-+	if (wpa_s->ap_iface == NULL)
-+		goto out;
++	if (!wpa_s->dbus_new_path) {
++		dbus_set_error(error, DBUS_ERROR_FAILED,
++			       "%s: no D-Bus interface", __func__);
++		return FALSE;
++	}
 +
-+	hapd = wpa_s->ap_iface->bss[0];
++	if (wpa_s->ap_iface) {
++		hapd = wpa_s->ap_iface->bss[0];
++		sta = hapd->sta_list;
++		num = hapd->num_sta;
++	}
 +
-+	paths = os_calloc(hapd->num_sta, sizeof(char *));
++	paths = os_calloc(num, sizeof(char *));
 +	if (!paths) {
 +		dbus_set_error_const(error, DBUS_ERROR_NO_MEMORY, "no memory");
 +		return FALSE;
 +	}
 +
 +	/* Loop through scan results and append each result's object path */
-+	for (sta = hapd->sta_list; sta; sta = sta->next) {
++	for (; sta; sta = sta->next) {
 +		paths[i] = os_zalloc(WPAS_DBUS_OBJECT_PATH_MAX);
 +		if (paths[i] == NULL) {
 +			dbus_set_error_const(error, DBUS_ERROR_NO_MEMORY,
@@ -399,7 +407,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
 +
 +	success = wpas_dbus_simple_array_property_getter(iter,
 +							 DBUS_TYPE_OBJECT_PATH,
-+							 paths, hapd->num_sta,
++							 paths, num,
 +							 error);
 +
 +out:
@@ -671,7 +679,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  dbus_bool_t wpas_dbus_simple_property_getter(DBusMessageIter *iter,
  					     const int type,
  					     const void *val,
-@@ -162,6 +167,15 @@ DECLARE_ACCESSOR(wpas_dbus_getter_networ
+@@ -159,6 +164,15 @@ DECLARE_ACCESSOR(wpas_dbus_getter_networks);
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_engine_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_module_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_blobs);
@@ -726,7 +734,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  #define WPAS_DBUS_NEW_IFACE_P2PDEVICE	\
  		WPAS_DBUS_NEW_IFACE_INTERFACE ".P2PDevice"
  
-@@ -161,6 +170,10 @@ int wpas_dbus_unregister_bss(struct wpa_
+@@ -161,6 +170,10 @@ int wpas_dbus_unregister_bss(struct wpa_supplicant *wpa_s,
  			     u8 bssid[ETH_ALEN], unsigned int id);
  int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  			   u8 bssid[ETH_ALEN], unsigned int id);
@@ -737,11 +745,10 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  				 const char *name);
  void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
-@@ -332,6 +345,18 @@ static inline int wpas_dbus_register_bss
- {
+@@ -333,6 +346,18 @@ static inline int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  	return 0;
  }
-+
+ 
 +static inline int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s,
 +					   const u8 *sta)
 +{
@@ -753,12 +760,14 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
 +{
 +	return 0;
 +}
- 
++
  static inline void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  					       const char *name)
+ {
+
 --- a/wpa_supplicant/notify.c
 +++ b/wpa_supplicant/notify.c
-@@ -720,6 +720,9 @@ static void wpas_notify_ap_sta_authorize
+@@ -720,6 +720,9 @@ static void wpas_notify_ap_sta_authorized(struct wpa_supplicant *wpa_s,
  		wpas_dbus_signal_p2p_peer_joined(wpa_s, p2p_dev_addr);
  #endif /* CONFIG_P2P */
  
@@ -768,7 +777,7 @@ Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
  	/* Notify listeners a new station has been authorized */
  	wpas_dbus_signal_sta_authorized(wpa_s, sta);
  }
-@@ -740,6 +743,9 @@ static void wpas_notify_ap_sta_deauthori
+@@ -740,6 +743,9 @@ static void wpas_notify_ap_sta_deauthorized(struct wpa_supplicant *wpa_s,
  
  	/* Notify listeners a station has been deauthorized */
  	wpas_dbus_signal_sta_deauthorized(wpa_s, sta);

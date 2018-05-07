@@ -1,3 +1,12 @@
+wpa (2:2.7~git20180504+60a5737-1) experimental; urgency=medium
+
+  * New upstream snapshot 2.7~git20180504+60a5737.
+  * Synchronise configs from the upstream.
+  * Drop patches previously cherry-picked from the upstream.
+  * Support ACS (Closes: #885957).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 07 May 2018 19:57:47 +0200
+
 wpa (2:2.6-16) unstable; urgency=medium
 
   * Fix README.Debian: MyNetWork, not NETBEER (Closes: #791333).

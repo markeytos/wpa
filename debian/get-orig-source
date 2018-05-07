@@ -17,11 +17,11 @@ fi
 
 DEB_VER="$(echo ${VERSION} | sed 's,\-[0-9a-z\~\.]*,,')"
 UP_VER="$(echo ${DEB_VER} | sed 's,\~,\-,g')"
-SNAPDATE="$(echo ${DEB_VER} | sed 's/.*\+git\([0-9]*\).*/\1/')"
+SNAPDATE="$(echo ${DEB_VER} | sed 's/.*[+~]git\([0-9]*\).*/\1/')"
 
 case "${UP_VER}" in
-*+git[0-9\.]*+*)
-	UP_VER_TAG="$(echo $UP_VER | sed 's,.*+git[0-9\.]*+,,')"
+*[+-]git[0-9\.]*+*)
+	UP_VER_TAG="$(echo $UP_VER | sed 's,.*[+-]git[0-9\.]*+,,')"
 	;;
 *)
 	UP_VER_TAG="hostap_$(echo $UP_VER | sed -e 's,\.,_,g' -e 's,\-,_,g')"

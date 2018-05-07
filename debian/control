@@ -1,7 +1,7 @@
 Source: wpa
 Maintainer: Debian wpasupplicant Maintainers <wpa@packages.debian.org>
 Uploaders:
- Andrew Shadura <andrewsh@debian.org>
+ Andrej Shadura <andrewsh@debian.org>
 Section: net
 Priority: optional
 Build-Depends: debhelper (>> 10),

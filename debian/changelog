@@ -1,3 +1,15 @@
+wpa (2:2.6-16) unstable; urgency=medium
+
+  * Fix README.Debian: MyNetWork, not NETBEER (Closes: #791333).
+  * Restart hostapd on a failure after 2s.
+  * Add a template for per-interface hostapd services (Closes: #889508).
+  * Merge a patch from Ubuntu:
+    - debian/patches/dbus-available-sta.patch: Make the list of connected
+      stations available on DBus for hotspot mode; along with some of the
+      station properties, such as rx/tx packets, bytes, capabilities, etc.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 07 May 2018 15:32:41 +0200
+
 wpa (2:2.6-15) unstable; urgency=medium
 
   * Update debian/control:

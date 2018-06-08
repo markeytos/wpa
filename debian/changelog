@@ -1,3 +1,11 @@
+wpa (2:2.7~git20180606+b915f2c-1) experimental; urgency=medium
+
+  * New upstream snapshot 2.7~git20180606+b915f2c.
+  * Remove dbus changes to StaAuthorized/StaDeauthorized after discussions
+    with the upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 08 Jun 2018 14:48:51 +0200
+
 wpa (2:2.7~git20180504+60a5737-1) experimental; urgency=medium
 
   * New upstream snapshot 2.7~git20180504+60a5737.

@@ -160,6 +160,8 @@ struct hostapd_eap_user {
 	} methods[EAP_MAX_METHODS];
 	u8 *password;
 	size_t password_len;
+	u8 *salt;
+	size_t salt_len; /* non-zero when password is salted */
 	int phase2;
 	int force_version;
 	unsigned int wildcard_prefix:1;
@@ -237,6 +239,12 @@ struct fils_realm {
 	char realm[];
 };
 
+struct sae_password_entry {
+	struct sae_password_entry *next;
+	char *password;
+	char *identifier;
+	u8 peer_addr[ETH_ALEN];
+};
 
 /**
  * struct hostapd_bss_config - Per-BSS configuration
@@ -604,7 +612,7 @@ struct hostapd_bss_config {
 	unsigned int sae_sync;
 	int sae_require_mfp;
 	int *sae_groups;
-	char *sae_password;
+	struct sae_password_entry *sae_passwords;
 
 	char *wowlan_triggers; /* Wake-on-WLAN triggers */
 
@@ -818,6 +826,11 @@ struct hostapd_config {
 	struct he_phy_capabilities_info he_phy_capab;
 	struct he_operation he_op;
 #endif /* CONFIG_IEEE80211AX */
+
+	/* VHT enable/disable config from CHAN_SWITCH */
+#define CH_SWITCH_VHT_ENABLED BIT(0)
+#define CH_SWITCH_VHT_DISABLED BIT(1)
+	unsigned int ch_switch_vht_config;
 };
 
 

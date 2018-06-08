@@ -1,6 +1,6 @@
 /*
  * hostapd / Configuration file parser
- * Copyright (c) 2003-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -233,6 +233,62 @@ static int hostapd_config_read_maclist(const char *fname,
 
 
 #ifdef EAP_SERVER
+
+static int hostapd_config_eap_user_salted(struct hostapd_eap_user *user,
+					  const char *hash, size_t len,
+					  char **pos, int line,
+					  const char *fname)
+{
+	char *pos2 = *pos;
+
+	while (*pos2 != '\0' && *pos2 != ' ' && *pos2 != '\t' && *pos2 != '#')
+		pos2++;
+
+	if (pos2 - *pos < (int) (2 * (len + 1))) { /* at least 1 byte of salt */
+		wpa_printf(MSG_ERROR,
+			   "Invalid salted %s hash on line %d in '%s'",
+			   hash, line, fname);
+		return -1;
+	}
+
+	user->password = os_malloc(len);
+	if (!user->password) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to allocate memory for salted %s hash",
+			   hash);
+		return -1;
+	}
+
+	if (hexstr2bin(*pos, user->password, len) < 0) {
+		wpa_printf(MSG_ERROR,
+			   "Invalid salted password on line %d in '%s'",
+			   line, fname);
+		return -1;
+	}
+	user->password_len = len;
+	*pos += 2 * len;
+
+	user->salt_len = (pos2 - *pos) / 2;
+	user->salt = os_malloc(user->salt_len);
+	if (!user->salt) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to allocate memory for salted %s hash",
+			   hash);
+		return -1;
+	}
+
+	if (hexstr2bin(*pos, user->salt, user->salt_len) < 0) {
+		wpa_printf(MSG_ERROR,
+			   "Invalid salt for password on line %d in '%s'",
+			   line, fname);
+		return -1;
+	}
+
+	*pos = pos2;
+	return 0;
+}
+
+
 static int hostapd_config_read_eap_user(const char *fname,
 					struct hostapd_bss_config *conf)
 {
@@ -484,6 +540,24 @@ static int hostapd_config_read_eap_user(const char *fname,
 			user->password_len = 16;
 			user->password_hash = 1;
 			pos = pos2;
+		} else if (os_strncmp(pos, "ssha1:", 6) == 0) {
+			pos += 6;
+			if (hostapd_config_eap_user_salted(user, "sha1", 20,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
+		} else if (os_strncmp(pos, "ssha256:", 8) == 0) {
+			pos += 8;
+			if (hostapd_config_eap_user_salted(user, "sha256", 32,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
+		} else if (os_strncmp(pos, "ssha512:", 8) == 0) {
+			pos += 8;
+			if (hostapd_config_eap_user_salted(user, "sha512", 64,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
 		} else {
 			pos2 = pos;
 			while (*pos2 != '\0' && *pos2 != ' ' &&
@@ -543,6 +617,7 @@ static int hostapd_config_read_eap_user(const char *fname,
 
 	return ret;
 }
+
 #endif /* EAP_SERVER */
 
 
@@ -697,6 +772,10 @@ static int hostapd_config_parse_key_mgmt(int line, const char *value)
 			val |= WPA_KEY_MGMT_FT_PSK;
 		else if (os_strcmp(start, "FT-EAP") == 0)
 			val |= WPA_KEY_MGMT_FT_IEEE8021X;
+#ifdef CONFIG_SHA384
+		else if (os_strcmp(start, "FT-EAP-SHA384") == 0)
+			val |= WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
+#endif /* CONFIG_SHA384 */
 #endif /* CONFIG_IEEE80211R_AP */
 #ifdef CONFIG_IEEE80211W
 		else if (os_strcmp(start, "WPA-PSK-SHA256") == 0)
@@ -738,6 +817,10 @@ static int hostapd_config_parse_key_mgmt(int line, const char *value)
 		else if (os_strcmp(start, "DPP") == 0)
 			val |= WPA_KEY_MGMT_DPP;
 #endif /* CONFIG_DPP */
+#ifdef CONFIG_HS20
+		else if (os_strcmp(start, "OSEN") == 0)
+			val |= WPA_KEY_MGMT_OSEN;
+#endif /* CONFIG_HS20 */
 		else {
 			wpa_printf(MSG_ERROR, "Line %d: invalid key_mgmt '%s'",
 				   line, start);
@@ -2167,6 +2250,61 @@ static unsigned int parse_tls_flags(const char *val)
 	return flags;
 }
 #endif /* EAP_SERVER */
+
+
+#ifdef CONFIG_SAE
+static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
+{
+	struct sae_password_entry *pw;
+	const char *pos = val, *pos2, *end = NULL;
+
+	pw = os_zalloc(sizeof(*pw));
+	if (!pw)
+		return -1;
+	os_memset(pw->peer_addr, 0xff, ETH_ALEN); /* default to wildcard */
+
+	pos2 = os_strstr(pos, "|mac=");
+	if (pos2) {
+		end = pos2;
+		pos2 += 5;
+		if (hwaddr_aton(pos2, pw->peer_addr) < 0)
+			goto fail;
+		pos = pos2 + ETH_ALEN * 3 - 1;
+	}
+
+	pos2 = os_strstr(pos, "|id=");
+	if (pos2) {
+		if (!end)
+			end = pos2;
+		pos2 += 4;
+		pw->identifier = os_strdup(pos2);
+		if (!pw->identifier)
+			goto fail;
+	}
+
+	if (!end) {
+		pw->password = os_strdup(val);
+		if (!pw->password)
+			goto fail;
+	} else {
+		pw->password = os_malloc(end - val + 1);
+		if (!pw->password)
+			goto fail;
+		os_memcpy(pw->password, val, end - val);
+		pw->password[end - val] = '\0';
+	}
+
+	pw->next = bss->sae_passwords;
+	bss->sae_passwords = pw;
+
+	return 0;
+fail:
+	str_clear_free(pw->password);
+	os_free(pw->identifier);
+	os_free(pw);
+	return -1;
+}
+#endif /* CONFIG_SAE */
 
 
 static int hostapd_config_fill(struct hostapd_config *conf,
@@ -3727,9 +3865,14 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "sae_commit_override") == 0) {
 		wpabuf_free(bss->sae_commit_override);
 		bss->sae_commit_override = wpabuf_parse_bin(pos);
+#ifdef CONFIG_SAE
 	} else if (os_strcmp(buf, "sae_password") == 0) {
-		os_free(bss->sae_password);
-		bss->sae_password = os_strdup(pos);
+		if (parse_sae_password(bss, pos) < 0) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid sae_password",
+				   line);
+			return 1;
+		}
+#endif /* CONFIG_SAE */
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strcmp(buf, "vendor_elements") == 0) {
 		if (parse_wpabuf_hex(line, buf, &bss->vendor_elements, pos))

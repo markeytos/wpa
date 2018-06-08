@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - WPA state machine and EAPOL-Key processing
- * Copyright (c) 2003-2017, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
  * Copyright(c) 2015 Intel Deutschland GmbH
  *
  * This software may be distributed under the terms of the BSD license.
@@ -323,8 +323,15 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 			u8 buf[2 * PMK_LEN];
 			if (eapol_sm_get_key(sm->eapol, buf, 2 * PMK_LEN) == 0)
 			{
-				os_memcpy(sm->xxkey, buf + PMK_LEN, PMK_LEN);
-				sm->xxkey_len = PMK_LEN;
+				if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
+					os_memcpy(sm->xxkey, buf,
+						  SHA384_MAC_LEN);
+					sm->xxkey_len = SHA384_MAC_LEN;
+				} else {
+					os_memcpy(sm->xxkey, buf + PMK_LEN,
+						  PMK_LEN);
+					sm->xxkey_len = PMK_LEN;
+				}
 				os_memset(buf, 0, sizeof(buf));
 			}
 #endif /* CONFIG_IEEE80211R */
@@ -3151,8 +3158,11 @@ void wpa_sm_drop_sa(struct wpa_sm *sm)
 #endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_IEEE80211R
 	os_memset(sm->xxkey, 0, sizeof(sm->xxkey));
+	sm->xxkey_len = 0;
 	os_memset(sm->pmk_r0, 0, sizeof(sm->pmk_r0));
+	sm->pmk_r0_len = 0;
 	os_memset(sm->pmk_r1, 0, sizeof(sm->pmk_r1));
+	sm->pmk_r1_len = 0;
 #endif /* CONFIG_IEEE80211R */
 }
 
@@ -3537,7 +3547,8 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 			goto fail;
 		}
 
-		if (wpa_ft_parse_ies(pos, end - pos, &parse) < 0) {
+		if (wpa_ft_parse_ies(pos, end - pos, &parse,
+				     wpa_key_mgmt_sha384(sm->key_mgmt)) < 0) {
 			wpa_printf(MSG_DEBUG, "FILS+FT: Failed to parse IEs");
 			goto fail;
 		}
@@ -3737,6 +3748,7 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
 	u8 *pos;
+	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
 
 	/* RSNIE[PMKR0Name/PMKR1Name] */
 	rsnie = wpabuf_put(buf, sizeof(*rsnie));
@@ -3804,18 +3816,20 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 	if (wpa_derive_pmk_r0(sm->fils_ft, sm->fils_ft_len, sm->ssid,
 			      sm->ssid_len, sm->mobility_domain,
 			      sm->r0kh_id, sm->r0kh_id_len, sm->own_addr,
-			      sm->pmk_r0, sm->pmk_r0_name) < 0) {
+			      sm->pmk_r0, sm->pmk_r0_name, use_sha384) < 0) {
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMK-R0");
 		return -1;
 	}
-	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0", sm->pmk_r0, PMK_LEN);
+	sm->pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
+	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0",
+			sm->pmk_r0, sm->pmk_r0_len);
 	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
 		    sm->pmk_r0_name, WPA_PMK_NAME_LEN);
 	wpa_printf(MSG_DEBUG, "FILS+FT: R1KH-ID: " MACSTR,
 		   MAC2STR(sm->r1kh_id));
 	pos = wpabuf_put(buf, WPA_PMK_NAME_LEN);
 	if (wpa_derive_pmk_r1_name(sm->pmk_r0_name, sm->r1kh_id, sm->own_addr,
-				   pos) < 0) {
+				   pos, use_sha384) < 0) {
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMKR1Name");
 		return -1;
 	}

@@ -169,7 +169,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		return 0;
 	}
 
-	wpa_s->ifmsh = ifmsh = os_zalloc(sizeof(*wpa_s->ifmsh));
+	wpa_s->ifmsh = ifmsh = hostapd_alloc_iface();
 	if (!ifmsh)
 		return -ENOMEM;
 
@@ -184,6 +184,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	if (!bss)
 		goto out_free;
 
+	ifmsh->bss[0]->msg_ctx = wpa_s;
 	os_memcpy(bss->own_addr, wpa_s->own_addr, ETH_ALEN);
 	bss->driver = wpa_s->driver;
 	bss->drv_priv = wpa_s->drv_priv;

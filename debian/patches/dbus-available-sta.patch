@@ -32,86 +32,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  
  #ifdef CONFIG_AP /* until needed by something else */
  
-@@ -1016,15 +1017,19 @@ void wpas_dbus_signal_eap_status(struct wpa_supplicant *wpa_s,
-  * Notify listeners about event related with station
-  */
- static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
--				 const u8 *sta, const char *sig_name)
-+				 const u8 *sta, const char *sig_name,
-+                                 int properties)
- {
- 	struct wpas_dbus_priv *iface;
- 	DBusMessage *msg;
--	char sta_mac[WPAS_DBUS_OBJECT_PATH_MAX];
--	char *dev_mac;
-+	DBusMessageIter iter;
-+	char sta_obj_path[WPAS_DBUS_OBJECT_PATH_MAX];
-+	char *path;
- 
--	os_snprintf(sta_mac, WPAS_DBUS_OBJECT_PATH_MAX, MACSTR, MAC2STR(sta));
--	dev_mac = sta_mac;
-+	os_snprintf(sta_obj_path, WPAS_DBUS_OBJECT_PATH_MAX,
-+		    "%s/" WPAS_DBUS_NEW_STAS_PART "/" COMPACT_MACSTR,
-+		    wpa_s->dbus_new_path, MAC2STR(sta));
-+	path = sta_obj_path;
- 
- 	iface = wpa_s->global->dbus;
- 
-@@ -1037,15 +1042,28 @@ static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
- 	if (msg == NULL)
- 		return;
- 
--	if (dbus_message_append_args(msg, DBUS_TYPE_STRING, &dev_mac,
--				     DBUS_TYPE_INVALID))
--		dbus_connection_send(iface->con, msg, NULL);
--	else
--		wpa_printf(MSG_ERROR, "dbus: Failed to construct signal");
-+	dbus_message_iter_init_append(msg, &iter);
-+	if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH,
-+					    &path))
-+		goto err;
-+
-+	if (properties) {
-+		if (!wpa_dbus_get_object_properties(iface, path,
-+						    WPAS_DBUS_NEW_IFACE_STA,
-+						    &iter))
-+			goto err;
-+	}
-+
-+	wpa_printf(MSG_DEBUG, "dbus: Station MAC address '" MACSTR "' '%s'",
-+		   MAC2STR(sta), sig_name);
-+
-+	dbus_connection_send(iface->con, msg, NULL);
- 	dbus_message_unref(msg);
-+	return;
- 
--	wpa_printf(MSG_DEBUG, "dbus: Station MAC address '%s' '%s'",
--		   sta_mac, sig_name);
-+err:
-+	wpa_printf(MSG_ERROR, "dbus: Failed to construct signal");
-+	dbus_message_unref(msg);
- }
- 
- 
-@@ -1059,7 +1077,7 @@ static void wpas_dbus_signal_sta(struct wpa_supplicant *wpa_s,
- void wpas_dbus_signal_sta_authorized(struct wpa_supplicant *wpa_s,
- 				     const u8 *sta)
- {
--	wpas_dbus_signal_sta(wpa_s, sta, "StaAuthorized");
-+	wpas_dbus_signal_sta(wpa_s, sta, "StaAuthorized", TRUE);
- }
- 
- 
-@@ -1073,7 +1091,7 @@ void wpas_dbus_signal_sta_authorized(struct wpa_supplicant *wpa_s,
- void wpas_dbus_signal_sta_deauthorized(struct wpa_supplicant *wpa_s,
- 				       const u8 *sta)
- {
--	wpas_dbus_signal_sta(wpa_s, sta, "StaDeauthorized");
-+	wpas_dbus_signal_sta(wpa_s, sta, "StaDeauthorized", FALSE);
- }
- 
- 
-@@ -2151,6 +2169,9 @@ void wpas_dbus_signal_prop_changed(struct wpa_supplicant *wpa_s,
+@@ -2151,6 +2152,9 @@
  	case WPAS_DBUS_PROP_BSSS:
  		prop = "BSSs";
  		break;
@@ -121,11 +42,10 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  	case WPAS_DBUS_PROP_CURRENT_AUTH_MODE:
  		prop = "CurrentAuthMode";
  		break;
-@@ -2243,6 +2264,39 @@ void wpas_dbus_bss_signal_prop_changed(struct wpa_supplicant *wpa_s,
- }
+@@ -2244,6 +2248,39 @@
  
  
-+/**
+ /**
 + * wpas_dbus_sta_signal_prop_changed - Signals change of STA property
 + * @wpa_s: %wpa_supplicant network interface data
 + * @property: indicates which property has changed
@@ -158,10 +78,11 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
 +	wpa_dbus_mark_property_changed(wpa_s->global->dbus, path,
 +				       WPAS_DBUS_NEW_IFACE_STA, prop);
 +}
- /**
++/**
   * wpas_dbus_signal_debug_level_changed - Signals change of debug param
   * @global: wpa_global structure
-@@ -2857,6 +2911,164 @@ err:
+  *
+@@ -2857,6 +2894,164 @@
  }
  
  
@@ -326,7 +247,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  static const struct wpa_dbus_method_desc wpas_dbus_interface_methods[] = {
  	{ "Scan", WPAS_DBUS_NEW_IFACE_INTERFACE,
  	  (WPADBusMethodHandler) wpas_dbus_handler_scan,
-@@ -3501,6 +3713,11 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
+@@ -3501,6 +3696,11 @@
  	  NULL
  	},
  #endif /* CONFIG_MESH */
@@ -351,7 +272,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  #include "dbus_new_helpers.h"
  #include "dbus_new.h"
  #include "dbus_new_handlers.h"
-@@ -3854,6 +3858,315 @@ dbus_bool_t wpas_dbus_setter_iface_global(
+@@ -3854,6 +3858,315 @@
  }
  
  
@@ -669,7 +590,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  {
 --- a/wpa_supplicant/dbus/dbus_new_handlers.h
 +++ b/wpa_supplicant/dbus/dbus_new_handlers.h
-@@ -22,6 +22,11 @@ struct bss_handler_args {
+@@ -22,6 +22,11 @@
  	unsigned int id;
  };
  
@@ -681,7 +602,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  dbus_bool_t wpas_dbus_simple_property_getter(DBusMessageIter *iter,
  					     const int type,
  					     const void *val,
-@@ -168,6 +173,15 @@ DECLARE_ACCESSOR(wpas_dbus_getter_networks);
+@@ -168,6 +173,15 @@
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_engine_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_module_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_blobs);
@@ -707,7 +628,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  
  struct wpa_global;
  struct wpa_supplicant;
-@@ -29,6 +30,7 @@ enum wpas_dbus_prop {
+@@ -29,6 +30,7 @@
  	WPAS_DBUS_PROP_CURRENT_NETWORK,
  	WPAS_DBUS_PROP_CURRENT_AUTH_MODE,
  	WPAS_DBUS_PROP_BSSS,
@@ -715,7 +636,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  	WPAS_DBUS_PROP_DISCONNECT_REASON,
  	WPAS_DBUS_PROP_ASSOC_STATUS_CODE,
  };
-@@ -46,6 +48,10 @@ enum wpas_dbus_bss_prop {
+@@ -46,6 +48,10 @@
  	WPAS_DBUS_BSS_PROP_AGE,
  };
  
@@ -726,7 +647,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  #define WPAS_DBUS_OBJECT_PATH_MAX 150
  
  #define WPAS_DBUS_NEW_SERVICE		"fi.w1.wpa_supplicant1"
-@@ -62,6 +68,9 @@ enum wpas_dbus_bss_prop {
+@@ -62,6 +68,9 @@
  #define WPAS_DBUS_NEW_BSSIDS_PART "BSSs"
  #define WPAS_DBUS_NEW_IFACE_BSS	WPAS_DBUS_NEW_INTERFACE ".BSS"
  
@@ -736,7 +657,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  #define WPAS_DBUS_NEW_IFACE_P2PDEVICE	\
  		WPAS_DBUS_NEW_IFACE_INTERFACE ".P2PDevice"
  
-@@ -164,6 +173,10 @@ int wpas_dbus_unregister_bss(struct wpa_supplicant *wpa_s,
+@@ -164,6 +173,10 @@
  			     u8 bssid[ETH_ALEN], unsigned int id);
  int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  			   u8 bssid[ETH_ALEN], unsigned int id);
@@ -747,10 +668,11 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  				 const char *name);
  void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
-@@ -346,6 +359,18 @@ static inline int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
+@@ -345,6 +358,18 @@
+ {
  	return 0;
  }
- 
++
 +static inline int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s,
 +					   const u8 *sta)
 +{
@@ -762,14 +684,12 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
 +{
 +	return 0;
 +}
-+
+ 
  static inline void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  					       const char *name)
- {
-
 --- a/wpa_supplicant/notify.c
 +++ b/wpa_supplicant/notify.c
-@@ -720,6 +720,9 @@ static void wpas_notify_ap_sta_authorized(struct wpa_supplicant *wpa_s,
+@@ -720,6 +720,9 @@
  		wpas_dbus_signal_p2p_peer_joined(wpa_s, p2p_dev_addr);
  #endif /* CONFIG_P2P */
  
@@ -779,7 +699,7 @@ Signed-off-by: Andrej Shadura <andrewsh@debian.org>
  	/* Notify listeners a new station has been authorized */
  	wpas_dbus_signal_sta_authorized(wpa_s, sta);
  }
-@@ -740,6 +743,9 @@ static void wpas_notify_ap_sta_deauthorized(struct wpa_supplicant *wpa_s,
+@@ -740,6 +743,9 @@
  
  	/* Notify listeners a station has been deauthorized */
  	wpas_dbus_signal_sta_deauthorized(wpa_s, sta);

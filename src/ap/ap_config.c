@@ -415,6 +415,7 @@ void hostapd_config_free_eap_user(struct hostapd_eap_user *user)
 	hostapd_config_free_radius_attr(user->accept_attr);
 	os_free(user->identity);
 	bin_clear_free(user->password, user->password_len);
+	bin_clear_free(user->salt, user->salt_len);
 	os_free(user);
 }
 
@@ -478,6 +479,22 @@ static void hostapd_config_free_fils_realms(struct hostapd_bss_config *conf)
 		os_free(realm);
 	}
 #endif /* CONFIG_FILS */
+}
+
+
+static void hostapd_config_free_sae_passwords(struct hostapd_bss_config *conf)
+{
+	struct sae_password_entry *pw, *tmp;
+
+	pw = conf->sae_passwords;
+	conf->sae_passwords = NULL;
+	while (pw) {
+		tmp = pw;
+		pw = pw->next;
+		str_clear_free(tmp->password);
+		os_free(tmp->identifier);
+		os_free(tmp);
+	}
 }
 
 
@@ -658,7 +675,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	wpabuf_free(conf->dpp_csign);
 #endif /* CONFIG_DPP */
 
-	os_free(conf->sae_password);
+	hostapd_config_free_sae_passwords(conf);
 
 	os_free(conf);
 }

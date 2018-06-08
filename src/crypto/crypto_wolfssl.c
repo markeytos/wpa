@@ -783,6 +783,9 @@ int crypto_dh_init(u8 generator, const u8 *prime, size_t prime_len, u8 *privkey,
 	DhKey *dh = NULL;
 	word32 priv_sz, pub_sz;
 
+	if (TEST_FAIL())
+		return -1;
+
 	dh = os_malloc(sizeof(DhKey));
 	if (!dh)
 		return -1;
@@ -1178,7 +1181,7 @@ int crypto_bignum_rshift(const struct crypto_bignum *a, int n,
 {
 	if (mp_copy((mp_int *) a, (mp_int *) r) != MP_OKAY)
 		return -1;
-	mp_rshd((mp_int *) r, n);
+	mp_rshb((mp_int *) r, n);
 	return 0;
 }
 
@@ -1762,7 +1765,7 @@ struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 		goto fail;
 
 	ret = wc_ecc_import_point_der(wpabuf_mhead(pubkey), 1 + 2 * key_len,
-				      ecdh->ec->key.dp->id, point);
+				      ecdh->ec->key.idx, point);
 	if (ret != MP_OKAY)
 		goto fail;
 

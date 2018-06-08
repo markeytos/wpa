@@ -1,6 +1,6 @@
 /*
  * hostapd / UNIX domain socket -based control interface
- * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1031,6 +1031,14 @@ static int hostapd_ctrl_iface_get_key_mgmt(struct hostapd_data *hapd,
 			return pos - buf;
 		pos += ret;
 	}
+#ifdef CONFIG_SHA384
+	if (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_FT_IEEE8021X_SHA384) {
+		ret = os_snprintf(pos, end - pos, "FT-EAP-SHA384 ");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_SHA384 */
 #ifdef CONFIG_SAE
 	if (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_FT_SAE) {
 		ret = os_snprintf(pos, end - pos, "FT-SAE ");
@@ -2222,6 +2230,11 @@ static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 		return ret;
 
 	for (i = 0; i < iface->num_bss; i++) {
+
+		/* Save CHAN_SWITCH VHT config */
+		hostapd_chan_switch_vht_config(
+			iface->bss[i], settings.freq_params.vht_enabled);
+
 		ret = hostapd_switch_channel(iface->bss[i], &settings);
 		if (ret) {
 			/* FIX: What do we do if CSA fails in the middle of

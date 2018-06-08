@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant / Configuration parser and common functions
- * Copyright (c) 2003-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -735,6 +735,10 @@ static int wpa_config_parse_key_mgmt(const struct parse_data *data,
 			val |= WPA_KEY_MGMT_FT_PSK;
 		else if (os_strcmp(start, "FT-EAP") == 0)
 			val |= WPA_KEY_MGMT_FT_IEEE8021X;
+#ifdef CONFIG_SHA384
+		else if (os_strcmp(start, "FT-EAP-SHA384") == 0)
+			val |= WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
+#endif /* CONFIG_SHA384 */
 #endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_IEEE80211W
 		else if (os_strcmp(start, "WPA-PSK-SHA256") == 0)
@@ -892,6 +896,18 @@ static char * wpa_config_write_key_mgmt(const struct parse_data *data,
 		}
 		pos += ret;
 	}
+
+#ifdef CONFIG_SHA384
+	if (ssid->key_mgmt & WPA_KEY_MGMT_FT_IEEE8021X_SHA384) {
+		ret = os_snprintf(pos, end - pos, "%sFT-EAP-SHA384",
+				  pos == buf ? "" : " ");
+		if (os_snprintf_error(end - pos, ret)) {
+			end[-1] = '\0';
+			return buf;
+		}
+		pos += ret;
+	}
+#endif /* CONFIG_SHA384 */
 #endif /* CONFIG_IEEE80211R */
 
 #ifdef CONFIG_IEEE80211W
@@ -2134,6 +2150,7 @@ static const struct parse_data ssid_fields[] = {
 	{ FUNC_KEY(psk) },
 	{ INT(mem_only_psk) },
 	{ STR_KEY(sae_password) },
+	{ STR(sae_password_id) },
 	{ FUNC(proto) },
 	{ FUNC(key_mgmt) },
 	{ INT(bg_scan_period) },
@@ -2474,6 +2491,7 @@ void wpa_config_free_ssid(struct wpa_ssid *ssid)
 	str_clear_free(ssid->passphrase);
 	os_free(ssid->ext_psk);
 	str_clear_free(ssid->sae_password);
+	os_free(ssid->sae_password_id);
 #ifdef IEEE8021X_EAPOL
 	eap_peer_config_free(&ssid->eap);
 #endif /* IEEE8021X_EAPOL */

@@ -115,6 +115,14 @@ struct radius_client {
 	int shared_secret_len;
 	struct radius_session *sessions;
 	struct radius_server_counters counters;
+
+	u8 next_dac_identifier;
+	struct radius_msg *pending_dac_coa_req;
+	u8 pending_dac_coa_id;
+	u8 pending_dac_coa_addr[ETH_ALEN];
+	struct radius_msg *pending_dac_disconnect_req;
+	u8 pending_dac_disconnect_id;
+	u8 pending_dac_disconnect_addr[ETH_ALEN];
 };
 
 /**
@@ -349,6 +357,8 @@ struct radius_server_data {
 
 	char *subscr_remediation_url;
 	u8 subscr_remediation_method;
+
+	char *t_c_server_url;
 
 #ifdef CONFIG_SQLITE
 	sqlite3 *db;
@@ -778,6 +788,36 @@ static void radius_srv_hs20_t_c_pending(struct radius_session *sess)
 #endif /* CONFIG_HS20 */
 
 
+static void radius_server_add_session(struct radius_session *sess)
+{
+#ifdef CONFIG_SQLITE
+	char *sql;
+	char addr_txt[ETH_ALEN * 3];
+	struct os_time now;
+
+	if (!sess->server->db)
+		return;
+
+
+	os_snprintf(addr_txt, sizeof(addr_txt), MACSTR,
+		    MAC2STR(sess->mac_addr));
+
+	os_get_time(&now);
+	sql = sqlite3_mprintf("INSERT OR REPLACE INTO current_sessions(mac_addr,identity,start_time,nas,hs20_t_c_filtering) VALUES (%Q,%Q,%d,%Q,%u)",
+			      addr_txt, sess->username, now.sec,
+			      sess->nas_ip, sess->t_c_filtering);
+	if (sql) {
+			if (sqlite3_exec(sess->server->db, sql, NULL, NULL,
+					 NULL) != SQLITE_OK) {
+				RADIUS_ERROR("Failed to add current_sessions entry into sqlite database: %s",
+					     sqlite3_errmsg(sess->server->db));
+			}
+			sqlite3_free(sql);
+	}
+#endif /* CONFIG_SQLITE */
+}
+
+
 static struct radius_msg *
 radius_server_encapsulate_eap(struct radius_server_data *data,
 			      struct radius_client *client,
@@ -884,12 +924,56 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 
 	if (code == RADIUS_CODE_ACCESS_ACCEPT && sess->t_c_filtering) {
 		u8 buf[4] = { 0x01, 0x00, 0x00, 0x00 }; /* E=1 */
+		const char *url = data->t_c_server_url, *pos;
+		char *url2, *end2, *pos2;
+		size_t url_len;
 
 		if (!radius_msg_add_wfa(
 			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING,
 			    buf, sizeof(buf))) {
 			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-Filtering");
+			radius_msg_free(msg);
+			return NULL;
 		}
+
+		if (!url) {
+			RADIUS_DEBUG("No t_c_server_url configured");
+			radius_msg_free(msg);
+			return NULL;
+		}
+
+		pos = os_strstr(url, "@1@");
+		if (!pos) {
+			RADIUS_DEBUG("No @1@ macro in t_c_server_url");
+			radius_msg_free(msg);
+			return NULL;
+		}
+
+		url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
+		url2 = os_malloc(url_len);
+		if (!url2) {
+			RADIUS_DEBUG("Failed to allocate room for T&C Server URL");
+			os_free(url2);
+			radius_msg_free(msg);
+			return NULL;
+		}
+		pos2 = url2;
+		end2 = url2 + url_len;
+		os_memcpy(pos2, url, pos - url);
+		pos2 += pos - url;
+		os_snprintf(pos2, end2 - pos2, MACSTR, MAC2STR(sess->mac_addr));
+		pos2 += ETH_ALEN * 3 - 1;
+		os_memcpy(pos2, pos + 3, os_strlen(pos + 3));
+		if (!radius_msg_add_wfa(msg,
+					RADIUS_VENDOR_ATTR_WFA_HS20_T_C_URL,
+					(const u8 *) url2, url_len)) {
+			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-URL");
+			os_free(url2);
+			radius_msg_free(msg);
+			return NULL;
+		}
+		os_free(url2);
+
 		radius_srv_hs20_t_c_pending(sess);
 	}
 #endif /* CONFIG_HS20 */
@@ -927,6 +1011,9 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 				  hdr->authenticator) < 0) {
 		RADIUS_DEBUG("Failed to add Message-Authenticator attribute");
 	}
+
+	if (code == RADIUS_CODE_ACCESS_ACCEPT)
+		radius_server_add_session(sess);
 
 	return msg;
 }
@@ -1318,6 +1405,116 @@ send_reply:
 }
 
 
+static void
+radius_server_receive_disconnect_resp(struct radius_server_data *data,
+				      struct radius_client *client,
+				      struct radius_msg *msg, int ack)
+{
+	struct radius_hdr *hdr;
+
+	if (!client->pending_dac_disconnect_req) {
+		RADIUS_DEBUG("Ignore unexpected Disconnect response");
+		radius_msg_free(msg);
+		return;
+	}
+
+	hdr = radius_msg_get_hdr(msg);
+	if (hdr->identifier != client->pending_dac_disconnect_id) {
+		RADIUS_DEBUG("Ignore unexpected Disconnect response with unexpected identifier %u (expected %u)",
+			     hdr->identifier,
+			     client->pending_dac_disconnect_id);
+		radius_msg_free(msg);
+		return;
+	}
+
+	if (radius_msg_verify(msg, (const u8 *) client->shared_secret,
+			      client->shared_secret_len,
+			      client->pending_dac_disconnect_req, 0)) {
+		RADIUS_DEBUG("Ignore Disconnect response with invalid authenticator");
+		radius_msg_free(msg);
+		return;
+	}
+
+	RADIUS_DEBUG("Disconnect-%s received for " MACSTR,
+		     ack ? "ACK" : "NAK",
+		     MAC2STR(client->pending_dac_disconnect_addr));
+
+	radius_msg_free(msg);
+	radius_msg_free(client->pending_dac_disconnect_req);
+	client->pending_dac_disconnect_req = NULL;
+}
+
+
+static void radius_server_receive_coa_resp(struct radius_server_data *data,
+					   struct radius_client *client,
+					   struct radius_msg *msg, int ack)
+{
+	struct radius_hdr *hdr;
+#ifdef CONFIG_SQLITE
+	char addrtxt[3 * ETH_ALEN];
+	char *sql;
+	int res;
+#endif /* CONFIG_SQLITE */
+
+	if (!client->pending_dac_coa_req) {
+		RADIUS_DEBUG("Ignore unexpected CoA response");
+		radius_msg_free(msg);
+		return;
+	}
+
+	hdr = radius_msg_get_hdr(msg);
+	if (hdr->identifier != client->pending_dac_coa_id) {
+		RADIUS_DEBUG("Ignore unexpected CoA response with unexpected identifier %u (expected %u)",
+			     hdr->identifier,
+			     client->pending_dac_coa_id);
+		radius_msg_free(msg);
+		return;
+	}
+
+	if (radius_msg_verify(msg, (const u8 *) client->shared_secret,
+			      client->shared_secret_len,
+			      client->pending_dac_coa_req, 0)) {
+		RADIUS_DEBUG("Ignore CoA response with invalid authenticator");
+		radius_msg_free(msg);
+		return;
+	}
+
+	RADIUS_DEBUG("CoA-%s received for " MACSTR,
+		     ack ? "ACK" : "NAK",
+		     MAC2STR(client->pending_dac_coa_addr));
+
+	radius_msg_free(msg);
+	radius_msg_free(client->pending_dac_coa_req);
+	client->pending_dac_coa_req = NULL;
+
+#ifdef CONFIG_SQLITE
+	if (!data->db)
+		return;
+
+	os_snprintf(addrtxt, sizeof(addrtxt), MACSTR,
+		    MAC2STR(client->pending_dac_coa_addr));
+
+	if (ack) {
+		sql = sqlite3_mprintf("UPDATE current_sessions SET hs20_t_c_filtering=0, waiting_coa_ack=0, coa_ack_received=1 WHERE mac_addr=%Q",
+				      addrtxt);
+	} else {
+		sql = sqlite3_mprintf("UPDATE current_sessions SET waiting_coa_ack=0 WHERE mac_addr=%Q",
+				      addrtxt);
+	}
+	if (!sql)
+		return;
+
+	res = sqlite3_exec(data->db, sql, NULL, NULL, NULL);
+	sqlite3_free(sql);
+	if (res != SQLITE_OK) {
+		RADIUS_ERROR("Failed to update current_sessions entry: %s",
+			     sqlite3_errmsg(data->db));
+		return;
+	}
+#endif /* CONFIG_SQLITE */
+}
+
+
 static void radius_server_receive_auth(int sock, void *eloop_ctx,
 				       void *sock_ctx)
 {
@@ -1396,6 +1593,26 @@ static void radius_server_receive_auth(int sock, void *eloop_ctx,
 
 	if (wpa_debug_level <= MSG_MSGDUMP) {
 		radius_msg_dump(msg);
+	}
+
+	if (radius_msg_get_hdr(msg)->code == RADIUS_CODE_DISCONNECT_ACK) {
+		radius_server_receive_disconnect_resp(data, client, msg, 1);
+		return;
+	}
+
+	if (radius_msg_get_hdr(msg)->code == RADIUS_CODE_DISCONNECT_NAK) {
+		radius_server_receive_disconnect_resp(data, client, msg, 0);
+		return;
+	}
+
+	if (radius_msg_get_hdr(msg)->code == RADIUS_CODE_COA_ACK) {
+		radius_server_receive_coa_resp(data, client, msg, 1);
+		return;
+	}
+
+	if (radius_msg_get_hdr(msg)->code == RADIUS_CODE_COA_NAK) {
+		radius_server_receive_coa_resp(data, client, msg, 0);
+		return;
 	}
 
 	if (radius_msg_get_hdr(msg)->code != RADIUS_CODE_ACCESS_REQUEST) {
@@ -1658,6 +1875,8 @@ static void radius_server_free_clients(struct radius_server_data *data,
 
 		radius_server_free_sessions(data, prev->sessions);
 		os_free(prev->shared_secret);
+		radius_msg_free(prev->pending_dac_coa_req);
+		radius_msg_free(prev->pending_dac_disconnect_req);
 		os_free(prev);
 	}
 }
@@ -1894,6 +2113,9 @@ radius_server_init(struct radius_server_conf *conf)
 	}
 	data->subscr_remediation_method = conf->subscr_remediation_method;
 
+	if (conf->t_c_server_url)
+		data->t_c_server_url = os_strdup(conf->t_c_server_url);
+
 #ifdef CONFIG_SQLITE
 	if (conf->sqlite_file) {
 		if (sqlite3_open(conf->sqlite_file, &data->db)) {
@@ -2010,6 +2232,7 @@ void radius_server_deinit(struct radius_server_data *data)
 	os_free(data->dump_msk_file);
 #endif /* CONFIG_RADIUS_TEST */
 	os_free(data->subscr_remediation_url);
+	os_free(data->t_c_server_url);
 
 #ifdef CONFIG_SQLITE
 	if (data->db)
@@ -2304,4 +2527,213 @@ void radius_server_eap_pending_cb(struct radius_server_data *data, void *ctx)
 		return; /* msg was stored with the session */
 
 	radius_msg_free(msg);
+}
+
+
+#ifdef CONFIG_SQLITE
+
+struct db_session_fields {
+	char *identity;
+	char *nas;
+	int hs20_t_c_filtering;
+	int waiting_coa_ack;
+	int coa_ack_received;
+};
+
+
+static int get_db_session_fields(void *ctx, int argc, char *argv[], char *col[])
+{
+	struct db_session_fields *fields = ctx;
+	int i;
+
+	for (i = 0; i < argc; i++) {
+		if (!argv[i])
+			continue;
+
+		RADIUS_DEBUG("Session DB: %s=%s", col[i], argv[i]);
+
+		if (os_strcmp(col[i], "identity") == 0) {
+			os_free(fields->identity);
+			fields->identity = os_strdup(argv[i]);
+		} else if (os_strcmp(col[i], "nas") == 0) {
+			os_free(fields->nas);
+			fields->nas = os_strdup(argv[i]);
+		} else if (os_strcmp(col[i], "hs20_t_c_filtering") == 0) {
+			fields->hs20_t_c_filtering = atoi(argv[i]);
+		} else if (os_strcmp(col[i], "waiting_coa_ack") == 0) {
+			fields->waiting_coa_ack = atoi(argv[i]);
+		} else if (os_strcmp(col[i], "coa_ack_received") == 0) {
+			fields->coa_ack_received = atoi(argv[i]);
+		}
+	}
+
+	return 0;
+}
+
+
+static void free_db_session_fields(struct db_session_fields *fields)
+{
+	os_free(fields->identity);
+	fields->identity = NULL;
+	os_free(fields->nas);
+	fields->nas = NULL;
+}
+
+#endif /* CONFIG_SQLITE */
+
+
+int radius_server_dac_request(struct radius_server_data *data, const char *req)
+{
+#ifdef CONFIG_SQLITE
+	char *sql;
+	int res;
+	int disconnect;
+	const char *pos = req;
+	u8 addr[ETH_ALEN];
+	char addrtxt[3 * ETH_ALEN];
+	int t_c_clear = 0;
+	struct db_session_fields fields;
+	struct sockaddr_in das;
+	struct radius_client *client;
+	struct radius_msg *msg;
+	struct wpabuf *buf;
+	u8 identifier;
+	struct os_time now;
+
+	if (!data)
+		return -1;
+
+	/* req: <disconnect|coa> <MAC Address> [t_c_clear] */
+
+	if (os_strncmp(pos, "disconnect ", 11) == 0) {
+		disconnect = 1;
+		pos += 11;
+	} else if (os_strncmp(req, "coa ", 4) == 0) {
+		disconnect = 0;
+		pos += 4;
+	} else {
+		return -1;
+	}
+
+	if (hwaddr_aton(pos, addr))
+		return -1;
+	pos = os_strchr(pos, ' ');
+	if (pos) {
+		if (os_strstr(pos, "t_c_clear"))
+			t_c_clear = 1;
+	}
+
+	if (!disconnect && !t_c_clear) {
+		RADIUS_ERROR("DAC request for CoA without any authorization change");
+		return -1;
+	}
+
+	if (!data->db) {
+		RADIUS_ERROR("SQLite database not in use");
+		return -1;
+	}
+
+	os_snprintf(addrtxt, sizeof(addrtxt), MACSTR, MAC2STR(addr));
+
+	sql = sqlite3_mprintf("SELECT * FROM current_sessions WHERE mac_addr=%Q",
+			      addrtxt);
+	if (!sql)
+		return -1;
+
+	os_memset(&fields, 0, sizeof(fields));
+	res = sqlite3_exec(data->db, sql, get_db_session_fields, &fields, NULL);
+	sqlite3_free(sql);
+	if (res != SQLITE_OK) {
+		RADIUS_ERROR("Failed to find matching current_sessions entry from sqlite database: %s",
+			     sqlite3_errmsg(data->db));
+		free_db_session_fields(&fields);
+		return -1;
+	}
+
+	if (!fields.nas) {
+		RADIUS_ERROR("No NAS information found from current_sessions");
+		free_db_session_fields(&fields);
+		return -1;
+	}
+
+	os_memset(&das, 0, sizeof(das));
+	das.sin_family = AF_INET;
+	das.sin_addr.s_addr = inet_addr(fields.nas);
+	das.sin_port = htons(3799);
+
+	free_db_session_fields(&fields);
+
+	client = radius_server_get_client(data, &das.sin_addr, 0);
+	if (!client) {
+		RADIUS_ERROR("No NAS information available to protect the packet");
+		return -1;
+	}
+
+	identifier = client->next_dac_identifier++;
+
+	msg = radius_msg_new(disconnect ? RADIUS_CODE_DISCONNECT_REQUEST :
+			     RADIUS_CODE_COA_REQUEST, identifier);
+	if (!msg)
+		return -1;
+
+	os_snprintf(addrtxt, sizeof(addrtxt), RADIUS_802_1X_ADDR_FORMAT,
+		    MAC2STR(addr));
+	if (!radius_msg_add_attr(msg, RADIUS_ATTR_CALLING_STATION_ID,
+				 (u8 *) addrtxt, os_strlen(addrtxt))) {
+		RADIUS_ERROR("Could not add Calling-Station-Id");
+		radius_msg_free(msg);
+		return -1;
+	}
+
+	if (!disconnect && t_c_clear) {
+		u8 val[4] = { 0x00, 0x00, 0x00, 0x00 }; /* E=0 */
+
+		if (!radius_msg_add_wfa(
+			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING,
+			    val, sizeof(val))) {
+			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-Filtering");
+			radius_msg_free(msg);
+			return -1;
+		}
+	}
+
+	os_get_time(&now);
+	if (!radius_msg_add_attr_int32(msg, RADIUS_ATTR_EVENT_TIMESTAMP,
+				       now.sec)) {
+		RADIUS_ERROR("Failed to add Event-Timestamp attribute");
+		radius_msg_free(msg);
+		return -1;
+	}
+
+	radius_msg_finish_acct(msg, (u8 *) client->shared_secret,
+			       client->shared_secret_len);
+
+	if (wpa_debug_level <= MSG_MSGDUMP)
+		radius_msg_dump(msg);
+
+	buf = radius_msg_get_buf(msg);
+	if (sendto(data->auth_sock, wpabuf_head(buf), wpabuf_len(buf), 0,
+		   (struct sockaddr *) &das, sizeof(das)) < 0) {
+		RADIUS_ERROR("Failed to send packet - sendto: %s",
+			     strerror(errno));
+		radius_msg_free(msg);
+		return -1;
+	}
+
+	if (disconnect) {
+		radius_msg_free(client->pending_dac_disconnect_req);
+		client->pending_dac_disconnect_req = msg;
+		client->pending_dac_disconnect_id = identifier;
+		os_memcpy(client->pending_dac_disconnect_addr, addr, ETH_ALEN);
+	} else {
+		radius_msg_free(client->pending_dac_coa_req);
+		client->pending_dac_coa_req = msg;
+		client->pending_dac_coa_id = identifier;
+		os_memcpy(client->pending_dac_coa_addr, addr, ETH_ALEN);
+	}
+
+	return 0;
+#else /* CONFIG_SQLITE */
+	return -1;
+#endif /* CONFIG_SQLITE */
 }

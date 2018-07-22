@@ -599,3 +599,9 @@ CONFIG_BGSCAN_SIMPLE=y
 # Opportunistic Wireless Encryption (OWE)
 # Experimental implementation of draft-harkins-owe-07.txt
 CONFIG_OWE=y
+
+# Device Provisioning Protocol (DPP)
+CONFIG_DPP=y
+
+# Simultaneous Authentication of Equals (SAE)
+CONFIG_SAE=y

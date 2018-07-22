@@ -33,6 +33,7 @@
 
 # QCA vendor extensions to nl80211
 #CONFIG_DRIVER_NL80211_QCA=y
+
 # driver_nl80211.c requires libnl. If you are compiling it yourself
 # you may need to point hostapd to your version of libnl.
 #
@@ -69,7 +70,6 @@ CONFIG_DRIVER_BSD=y
 # wpa_supplicant.
 # CONFIG_USE_NDISUIO=y
 
-
 # Driver interface for wired Ethernet drivers
 CONFIG_DRIVER_WIRED=y
 
@@ -78,6 +78,7 @@ CONFIG_DRIVER_WIRED=y
 
 # Driver interface for Linux MACsec drivers
 #CONFIG_DRIVER_MACSEC_LINUX=y
+
 # Driver interface for the Broadcom RoboSwitch family
 #CONFIG_DRIVER_ROBOSWITCH=y
 
@@ -279,6 +280,7 @@ CONFIG_ELOOP=eloop
 
 # Should we use kqueue instead of select? Select is used by default.
 #CONFIG_ELOOP_KQUEUE=y
+
 # Select layer 2 packet implementation
 # linux = Linux packet socket (default)
 # pcap = libpcap/libdnet/WinPcap
@@ -323,6 +325,7 @@ CONFIG_TLSV12=y
 # Select which ciphers to use by default with OpenSSL if the user does not
 # specify them.
 #CONFIG_TLS_DEFAULT_CIPHERS="DEFAULT:!EXP:!LOW"
+
 # If CONFIG_TLS=internal is used, additional library and include paths are
 # needed for LibTomMath. Alternatively, an integrated, minimal version of
 # LibTomMath can be used. See beginning of libtommath.c for details on benefits
@@ -476,6 +479,7 @@ CONFIG_WNM=y
 
 # Enable interface matching in wpa_supplicant
 #CONFIG_MATCH_IFACE=y
+
 # Disable roaming in wpa_supplicant
 #CONFIG_NO_ROAMING=y
 
@@ -561,6 +565,7 @@ LIBS += -ldl
 
 # Support Multi Band Operation
 #CONFIG_MBO=y
+
 # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
 # Note: This is an experimental and not yet complete implementation. This
 # should not be enabled for production use.
@@ -577,6 +582,7 @@ CONFIG_IBSS_RSN=y
 # This can be used to enable control interface commands that allow the current
 # PMKSA cache entries to be fetched and new entries to be added.
 #CONFIG_PMKSA_CACHE_EXTERNAL=y
+
 # Mesh Networking (IEEE 802.11s)
 #CONFIG_MESH=y
 
@@ -592,4 +598,4 @@ CONFIG_BGSCAN_SIMPLE=y
 
 # Opportunistic Wireless Encryption (OWE)
 # Experimental implementation of draft-harkins-owe-07.txt
-#CONFIG_OWE=y
+CONFIG_OWE=y

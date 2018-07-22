@@ -1,3 +1,11 @@
+wpa (2:2.7~git20180706+420b5dd-1) experimental; urgency=medium
+
+  * New upstream snapshot 2.7~git20180706+420b5dd.
+  * Disable dbus-available-sta.patch since it is not ready for use yet.
+  * Enable OWE, DPP and SAE
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 22 Jul 2018 17:02:30 +0200
+
 wpa (2:2.7~git20180606+b915f2c-1) experimental; urgency=medium
 
   * New upstream snapshot 2.7~git20180606+b915f2c.

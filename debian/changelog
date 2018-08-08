@@ -1,3 +1,12 @@
+wpa (2:2.6-18) unstable; urgency=high
+
+  * Fix NL80211_ATTR_SMPS_MODE encoding (Closes: #903952)
+  * SECURITY UPDATE:
+    - CVE-2018-14526: Ignore unauthenticated encrypted EAPOL-Key data
+      (Closes: #905739)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 08 Aug 2018 22:50:11 +0200
+
 wpa (2:2.6-17) unstable; urgency=medium
 
   * Fix get-orig-source so that it can produce pre-release snapshots.

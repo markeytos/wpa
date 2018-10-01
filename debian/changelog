@@ -1,6 +1,7 @@
 wpa (2:2.6-19) UNRELEASED; urgency=medium
 
   * d/copyright: Use https protocol in Format field
+  * d/changelog: Remove trailing whitespaces
 
  -- Ondřej Nový <onovy@debian.org>  Mon, 01 Oct 2018 10:44:31 +0200
 
@@ -286,7 +287,7 @@ wpa (2.5-2+v2.4-1) unstable; urgency=medium
     Don't add a versioned build-dependency in order to avoid unnecessary
     complications with backports.
   * change Vcs-Browser location to prefer https, but keep the unsecure tag for
-    Vcs-Svn, as there is no option allowing to pull from the svn+ssh:// 
+    Vcs-Svn, as there is no option allowing to pull from the svn+ssh://
     location without an alioth account, this only makes lintian partially happy
     in regards to vcs-field-uses-insecure-uri.
   * debian/*: fix spelling errors noticed by lintian.
@@ -486,7 +487,7 @@ wpa (2.2-1) unstable; urgency=medium
       + hostapd: keep sqlite3 support disabled for the time being.
     - update debian/copyright manually, the wpa v2 branch was relicensed from
       (BSD-3-clause || GPL-2) to BSD-3-clause only (for the most part). This
-      doesn't change the licensing state as the BSD-3-clause license is 
+      doesn't change the licensing state as the BSD-3-clause license is
       compatible with GPL-2.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     versioned initscripts dependency to a versioned breaks relation.

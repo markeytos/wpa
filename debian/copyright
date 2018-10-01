@@ -1,4 +1,4 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: hostapd
 Upstream-Contact: Jouni Malinen <j@w1.fi>
 Source: git://w1.fi/srv/git/hostap.git

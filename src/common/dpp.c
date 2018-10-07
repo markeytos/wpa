@@ -840,6 +840,7 @@ static int dpp_parse_uri_pk(struct dpp_bootstrap_info *bi, const char *info)
 	if (sha256_vector(1, (const u8 **) &data, &data_len,
 			  bi->pubkey_hash) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to hash public key");
+		os_free(data);
 		return -1;
 	}
 	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash",
@@ -2601,6 +2602,7 @@ static int dpp_auth_derive_l_initiator(struct dpp_authentication *auth)
 	ret = 0;
 fail:
 	EC_POINT_clear_free(l);
+	EC_POINT_clear_free(sum);
 	EC_KEY_free(bI);
 	EC_KEY_free(BR);
 	EC_KEY_free(PR);
@@ -3988,6 +3990,7 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 	if (!conf)
 		return;
 	str_clear_free(conf->passphrase);
+	os_free(conf->group_id);
 	bin_clear_free(conf, sizeof(*conf));
 }
 
@@ -4134,6 +4137,9 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 		extra_len += os_strlen(auth->groups_override);
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	if (conf->group_id)
+		extra_len += os_strlen(conf->group_id);
+
 	/* Connector (JSON dppCon object) */
 	dppcon = wpabuf_alloc(extra_len + 2 * auth->curve->prime_len * 4 / 3);
 	if (!dppcon)
@@ -4152,7 +4158,8 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 		goto skip_groups;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	wpabuf_put_str(dppcon, "{\"groups\":[{\"groupId\":\"*\",");
+	wpabuf_printf(dppcon, "{\"groups\":[{\"groupId\":\"%s\",",
+		      conf->group_id ? conf->group_id : "*");
 	wpabuf_printf(dppcon, "\"netRole\":\"%s\"}],", ap ? "ap" : "sta");
 #ifdef CONFIG_TESTING_OPTIONS
 skip_groups:
@@ -5557,6 +5564,7 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 		if (!conf->curve) {
 			wpa_printf(MSG_INFO, "DPP: Unsupported curve: %s",
 				   curve);
+			os_free(conf);
 			return NULL;
 		}
 	}
@@ -6214,14 +6222,14 @@ static int dpp_test_gen_invalid_key(struct wpabuf *msg,
 
 		if (EC_POINT_set_affine_coordinates_GFp(group, point, x, y,
 							ctx) != 1) {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L || defined(OPENSSL_IS_BORINGSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L || defined(OPENSSL_IS_BORINGSSL)
 		/* Unlike older OpenSSL versions, OpenSSL 1.1.1 and BoringSSL
 		 * return an error from EC_POINT_set_affine_coordinates_GFp()
 		 * when the point is not on the curve. */
 			break;
-#else /* >=1.1.1 or OPENSSL_IS_BORINGSSL */
+#else /* >=1.1.0 or OPENSSL_IS_BORINGSSL */
 			goto fail;
-#endif /* >= 1.1.1 or OPENSSL_IS_BORINGSSL */
+#endif /* >= 1.1.0 or OPENSSL_IS_BORINGSSL */
 		}
 
 		if (!EC_POINT_is_on_curve(group, point, ctx))

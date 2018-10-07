@@ -280,6 +280,9 @@ void wpa_supplicant_cancel_auth_timeout(struct wpa_supplicant *wpa_s)
 	wpa_dbg(wpa_s, MSG_DEBUG, "Cancelling authentication timeout");
 	eloop_cancel_timeout(wpa_supplicant_timeout, wpa_s, NULL);
 	wpa_blacklist_del(wpa_s, wpa_s->bssid);
+	os_free(wpa_s->last_con_fail_realm);
+	wpa_s->last_con_fail_realm = NULL;
+	wpa_s->last_con_fail_realm_len = 0;
 }
 
 
@@ -503,6 +506,10 @@ static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 
 	os_free(wpa_s->confanother);
 	wpa_s->confanother = NULL;
+
+	os_free(wpa_s->last_con_fail_realm);
+	wpa_s->last_con_fail_realm = NULL;
+	wpa_s->last_con_fail_realm_len = 0;
 
 	wpa_sm_set_eapol(wpa_s->wpa, NULL);
 	eapol_sm_deinit(wpa_s->eapol);
@@ -1656,7 +1663,7 @@ static void wpas_ext_capab_byte(struct wpa_supplicant *wpa_s, u8 *pos, int idx)
 		break;
 	case 4: /* Bits 32-39 */
 #ifdef CONFIG_INTERWORKING
-		if (wpa_s->drv_flags / WPA_DRIVER_FLAGS_QOS_MAPPING)
+		if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_QOS_MAPPING)
 			*pos |= 0x01; /* Bit 32 - QoS Map */
 #endif /* CONFIG_INTERWORKING */
 		break;
@@ -2437,6 +2444,9 @@ static u8 * wpas_populate_assoc_ies(
 	size_t max_wpa_ie_len = 500;
 	size_t wpa_ie_len;
 	int algs = WPA_AUTH_ALG_OPEN;
+#ifdef CONFIG_MBO
+	const u8 *mbo_ie;
+#endif
 #ifdef CONFIG_FILS
 	const u8 *realm, *username, *rrk;
 	size_t realm_len, username_len, rrk_len;
@@ -2545,7 +2555,10 @@ static u8 * wpas_populate_assoc_ies(
 	    ssid->eap.erp && wpa_key_mgmt_fils(wpa_s->key_mgmt) &&
 	    eapol_sm_get_erp_info(wpa_s->eapol, &ssid->eap, &username,
 				  &username_len, &realm, &realm_len,
-				  &next_seq_num, &rrk, &rrk_len) == 0) {
+				  &next_seq_num, &rrk, &rrk_len) == 0 &&
+	    (!wpa_s->last_con_fail_realm ||
+	     wpa_s->last_con_fail_realm_len != realm_len ||
+	     os_memcmp(wpa_s->last_con_fail_realm, realm, realm_len) != 0)) {
 		algs = WPA_AUTH_ALG_FILS;
 		params->fils_erp_username = username;
 		params->fils_erp_username_len = username_len;
@@ -2689,11 +2702,14 @@ static u8 * wpas_populate_assoc_ies(
 #endif /* CONFIG_FST */
 
 #ifdef CONFIG_MBO
-	if (bss && wpa_bss_get_vendor_ie(bss, MBO_IE_VENDOR_TYPE)) {
+	mbo_ie = bss ? wpa_bss_get_vendor_ie(bss, MBO_IE_VENDOR_TYPE) : NULL;
+	if (mbo_ie) {
 		int len;
 
 		len = wpas_mbo_ie(wpa_s, wpa_ie + wpa_ie_len,
-				  max_wpa_ie_len - wpa_ie_len);
+				  max_wpa_ie_len - wpa_ie_len,
+				  !!mbo_attr_from_mbo_ie(mbo_ie,
+							 OCE_ATTR_ID_CAPA_IND));
 		if (len >= 0)
 			wpa_ie_len += len;
 	}
@@ -3059,6 +3075,11 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 				"MFP: require MFP");
 			params.mgmt_frame_protection =
 				MGMT_FRAME_PROTECTION_REQUIRED;
+#ifdef CONFIG_OWE
+		} else if (!rsn && (ssid->key_mgmt & WPA_KEY_MGMT_OWE) &&
+			   !ssid->owe_only) {
+			params.mgmt_frame_protection = NO_MGMT_FRAME_PROTECTION;
+#endif /* CONFIG_OWE */
 		}
 	}
 #endif /* CONFIG_IEEE80211W */
@@ -6502,6 +6523,35 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 	wpa_supplicant_req_scan(wpa_s, timeout / 1000,
 				1000 * (timeout % 1000));
 }
+
+
+#ifdef CONFIG_FILS
+void fils_connection_failure(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_ssid *ssid = wpa_s->current_ssid;
+	const u8 *realm, *username, *rrk;
+	size_t realm_len, username_len, rrk_len;
+	u16 next_seq_num;
+
+	if (!ssid || !ssid->eap.erp || !wpa_key_mgmt_fils(ssid->key_mgmt) ||
+	    eapol_sm_get_erp_info(wpa_s->eapol, &ssid->eap,
+				  &username, &username_len,
+				  &realm, &realm_len, &next_seq_num,
+				  &rrk, &rrk_len) != 0 ||
+	    !realm)
+		return;
+
+	wpa_hexdump_ascii(MSG_DEBUG,
+			  "FILS: Store last connection failure realm",
+			  realm, realm_len);
+	os_free(wpa_s->last_con_fail_realm);
+	wpa_s->last_con_fail_realm = os_malloc(realm_len);
+	if (wpa_s->last_con_fail_realm) {
+		wpa_s->last_con_fail_realm_len = realm_len;
+		os_memcpy(wpa_s->last_con_fail_realm, realm, realm_len);
+	}
+}
+#endif /* CONFIG_FILS */
 
 
 int wpas_driver_bss_selection(struct wpa_supplicant *wpa_s)

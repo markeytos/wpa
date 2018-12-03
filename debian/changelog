@@ -1,3 +1,12 @@
+wpa (2:2.7-1) experimental; urgency=medium
+
+  * New upstream version 2.7.
+  * Enable FILS.
+  * Add debian/upstream/signing-key.asc, update debian/watch to
+    verify PGP signatures on tarballs.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 03 Dec 2018 19:36:56 +0100
+
 wpa (2:2.7~git20181004+1dd66fc-1) experimental; urgency=medium
 
   * New upstream snapshot 2.7~git20181004+1dd66fc.

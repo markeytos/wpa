@@ -3,7 +3,7 @@ set -e
 
 # This script is invoked by uscan after downloading a new tarball
 
-if [ "x$1" != "x--upstream-version" ] || [ $# != 3 ]; then
+if [ "$1" != "--upstream-version" ] || [ $# != 3 ]; then
 	echo "invalid arguments: $*" >&2
 	exit 2
 fi

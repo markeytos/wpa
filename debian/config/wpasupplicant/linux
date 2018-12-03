@@ -32,7 +32,7 @@ CONFIG_DRIVER_WEXT=y
 CONFIG_DRIVER_NL80211=y
 
 # QCA vendor extensions to nl80211
-#CONFIG_DRIVER_NL80211_QCA=y
+CONFIG_DRIVER_NL80211_QCA=y
 
 # driver_nl80211.c requires libnl. If you are compiling it yourself
 # you may need to point hostapd to your version of libnl.
@@ -74,10 +74,10 @@ CONFIG_LIBNL32=y
 CONFIG_DRIVER_WIRED=y
 
 # Driver interface for MACsec capable Qualcomm Atheros drivers
-#CONFIG_DRIVER_MACSEC_QCA=y
+CONFIG_DRIVER_MACSEC_QCA=y
 
 # Driver interface for Linux MACsec drivers
-#CONFIG_DRIVER_MACSEC_LINUX=y
+CONFIG_DRIVER_MACSEC_LINUX=y
 
 # Driver interface for the Broadcom RoboSwitch family
 #CONFIG_DRIVER_ROBOSWITCH=y
@@ -173,7 +173,7 @@ CONFIG_EAP_IKEV2=y
 CONFIG_EAP_EKE=y
 
 # MACsec
-#CONFIG_MACSEC=y
+CONFIG_MACSEC=y
 
 # PKCS#12 (PFX) support (used to read private key and certificate file from
 # a file that usually has extension .p12 or .pfx)
@@ -473,10 +473,10 @@ CONFIG_IEEE80211AC=y
 # This can be used to enable functionality to improve interworking with
 # external networks (GAS/ANQP to learn more about the networks and network
 # selection based on available credentials).
-#CONFIG_INTERWORKING=y
+CONFIG_INTERWORKING=y
 
 # Hotspot 2.0
-#CONFIG_HS20=y
+CONFIG_HS20=y
 
 # Enable interface matching in wpa_supplicant
 #CONFIG_MATCH_IFACE=y
@@ -523,7 +523,7 @@ CONFIG_AUTOSCAN_PERIODIC=y
 #CONFIG_EXT_PASSWORD_TEST=y
 
 # Enable Fast Session Transfer (FST)
-#CONFIG_FST=y
+CONFIG_FST=y
 
 # Enable CLI commands for FST testing
 #CONFIG_FST_TEST=y
@@ -558,14 +558,14 @@ CONFIG_AUTOSCAN_PERIODIC=y
 CONFIG_ACS=y
 
 # Support Multi Band Operation
-#CONFIG_MBO=y
+CONFIG_MBO=y
 
 # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
 # Note: This is an experimental and not yet complete implementation. This
 # should not be enabled for production use.
 CONFIG_FILS=y
 # FILS shared key authentication with PFS
-#CONFIG_FILS_SK_PFS=y
+CONFIG_FILS_SK_PFS=y
 
 # Support RSN on IBSS networks
 # This is needed to be able to use mode=1 network profile with proto=RSN and
@@ -575,10 +575,10 @@ CONFIG_IBSS_RSN=y
 # External PMKSA cache control
 # This can be used to enable control interface commands that allow the current
 # PMKSA cache entries to be fetched and new entries to be added.
-#CONFIG_PMKSA_CACHE_EXTERNAL=y
+CONFIG_PMKSA_CACHE_EXTERNAL=y
 
 # Mesh Networking (IEEE 802.11s)
-#CONFIG_MESH=y
+CONFIG_MESH=y
 
 # Background scanning modules
 # These can be used to request wpa_supplicant to perform background scanning
@@ -588,7 +588,7 @@ CONFIG_IBSS_RSN=y
 CONFIG_BGSCAN_SIMPLE=y
 # Learn channels used by the network and try to avoid bgscans on other
 # channels (experimental)
-#CONFIG_BGSCAN_LEARN=y
+CONFIG_BGSCAN_LEARN=y
 
 # Opportunistic Wireless Encryption (OWE)
 # Experimental implementation of draft-harkins-owe-07.txt

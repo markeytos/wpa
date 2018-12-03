@@ -301,13 +301,13 @@ CONFIG_TLSV12=y
 CONFIG_INTERWORKING=y
 
 # Hotspot 2.0
-#CONFIG_HS20=y
+CONFIG_HS20=y
 
 # Enable SQLite database support in hlr_auc_gw, EAP-SIM DB, and eap_user_file
 #CONFIG_SQLITE=y
 
 # Enable Fast Session Transfer (FST)
-#CONFIG_FST=y
+CONFIG_FST=y
 
 # Enable CLI commands for FST testing
 #CONFIG_FST_TEST=y
@@ -347,7 +347,7 @@ CONFIG_ACS=y
 # Multiband Operation support
 # These extentions facilitate efficient use of multiple frequency bands
 # available to the AP and the devices that may associate with it.
-#CONFIG_MBO=y
+CONFIG_MBO=y
 
 # Client Taxonomy
 # Has the AP retain the Probe Request and (Re)Association Request frames from
@@ -360,7 +360,7 @@ CONFIG_ACS=y
 # should not be enabled for production use.
 CONFIG_FILS=y
 # FILS shared key authentication with PFS
-#CONFIG_FILS_SK_PFS=y
+CONFIG_FILS_SK_PFS=y
 
 # Include internal line edit mode in hostapd_cli. This can be used to provide
 # limited command line editing and history support.

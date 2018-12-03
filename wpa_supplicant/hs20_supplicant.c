@@ -49,6 +49,8 @@ struct osu_provider {
 	u8 bssid[ETH_ALEN];
 	u8 osu_ssid[SSID_MAX_LEN];
 	u8 osu_ssid_len;
+	u8 osu_ssid2[SSID_MAX_LEN];
+	u8 osu_ssid2_len;
 	char server_uri[256];
 	u32 osu_methods; /* bit 0 = OMA-DM, bit 1 = SOAP-XML SPP */
 	char osu_nai[256];
@@ -115,6 +117,22 @@ void wpas_hs20_add_indication(struct wpabuf *buf, int pps_mo_id)
 	wpabuf_put_u8(buf, conf);
 	if (pps_mo_id >= 0)
 		wpabuf_put_le16(buf, pps_mo_id);
+}
+
+
+void wpas_hs20_add_roam_cons_sel(struct wpabuf *buf,
+				 const struct wpa_ssid *ssid)
+{
+	if (!ssid->roaming_consortium_selection ||
+	    !ssid->roaming_consortium_selection_len)
+		return;
+
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 4 + ssid->roaming_consortium_selection_len);
+	wpabuf_put_be24(buf, OUI_WFA);
+	wpabuf_put_u8(buf, HS20_ROAMING_CONS_SEL_OUI_TYPE);
+	wpabuf_put_data(buf, ssid->roaming_consortium_selection,
+			ssid->roaming_consortium_selection_len);
 }
 
 
@@ -248,7 +266,7 @@ int hs20_anqp_send_req(struct wpa_supplicant *wpa_s, const u8 *dst, u32 stypes,
 	if (buf == NULL)
 		return -1;
 
-	res = gas_query_req(wpa_s->gas, dst, freq, buf, anqp_resp_cb, wpa_s);
+	res = gas_query_req(wpa_s->gas, dst, freq, 0, buf, anqp_resp_cb, wpa_s);
 	if (res < 0) {
 		wpa_printf(MSG_DEBUG, "ANQP: Failed to send Query Request");
 		wpabuf_free(buf);
@@ -429,10 +447,9 @@ static int hs20_process_icon_binary_file(struct wpa_supplicant *wpa_s,
 	dl_list_for_each(icon, &wpa_s->icon_head, struct icon_entry, list) {
 		if (icon->dialog_token == dialog_token && !icon->image &&
 		    os_memcmp(icon->bssid, sa, ETH_ALEN) == 0) {
-			icon->image = os_malloc(slen);
+			icon->image = os_memdup(pos, slen);
 			if (!icon->image)
 				return -1;
-			os_memcpy(icon->image, pos, slen);
 			icon->image_len = slen;
 			hs20_remove_duplicate_icons(wpa_s, icon);
 			wpa_msg(wpa_s, MSG_INFO,
@@ -646,6 +663,16 @@ void hs20_parse_rx_hs20_anqp_resp(struct wpa_supplicant *wpa_s,
 					       wpa_s, NULL);
 		}
 		break;
+	case HS20_STYPE_OPERATOR_ICON_METADATA:
+		wpa_msg(wpa_s, MSG_INFO, RX_HS20_ANQP MACSTR
+			" Operator Icon Metadata", MAC2STR(sa));
+		wpa_hexdump(MSG_DEBUG, "Operator Icon Metadata", pos, slen);
+		if (anqp) {
+			wpabuf_free(anqp->hs20_operator_icon_metadata);
+			anqp->hs20_operator_icon_metadata =
+				wpabuf_alloc_copy(pos, slen);
+		}
+		break;
 	default:
 		wpa_printf(MSG_DEBUG, "HS20: Unsupported subtype %u", subtype);
 		break;
@@ -725,6 +752,11 @@ static void hs20_osu_fetch_done(struct wpa_supplicant *wpa_s)
 				wpa_ssid_txt(osu->osu_ssid,
 					     osu->osu_ssid_len));
 		}
+		if (osu->osu_ssid2_len) {
+			fprintf(f, "osu_ssid2=%s\n",
+				wpa_ssid_txt(osu->osu_ssid2,
+					     osu->osu_ssid2_len));
+		}
 		if (osu->osu_nai[0])
 			fprintf(f, "osu_nai=%s\n", osu->osu_nai);
 		for (j = 0; j < osu->friendly_name_count; j++) {
@@ -790,6 +822,7 @@ void hs20_next_osu_icon(struct wpa_supplicant *wpa_s)
 
 static void hs20_osu_add_prov(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 			      const u8 *osu_ssid, u8 osu_ssid_len,
+			      const u8 *osu_ssid2, u8 osu_ssid2_len,
 			      const u8 *pos, size_t len)
 {
 	struct osu_provider *prov;
@@ -811,6 +844,9 @@ static void hs20_osu_add_prov(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 	os_memcpy(prov->bssid, bss->bssid, ETH_ALEN);
 	os_memcpy(prov->osu_ssid, osu_ssid, osu_ssid_len);
 	prov->osu_ssid_len = osu_ssid_len;
+	if (osu_ssid2)
+		os_memcpy(prov->osu_ssid2, osu_ssid2, osu_ssid2_len);
+	prov->osu_ssid2_len = osu_ssid2_len;
 
 	/* OSU Friendly Name Length */
 	if (end - pos < 2) {
@@ -992,18 +1028,30 @@ void hs20_osu_icon_fetch(struct wpa_supplicant *wpa_s)
 	struct wpabuf *prov_anqp;
 	const u8 *pos, *end;
 	u16 len;
-	const u8 *osu_ssid;
-	u8 osu_ssid_len;
+	const u8 *osu_ssid, *osu_ssid2;
+	u8 osu_ssid_len, osu_ssid2_len;
 	u8 num_providers;
 
 	hs20_free_osu_prov(wpa_s);
 
 	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
+		struct wpa_ie_data data;
+		const u8 *ie;
+
 		if (bss->anqp == NULL)
 			continue;
 		prov_anqp = bss->anqp->hs20_osu_providers_list;
 		if (prov_anqp == NULL)
 			continue;
+		ie = wpa_bss_get_ie(bss, WLAN_EID_RSN);
+		if (ie && wpa_parse_wpa_ie(ie, 2 + ie[1], &data) == 0 &&
+		    (data.key_mgmt & WPA_KEY_MGMT_OSEN)) {
+			osu_ssid2 = bss->ssid;
+			osu_ssid2_len = bss->ssid_len;
+		} else {
+			osu_ssid2 = NULL;
+			osu_ssid2_len = 0;
+		}
 		wpa_printf(MSG_DEBUG, "HS 2.0: Parsing OSU Providers list from "
 			   MACSTR, MAC2STR(bss->bssid));
 		wpa_hexdump_buf(MSG_DEBUG, "HS 2.0: OSU Providers list",
@@ -1045,7 +1093,8 @@ void hs20_osu_icon_fetch(struct wpa_supplicant *wpa_s)
 			if (len > (unsigned int) (end - pos))
 				break;
 			hs20_osu_add_prov(wpa_s, bss, osu_ssid,
-					  osu_ssid_len, pos, len);
+					  osu_ssid_len, osu_ssid2,
+					  osu_ssid2_len, pos, len);
 			pos += len;
 		}
 
@@ -1204,6 +1253,18 @@ void hs20_rx_deauth_imminent_notice(struct wpa_supplicant *wpa_s, u8 code,
 		wpa_s->current_ssid->disabled_until.sec =
 			now.sec + reauth_delay;
 	}
+}
+
+
+void hs20_rx_t_c_acceptance(struct wpa_supplicant *wpa_s, const char *url)
+{
+	if (!wpa_sm_pmf_enabled(wpa_s->wpa)) {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Ignore Terms and Conditions Acceptance since PMF was not enabled");
+		return;
+	}
+
+	wpa_msg(wpa_s, MSG_INFO, HS20_T_C_ACCEPTANCE "%s", url);
 }
 
 

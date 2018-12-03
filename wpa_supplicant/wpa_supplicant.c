@@ -68,7 +68,7 @@
 
 const char *const wpa_supplicant_version =
 "wpa_supplicant v" VERSION_STR "\n"
-"Copyright (c) 2003-2017, Jouni Malinen <j@w1.fi> and contributors";
+"Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi> and contributors";
 
 const char *const wpa_supplicant_license =
 "This software may be distributed under the terms of the BSD license.\n"
@@ -1216,13 +1216,12 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using IEEE 802.11i/D3.0");
 		proto = WPA_PROTO_WPA;
 #ifdef CONFIG_HS20
-	} else if (bss_osen && (ssid->proto & WPA_PROTO_OSEN)) {
+	} else if (bss_osen && (ssid->proto & WPA_PROTO_OSEN) &&
+		   wpa_parse_wpa_ie(bss_osen, 2 + bss_osen[1], &ie) == 0 &&
+		   (ie.group_cipher & ssid->group_cipher) &&
+		   (ie.pairwise_cipher & ssid->pairwise_cipher) &&
+		   (ie.key_mgmt & ssid->key_mgmt)) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "HS 2.0: using OSEN");
-		/* TODO: parse OSEN element */
-		os_memset(&ie, 0, sizeof(ie));
-		ie.group_cipher = WPA_CIPHER_CCMP;
-		ie.pairwise_cipher = WPA_CIPHER_CCMP;
-		ie.key_mgmt = WPA_KEY_MGMT_OSEN;
 		proto = WPA_PROTO_OSEN;
 	} else if (bss_rsn && (ssid->proto & WPA_PROTO_OSEN) &&
 	    wpa_parse_wpa_ie(bss_rsn, 2 + bss_rsn[1], &ie) == 0 &&
@@ -1645,6 +1644,10 @@ static void wpas_ext_capab_byte(struct wpa_supplicant *wpa_s, u8 *pos, int idx)
 	case 0: /* Bits 0-7 */
 		break;
 	case 1: /* Bits 8-15 */
+		if (wpa_s->conf->coloc_intf_reporting) {
+			/* Bit 13 - Collocated Interference Reporting */
+			*pos |= 0x20;
+		}
 		break;
 	case 2: /* Bits 16-23 */
 #ifdef CONFIG_WNM
@@ -2494,6 +2497,19 @@ static u8 * wpas_populate_assoc_ies(
 			os_free(wpa_ie);
 			return NULL;
 		}
+#ifdef CONFIG_HS20
+	} else if (bss && wpa_bss_get_vendor_ie(bss, OSEN_IE_VENDOR_TYPE) &&
+		   (ssid->key_mgmt & WPA_KEY_MGMT_OSEN)) {
+		/* No PMKSA caching, but otherwise similar to RSN/WPA */
+		wpa_ie_len = max_wpa_ie_len;
+		if (wpa_supplicant_set_suites(wpa_s, bss, ssid,
+					      wpa_ie, &wpa_ie_len)) {
+			wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to set WPA "
+				"key management and encryption suites");
+			os_free(wpa_ie);
+			return NULL;
+		}
+#endif /* CONFIG_HS20 */
 	} else if ((ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA) && bss &&
 		   wpa_key_mgmt_wpa_ieee8021x(ssid->key_mgmt)) {
 		/*
@@ -2738,14 +2754,18 @@ static u8 * wpas_populate_assoc_ies(
 
 		if (ssid->owe_group) {
 			group = ssid->owe_group;
-		} else {
+		} else if (wpa_s->assoc_status_code ==
+			   WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
 			if (wpa_s->last_owe_group == 19)
 				group = 20;
 			else if (wpa_s->last_owe_group == 20)
 				group = 21;
 			else
 				group = OWE_DH_GROUP;
+		} else {
+			group = OWE_DH_GROUP;
 		}
+
 		wpa_s->last_owe_group = group;
 		wpa_printf(MSG_DEBUG, "OWE: Try to use group %u", group);
 		owe_ie = owe_build_assoc_req(wpa_s->wpa, group);
@@ -3307,6 +3327,7 @@ static void wpa_supplicant_enable_one_network(struct wpa_supplicant *wpa_s,
 		return;
 
 	ssid->disabled = 0;
+	ssid->owe_transition_bss_select_count = 0;
 	wpas_clear_temp_disabled(wpa_s, ssid, 1);
 	wpas_notify_network_enabled_changed(wpa_s, ssid);
 
@@ -3571,6 +3592,8 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
 	wpa_s->last_owe_group = 0;
+	if (ssid)
+		ssid->owe_transition_bss_select_count = 0;
 
 	if (wpa_s->connect_without_scan ||
 	    wpa_supplicant_fast_associate(wpa_s) != 1) {

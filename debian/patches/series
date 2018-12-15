@@ -28,3 +28,4 @@ wpa_supplicant-update-MAC-when-driver-detects-a-change.patch
 dbus-available-sta.patch
 nl80211-Fix-NL80211_ATTR_SMPS_MODE-encoding.patch
 CVE-2018-14526/rebased-v2.6-0001-WPA-Ignore-unauthenticated-encrypted-EAPOL-Key-data.patch
+allow-tlsv1.patch

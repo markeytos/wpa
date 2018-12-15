@@ -1,3 +1,9 @@
+wpa (2:2.6-21) unstable; urgency=medium
+
+  * Fix a typo in the patch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 17:38:19 +0100
+
 wpa (2:2.6-20) unstable; urgency=medium
 
   * Rework the TLSv1.0 patch.

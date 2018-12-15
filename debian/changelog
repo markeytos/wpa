@@ -1,9 +1,15 @@
-wpa (2:2.6-19) UNRELEASED; urgency=medium
+wpa (2:2.6-19) unstable; urgency=medium
 
+  [ Ondřej Nový ]
   * d/copyright: Use https protocol in Format field
   * d/changelog: Remove trailing whitespaces
 
- -- Ondřej Nový <onovy@debian.org>  Mon, 01 Oct 2018 10:44:31 +0200
+  [ Andrej Shadura ]
+  * Re-enable TLSv1.0 and security level 1 for wpasupplicant.
+    (Closes: #907518, #911297).
+  * Modernise debian/rules.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:21:08 +0100
 
 wpa (2:2.6-18) unstable; urgency=high
 

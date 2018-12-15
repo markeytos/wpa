@@ -1,3 +1,11 @@
+wpa (2:2.7-2) experimental; urgency=medium
+
+  * Re-enable TLSv1.0 and security level 1 for wpasupplicant
+    (Closes: #907518, #911297).
+  * Enable more build-time options.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:31:57 +0100
+
 wpa (2:2.7-1) experimental; urgency=medium
 
   * New upstream version 2.7.

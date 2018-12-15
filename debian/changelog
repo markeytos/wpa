@@ -1,3 +1,9 @@
+wpa (2:2.6-20) unstable; urgency=medium
+
+  * Rework the TLSv1.0 patch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:53:58 +0100
+
 wpa (2:2.6-19) unstable; urgency=medium
 
   [ Ondřej Nový ]

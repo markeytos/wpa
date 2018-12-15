@@ -2,7 +2,8 @@
 
 export QT_SELECT=qt5
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
-include /usr/share/dpkg/buildflags.mk
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
 
 # The build system doesn't use CPPFLAGS, pass them to CFLAGS/CXXFLAGS to
 # enable the missing (hardening) flags
@@ -16,10 +17,6 @@ UCFLAGS   = -MMD -Wall -g -Os -fPIC
 BINDIR    = /sbin
 V = 1
 
-DEB_HOST_GNU_TYPE  := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-ifeq ($(origin CC),default)
-	CC=$(DEB_HOST_GNU_TYPE)-gcc
-endif
 PKG_CONFIG ?= $(DEB_HOST_GNU_TYPE)-pkg-config
 
 export CC BINDIR V PKG_CONFIG
@@ -28,7 +25,6 @@ DEB_HOST_ARCH_OS              ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 HOSTAPD_DOT_CONFIG            := debian/config/hostapd/$(DEB_HOST_ARCH_OS)
 WPASUPPLICANT_DOT_CONFIG      := debian/config/wpasupplicant/$(DEB_HOST_ARCH_OS)
 WPASUPPLICANT_UDEB_DOT_CONFIG := debian/config/wpasupplicant/$(DEB_HOST_ARCH_OS)-udeb
-VERSION                       := $(shell dpkg-parsechangelog | sed -ne 's,^Version: *\([0-9]*:\)\?\(.*\)$$,\2,p')
 
 ### start dh overrides
 override_dh_auto_configure:
@@ -39,31 +35,26 @@ override_dh_auto_build:
 	# build documentation
 	dh_auto_build --sourcedirectory=wpa_supplicant/doc/docbook \
 	              --buildsystem=makefile \
-		      --parallel \
-		      -- man
+	              -- man
 	# build wpasupplicant-udeb
 	cp -v --remove-destination $(WPASUPPLICANT_UDEB_DOT_CONFIG) wpa_supplicant/.config
 	CFLAGS="$(UCFLAGS)" dh_auto_build --sourcedirectory=wpa_supplicant \
-	              --buildsystem=makefile \
-		      --parallel
+	              --buildsystem=makefile
 	mv -v wpa_supplicant/wpa_supplicant wpa_supplicant/wpa_supplicant-udeb
 	dh_auto_clean --sourcedirectory=wpa_supplicant \
 	              --buildsystem=makefile
 	# build wpasupplicant
 	cp -v --remove-destination $(WPASUPPLICANT_DOT_CONFIG) wpa_supplicant/.config
 	dh_auto_build --sourcedirectory=wpa_supplicant \
-	              --buildsystem=makefile \
-		      --parallel
+	              --buildsystem=makefile
 	# build wpa_gui-qt4
 	dh_auto_build --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
-	              --buildsystem=qmake \
-		      --parallel
+	              --buildsystem=qmake
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
 	# build hostapd
 	cp -v --remove-destination $(HOSTAPD_DOT_CONFIG) hostapd/.config
 	dh_auto_build --sourcedirectory=hostapd \
-	              --buildsystem=makefile \
-		      --parallel
+	              --buildsystem=makefile
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
 
 override_dh_auto_clean:
@@ -85,9 +76,7 @@ override_dh_auto_install:
 override_dh_clean:
 	# make sure to remove the staging directory for the udeb
 	rm -rf debian/wpasupplicant-udeb
-	dh_clean wpa_supplicant/.config \
-		 hostapd/.config \
-		 wpa_supplicant/wpa_supplicant-udeb
+	dh_clean
 
 override_dh_install:
 	dh_install
@@ -131,7 +120,7 @@ override_dh_systemd_enable:
 ### end dh overrides
 
 %:
-	dh ${@} --parallel
+	dh ${@}
 
 get-orig-source:
 	chmod +x $(CURDIR)/debian/get-orig-source

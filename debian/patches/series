@@ -6,3 +6,4 @@
 networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 # dbus-available-sta.patch
+allow-tlsv1.patch

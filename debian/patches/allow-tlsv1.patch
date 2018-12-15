@@ -6,7 +6,21 @@ Some older networks may support for TLSv1.0 and less secure cyphers.
 
 --- a/src/crypto/tls_openssl.c
 +++ b/src/crypto/tls_openssl.c
-@@ -1017,7 +1017,13 @@
+@@ -965,6 +965,13 @@
+ 		os_free(data);
+ 		return NULL;
+ 	}
++
++#ifndef EAP_SERVER_TLS
++	/* Enable TLSv1.0 by default to allow connecting to legacy
++	 * networks since Debian OpenSSL is set to minimum TLSv1.2 and SECLEVEL=2. */
++	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
++#endif
++
+ 	data->ssl = ssl;
+ 	if (conf)
+ 		data->tls_session_lifetime = conf->tls_session_lifetime;
+@@ -1017,7 +1024,13 @@
  	if (conf && conf->openssl_ciphers)
  		ciphers = conf->openssl_ciphers;
  	else
@@ -20,15 +34,3 @@ Some older networks may support for TLSv1.0 and less secure cyphers.
  	if (SSL_CTX_set_cipher_list(ssl, ciphers) != 1) {
  		wpa_printf(MSG_ERROR,
  			   "OpenSSL: Failed to set cipher string '%s'",
-@@ -4118,6 +4124,11 @@
- 		return -1;
- 	}
- 
-+#ifndef EAP_SERVER_TLS
-+	/* Enable TLSv1.0 by default to allow connecting to legacy
-+	 * networks since Debian OpenSSL is set to minimum TLSv1.2 and SECLEVEL=2. */
-+	SSL_CTX_set_min_proto_version(ssl_ctx, TLS1_VERSION);
-+#endif
- #ifdef SSL_OP_NO_TICKET
- 	if (params->flags & TLS_CONN_DISABLE_SESSION_TICKET)
- 		SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_TICKET);

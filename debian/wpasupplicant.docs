@@ -1,3 +1,5 @@
 wpa_supplicant/README
+debian/README-DPP
+wpa_supplicant/README-HS20
 wpa_supplicant/README-WPS
 wpa_supplicant/README-P2P

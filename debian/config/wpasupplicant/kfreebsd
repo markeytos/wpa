@@ -74,7 +74,7 @@ CONFIG_DRIVER_BSD=y
 CONFIG_DRIVER_WIRED=y
 
 # Driver interface for MACsec capable Qualcomm Atheros drivers
-#CONFIG_DRIVER_MACSEC_QCA=y
+CONFIG_DRIVER_MACSEC_QCA=y
 
 # Driver interface for Linux MACsec drivers
 #CONFIG_DRIVER_MACSEC_LINUX=y

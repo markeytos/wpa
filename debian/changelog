@@ -3,6 +3,9 @@ wpa (2:2.7-2) experimental; urgency=medium
   * Re-enable TLSv1.0 and security level 1 for wpasupplicant
     (Closes: #907518, #911297).
   * Enable more build-time options.
+  * Flip CONFIG_DRIVER_MACSEC_QCA on Linux and kFreeBSD
+  * Add DPP README.
+  * Make wpa_supplicant reproducible.
 
  -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:31:57 +0100
 

@@ -1,40 +1,61 @@
-From 0709a1b6878d60d0512f65905106166f06c4c405 Mon Sep 17 00:00:00 2001
 From: Andrej Shadura <andrew.shadura@collabora.co.uk>
-Date: Sun, 7 Oct 2018 11:49:19 +0200
-Subject: [PATCH v2 1/2] dbus: Use dbus_bool_t, not int for boolean function
- arguments
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Date: Sun, 7 Oct 2018 14:31:50 +0200
+Subject: [PATCH] dbus: Expose connected stations on D-Bus
 
-Properties argument specifies whether to add object’s properties
-or not, hence it doesn’t need to be int.
+Make it possible to list connected stations in AP mode over D-Bus, along
+with some of their properties: rx/tx packets, bytes, capabilities, etc.
+
+Signed-off-by: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
+
+Rebased by Julian Andres Klode <juliank@ubuntu.com> and updated to use
+the new getter API.
+
+Further modified by Andrej Shadura to not error out when not in AP mode
+and to send separate StationAdded/StationRemoved signals instead of
+changing signatures of existing StaAuthorized/StaDeauthorized signals.
 
 Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
----
- wpa_supplicant/dbus/dbus_new.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
+---
+
+dbus: Use dbus_bool_t, not int for boolean function arguments
+
+Properties argument specifies whether to add object's properties
+or not, hence it doesn't need to be int.
+
+Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
+
+---
+ wpa_supplicant/dbus/dbus_new.c          | 292 +++++++++++++++++++++++-
+ wpa_supplicant/dbus/dbus_new.h          |  22 ++
+ wpa_supplicant/dbus/dbus_new_handlers.c | 287 +++++++++++++++++++++++
+ wpa_supplicant/dbus/dbus_new_handlers.h |  13 ++
+ wpa_supplicant/notify.c                 |   6 +
+ 7 files changed, 697 insertions(+), 9 deletions(-)
+
+diff --git a/wpa_supplicant/dbus/dbus_new.c b/wpa_supplicant/dbus/dbus_new.c
+index d4deb0fe3..96ab444d3 100644
 --- a/wpa_supplicant/dbus/dbus_new.c
 +++ b/wpa_supplicant/dbus/dbus_new.c
-@@ -25,6 +25,7 @@
- #include "dbus_new_handlers_p2p.h"
- #include "p2p/p2p.h"
- #include "../p2p_supplicant.h"
+@@ -13,6 +13,7 @@
+ #include "common.h"
+ #include "common/ieee802_11_defs.h"
+ #include "wps/wps.h"
 +#include "ap/sta_info.h"
- 
- #ifdef CONFIG_AP /* until needed by something else */
- 
-@@ -128,7 +129,7 @@
+ #include "../config.h"
+ #include "../wpa_supplicant_i.h"
+ #include "../bss.h"
+@@ -128,7 +129,8 @@ void wpas_dbus_unsubscribe_noc(struct wpas_dbus_priv *priv)
   * Notify listeners about event related with interface
   */
  static void wpas_dbus_signal_interface(struct wpa_supplicant *wpa_s,
 -				       const char *sig_name, int properties)
-+				       const char *sig_name, dbus_bool_t properties)
++				       const char *sig_name,
++				       dbus_bool_t properties)
  {
  	struct wpas_dbus_priv *iface;
  	DBusMessage *msg;
-@@ -230,7 +231,7 @@
+@@ -230,7 +232,7 @@ void wpas_dbus_signal_scan_done(struct wpa_supplicant *wpa_s, int success)
   */
  static void wpas_dbus_signal_bss(struct wpa_supplicant *wpa_s,
  				 const char *bss_obj_path,
@@ -43,7 +64,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  {
  	struct wpas_dbus_priv *iface;
  	DBusMessage *msg;
-@@ -364,7 +365,7 @@
+@@ -364,7 +366,7 @@ void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
   */
  static void wpas_dbus_signal_network(struct wpa_supplicant *wpa_s,
  				     int id, const char *sig_name,
@@ -52,7 +73,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  {
  	struct wpas_dbus_priv *iface;
  	DBusMessage *msg;
-@@ -1077,6 +1078,75 @@
+@@ -1077,6 +1079,79 @@ void wpas_dbus_signal_sta_deauthorized(struct wpa_supplicant *wpa_s,
  }
  
  
@@ -63,11 +84,12 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 + * @sig_name: signal name - StationAdded or StationRemoved
 + * @properties: Whether to add second argument with object properties
 + *
-+ * Notify listeners about event related with station
++ * Notify listeners about event related with station.
 + */
 +static void wpas_dbus_signal_station(struct wpa_supplicant *wpa_s,
-+				 const char *station_obj_path,
-+				 const char *sig_name, dbus_bool_t properties)
++				     const char *station_obj_path,
++				     const char *sig_name,
++				     dbus_bool_t properties)
 +{
 +	struct wpas_dbus_priv *iface;
 +	DBusMessage *msg;
@@ -76,14 +98,16 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	iface = wpa_s->global->dbus;
 +
 +	/* Do nothing if the control interface is not turned on */
-+	if (iface == NULL || !wpa_s->dbus_new_path)
++	if (!iface || !wpa_s->dbus_new_path)
 +		return;
 +
++	wpa_printf(MSG_DEBUG, "dbus: STA signal %s", sig_name);
 +	msg = dbus_message_new_signal(wpa_s->dbus_new_path,
 +				      WPAS_DBUS_NEW_IFACE_INTERFACE, sig_name);
-+	if (msg == NULL)
++	if (!msg)
 +		return;
 +
++	dbus_message_iter_init_append(msg, &iter);
 +	if (!dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH,
 +					    &station_obj_path) ||
 +	    (properties &&
@@ -105,7 +129,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 + * Notify listeners about adding new Station
 + */
 +static void wpas_dbus_signal_station_added(struct wpa_supplicant *wpa_s,
-+				       const char *station_obj_path)
++					   const char *station_obj_path)
 +{
 +	wpas_dbus_signal_station(wpa_s, station_obj_path, "StationAdded", TRUE);
 +}
@@ -119,16 +143,17 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 + * Notify listeners about removing Station
 + */
 +static void wpas_dbus_signal_station_removed(struct wpa_supplicant *wpa_s,
-+					 const char *station_obj_path)
++					     const char *station_obj_path)
 +{
-+	wpas_dbus_signal_station(wpa_s, station_obj_path, "StationRemoved", FALSE);
++	wpas_dbus_signal_station(wpa_s, station_obj_path, "StationRemoved",
++				 FALSE);
 +}
 +
 +
  #ifdef CONFIG_P2P
  
  /**
-@@ -1882,7 +1952,7 @@
+@@ -1882,7 +1957,7 @@ void wpas_dbus_signal_p2p_sd_response(struct wpa_supplicant *wpa_s,
   */
  static void wpas_dbus_signal_persistent_group(struct wpa_supplicant *wpa_s,
  					      int id, const char *sig_name,
@@ -137,7 +162,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  {
  	struct wpas_dbus_priv *iface;
  	DBusMessage *msg;
-@@ -2151,6 +2221,9 @@
+@@ -2146,6 +2221,9 @@ void wpas_dbus_signal_prop_changed(struct wpa_supplicant *wpa_s,
  	case WPAS_DBUS_PROP_BSSS:
  		prop = "BSSs";
  		break;
@@ -147,10 +172,11 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  	case WPAS_DBUS_PROP_CURRENT_AUTH_MODE:
  		prop = "CurrentAuthMode";
  		break;
-@@ -2244,6 +2317,39 @@
+@@ -2238,6 +2316,41 @@ void wpas_dbus_bss_signal_prop_changed(struct wpa_supplicant *wpa_s,
+ }
  
  
- /**
++/**
 + * wpas_dbus_sta_signal_prop_changed - Signals change of STA property
 + * @wpa_s: %wpa_supplicant network interface data
 + * @property: indicates which property has changed
@@ -183,48 +209,45 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	wpa_dbus_mark_property_changed(wpa_s->global->dbus, path,
 +				       WPAS_DBUS_NEW_IFACE_STA, prop);
 +}
-+/**
++
++
+ /**
   * wpas_dbus_signal_debug_level_changed - Signals change of debug param
   * @global: wpa_global structure
-  *
-@@ -2857,6 +2963,166 @@
+@@ -2852,6 +2965,157 @@ err:
  }
  
  
 +static const struct wpa_dbus_property_desc wpas_dbus_sta_properties[] = {
 +	{ "Address", WPAS_DBUS_NEW_IFACE_STA, "ay",
 +	  wpas_dbus_getter_sta_address,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "AID", WPAS_DBUS_NEW_IFACE_STA, "q",
 +	  wpas_dbus_getter_sta_aid,
-+	  NULL
-+	},
-+	{ "Flags", WPAS_DBUS_NEW_IFACE_STA, "u",
-+	  wpas_dbus_getter_sta_flags,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "Capabilities", WPAS_DBUS_NEW_IFACE_STA, "q",
 +	  wpas_dbus_getter_sta_caps,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "RxPackets", WPAS_DBUS_NEW_IFACE_STA, "t",
 +	  wpas_dbus_getter_sta_rx_packets,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "TxPackets", WPAS_DBUS_NEW_IFACE_STA, "t",
 +	  wpas_dbus_getter_sta_tx_packets,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "RxBytes", WPAS_DBUS_NEW_IFACE_STA, "t",
 +	  wpas_dbus_getter_sta_rx_bytes,
-+	  NULL
++	  NULL, NULL
 +	},
 +	{ "TxBytes", WPAS_DBUS_NEW_IFACE_STA, "t",
 +	  wpas_dbus_getter_sta_tx_bytes,
-+	  NULL
++	  NULL, NULL
 +	},
-+	{ NULL, NULL, NULL, NULL, NULL }
++	{ NULL, NULL, NULL, NULL, NULL, NULL }
 +};
 +
 +
@@ -243,23 +266,21 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +/**
 + * wpas_dbus_unregister_sta - Unregister a connected station from dbus
 + * @wpa_s: wpa_supplicant interface structure
-+ * @bssid: connected station bssid
-+ * @id: unique station identifier
++ * @sta: station MAC address
 + * Returns: 0 on success, -1 on failure
 + *
-+ * Unregisters STA representing object from dbus
++ * Unregisters STA representing object from dbus.
 + */
-+int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s,
-+			     const u8 *sta)
++int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s, const u8 *sta)
 +{
 +	struct wpas_dbus_priv *ctrl_iface;
 +	char station_obj_path[WPAS_DBUS_OBJECT_PATH_MAX];
 +
 +	/* Do nothing if the control interface is not turned on */
-+	if (wpa_s == NULL || wpa_s->global == NULL)
++	if (!wpa_s || !wpa_s->global)
 +		return 0;
 +	ctrl_iface = wpa_s->global->dbus;
-+	if (ctrl_iface == NULL)
++	if (!ctrl_iface)
 +		return 0;
 +
 +	os_snprintf(station_obj_path, WPAS_DBUS_OBJECT_PATH_MAX,
@@ -268,13 +289,14 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +
 +	wpa_printf(MSG_DEBUG, "dbus: Unregister STA object '%s'",
 +		   station_obj_path);
-+	if (wpa_dbus_unregister_object_per_iface(ctrl_iface, station_obj_path)) {
++	if (wpa_dbus_unregister_object_per_iface(ctrl_iface,
++						 station_obj_path)) {
 +		wpa_printf(MSG_ERROR, "dbus: Cannot unregister STA object %s",
 +			   station_obj_path);
 +		return -1;
 +	}
 +
-+	wpas_dbus_signal_station_added(wpa_s, station_obj_path);
++	wpas_dbus_signal_station_removed(wpa_s, station_obj_path);
 +	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_STATIONS);
 +
 +	return 0;
@@ -282,16 +304,14 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +
 +
 +/**
-+ * wpas_dbus_register_sta - Register a scanned station with dbus
++ * wpas_dbus_register_sta - Register a connected station with dbus
 + * @wpa_s: wpa_supplicant interface structure
-+ * @bssid: connection network station
-+ * @id: unique STA identifier
++ * @sta: station MAC address
 + * Returns: 0 on success, -1 on failure
 + *
-+ * Registers STA representing object with dbus
++ * Registers STA representing object with dbus.
 + */
-+int wpas_dbus_register_sta(struct wpa_supplicant *wpa_s,
-+			   const u8 *sta)
++int wpas_dbus_register_sta(struct wpa_supplicant *wpa_s, const u8 *sta)
 +{
 +	struct wpas_dbus_priv *ctrl_iface;
 +	struct wpa_dbus_object_desc *obj_desc;
@@ -299,10 +319,10 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	struct sta_handler_args *arg;
 +
 +	/* Do nothing if the control interface is not turned on */
-+	if (wpa_s == NULL || wpa_s->global == NULL)
++	if (!wpa_s || !wpa_s->global)
 +		return 0;
 +	ctrl_iface = wpa_s->global->dbus;
-+	if (ctrl_iface == NULL)
++	if (!ctrl_iface)
 +		return 0;
 +
 +	os_snprintf(station_obj_path, WPAS_DBUS_OBJECT_PATH_MAX,
@@ -311,36 +331,34 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +
 +	obj_desc = os_zalloc(sizeof(struct wpa_dbus_object_desc));
 +	if (!obj_desc) {
-+		wpa_printf(MSG_ERROR, "Not enough memory "
-+			   "to create object description");
++		wpa_printf(MSG_ERROR,
++			   "Not enough memory to create object description");
 +		goto err;
 +	}
 +
 +	arg = os_zalloc(sizeof(struct sta_handler_args));
 +	if (!arg) {
-+		wpa_printf(MSG_ERROR, "Not enough memory "
-+			   "to create arguments for handler");
++		wpa_printf(MSG_ERROR,
++			   "Not enough memory to create arguments for handler");
 +		goto err;
 +	}
 +	arg->wpa_s = wpa_s;
 +	arg->sta = sta;
 +
-+	wpas_dbus_register(obj_desc, arg, wpa_dbus_free,
-+			   NULL,
-+			   wpas_dbus_sta_properties,
-+			   wpas_dbus_sta_signals);
++	wpas_dbus_register(obj_desc, arg, wpa_dbus_free, NULL,
++			   wpas_dbus_sta_properties, wpas_dbus_sta_signals);
 +
 +	wpa_printf(MSG_DEBUG, "dbus: Register STA object '%s'",
 +		   station_obj_path);
 +	if (wpa_dbus_register_object_per_iface(ctrl_iface, station_obj_path,
 +					       wpa_s->ifname, obj_desc)) {
 +		wpa_printf(MSG_ERROR,
-+			   "Cannot register STA dbus object %s.",
++			   "Cannot register STA dbus object %s",
 +			   station_obj_path);
 +		goto err;
 +	}
 +
-+	wpas_dbus_signal_station_removed(wpa_s, station_obj_path);
++	wpas_dbus_signal_station_added(wpa_s, station_obj_path);
 +	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_STATIONS);
 +
 +	return 0;
@@ -354,7 +372,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  static const struct wpa_dbus_method_desc wpas_dbus_interface_methods[] = {
  	{ "Scan", WPAS_DBUS_NEW_IFACE_INTERFACE,
  	  (WPADBusMethodHandler) wpas_dbus_handler_scan,
-@@ -3501,6 +3767,11 @@
+@@ -3489,6 +3753,11 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
  	  NULL
  	},
  #endif /* CONFIG_MESH */
@@ -366,7 +384,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  	{ NULL, NULL, NULL, NULL, NULL, NULL }
  };
  
-@@ -3770,6 +4041,19 @@
+@@ -3758,6 +4027,19 @@ static const struct wpa_dbus_signal_desc wpas_dbus_interface_signals[] = {
  		  END_ARGS
  	  }
  	},
@@ -386,7 +404,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  	{ "NetworkRequest", WPAS_DBUS_NEW_IFACE_INTERFACE,
  	  {
  		  { "path", "o", ARG_OUT },
-@@ -4078,7 +4362,7 @@
+@@ -4066,7 +4348,7 @@ static const struct wpa_dbus_signal_desc wpas_dbus_p2p_peer_signals[] = {
   */
  static void wpas_dbus_signal_peer(struct wpa_supplicant *wpa_s,
  				  const u8 *dev_addr, const char *interface,
@@ -395,17 +413,11 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  {
  	struct wpas_dbus_priv *iface;
  	DBusMessage *msg;
+diff --git a/wpa_supplicant/dbus/dbus_new.h b/wpa_supplicant/dbus/dbus_new.h
+index 40ae133b2..be2ce0d33 100644
 --- a/wpa_supplicant/dbus/dbus_new.h
 +++ b/wpa_supplicant/dbus/dbus_new.h
-@@ -12,6 +12,7 @@
- 
- #include "common/defs.h"
- #include "p2p/p2p.h"
-+#include "ap/sta_info.h"
- 
- struct wpa_global;
- struct wpa_supplicant;
-@@ -29,6 +30,7 @@
+@@ -28,6 +28,7 @@ enum wpas_dbus_prop {
  	WPAS_DBUS_PROP_CURRENT_NETWORK,
  	WPAS_DBUS_PROP_CURRENT_AUTH_MODE,
  	WPAS_DBUS_PROP_BSSS,
@@ -413,7 +425,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  	WPAS_DBUS_PROP_DISCONNECT_REASON,
  	WPAS_DBUS_PROP_ASSOC_STATUS_CODE,
  };
-@@ -46,6 +48,10 @@
+@@ -45,6 +46,10 @@ enum wpas_dbus_bss_prop {
  	WPAS_DBUS_BSS_PROP_AGE,
  };
  
@@ -424,7 +436,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  #define WPAS_DBUS_OBJECT_PATH_MAX 150
  
  #define WPAS_DBUS_NEW_SERVICE		"fi.w1.wpa_supplicant1"
-@@ -62,6 +68,9 @@
+@@ -61,6 +66,9 @@ enum wpas_dbus_bss_prop {
  #define WPAS_DBUS_NEW_BSSIDS_PART "BSSs"
  #define WPAS_DBUS_NEW_IFACE_BSS	WPAS_DBUS_NEW_INTERFACE ".BSS"
  
@@ -434,22 +446,19 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  #define WPAS_DBUS_NEW_IFACE_P2PDEVICE	\
  		WPAS_DBUS_NEW_IFACE_INTERFACE ".P2PDevice"
  
-@@ -164,6 +173,10 @@
+@@ -163,6 +171,8 @@ int wpas_dbus_unregister_bss(struct wpa_supplicant *wpa_s,
  			     u8 bssid[ETH_ALEN], unsigned int id);
  int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  			   u8 bssid[ETH_ALEN], unsigned int id);
-+int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s,
-+			     const u8 *sta);
-+int wpas_dbus_register_sta(struct wpa_supplicant *wpa_s,
-+			   const u8 *sta);
++int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s, const u8 *sta);
++int wpas_dbus_register_sta(struct wpa_supplicant *wpa_s, const u8 *sta);
  void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  				 const char *name);
  void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
-@@ -345,6 +358,18 @@
- {
+@@ -345,6 +355,18 @@ static inline int wpas_dbus_register_bss(struct wpa_supplicant *wpa_s,
  	return 0;
  }
-+
+ 
 +static inline int wpas_dbus_unregister_sta(struct wpa_supplicant *wpa_s,
 +					   const u8 *sta)
 +{
@@ -461,23 +470,33 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +{
 +	return 0;
 +}
- 
++
  static inline void wpas_dbus_signal_blob_added(struct wpa_supplicant *wpa_s,
  					       const char *name)
+ {
+diff --git a/wpa_supplicant/dbus/dbus_new_handlers.c b/wpa_supplicant/dbus/dbus_new_handlers.c
+index 94773b329..2a6ad5818 100644
 --- a/wpa_supplicant/dbus/dbus_new_handlers.c
 +++ b/wpa_supplicant/dbus/dbus_new_handlers.c
-@@ -22,6 +22,10 @@
+@@ -15,6 +15,9 @@
+ #include "eap_peer/eap_methods.h"
+ #include "eapol_supp/eapol_supp_sm.h"
+ #include "rsn_supp/wpa.h"
++#include "ap/hostapd.h"
++#include "ap/sta_info.h"
++#include "ap/ap_drv_ops.h"
+ #include "../config.h"
+ #include "../wpa_supplicant_i.h"
+ #include "../driver_i.h"
+@@ -22,6 +25,7 @@
  #include "../bss.h"
  #include "../scan.h"
  #include "../autoscan.h"
 +#include "../ap.h"
-+#include "ap/hostapd.h"
-+#include "ap/sta_info.h"
-+#include "ap/ap_drv_ops.h"
  #include "dbus_new_helpers.h"
  #include "dbus_new.h"
  #include "dbus_new_handlers.h"
-@@ -3854,6 +3858,315 @@
+@@ -3805,6 +3809,289 @@ dbus_bool_t wpas_dbus_setter_iface_global(
  }
  
  
@@ -522,7 +541,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	/* Loop through scan results and append each result's object path */
 +	for (; sta; sta = sta->next) {
 +		paths[i] = os_zalloc(WPAS_DBUS_OBJECT_PATH_MAX);
-+		if (paths[i] == NULL) {
++		if (!paths[i]) {
 +			dbus_set_error_const(error, DBUS_ERROR_NO_MEMORY,
 +					     "no memory");
 +			goto out;
@@ -547,7 +566,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +
 +
 +/**
-+ * wpas_dbus_getter_sta_address - Return the BSSID of a connected station
++ * wpas_dbus_getter_sta_address - Return the address of a connected station
 + * @iter: Pointer to incoming dbus message iter
 + * @error: Location to store error on failure
 + * @user_data: Function specific data
@@ -594,32 +613,6 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +
 +	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT16,
 +						&sta->aid,
-+						error);
-+}
-+
-+
-+/**
-+ * wpas_dbus_getter_sta_flags - Return the flags of a connected station
-+ * @iter: Pointer to incoming dbus message iter
-+ * @error: Location to store error on failure
-+ * @user_data: Function specific data
-+ * Returns: TRUE on success, FALSE on failure
-+ *
-+ * Getter for "Flags" property.
-+ */
-+dbus_bool_t wpas_dbus_getter_sta_flags(
-+	const struct wpa_dbus_property_desc *property_desc,
-+	DBusMessageIter *iter, DBusError *error, void *user_data)
-+{
-+	struct sta_handler_args *args = user_data;
-+	struct sta_info *sta;
-+
-+	sta = ap_get_sta(args->wpa_s->ap_iface->bss[0], args->sta);
-+	if (!sta)
-+		return FALSE;
-+
-+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT32,
-+						&sta->flags,
 +						error);
 +}
 +
@@ -676,7 +669,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	if (!sta)
 +		return FALSE;
 +
-+        if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
++	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
 +		return FALSE;
 +
 +	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
@@ -711,7 +704,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	if (!sta)
 +		return FALSE;
 +
-+        if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
++	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
 +		return FALSE;
 +
 +	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
@@ -746,7 +739,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	if (!sta)
 +		return FALSE;
 +
-+        if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
++	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
 +		return FALSE;
 +
 +	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
@@ -781,7 +774,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
 +	if (!sta)
 +		return FALSE;
 +
-+        if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
++	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
 +		return FALSE;
 +
 +	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
@@ -793,9 +786,11 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  static struct wpa_bss * get_bss_helper(struct bss_handler_args *args,
  				       DBusError *error, const char *func_name)
  {
+diff --git a/wpa_supplicant/dbus/dbus_new_handlers.h b/wpa_supplicant/dbus/dbus_new_handlers.h
+index 6f952cc39..1907a8a51 100644
 --- a/wpa_supplicant/dbus/dbus_new_handlers.h
 +++ b/wpa_supplicant/dbus/dbus_new_handlers.h
-@@ -22,6 +22,11 @@
+@@ -22,6 +22,11 @@ struct bss_handler_args {
  	unsigned int id;
  };
  
@@ -807,14 +802,13 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  dbus_bool_t wpas_dbus_simple_property_getter(DBusMessageIter *iter,
  					     const int type,
  					     const void *val,
-@@ -168,6 +173,15 @@
+@@ -166,6 +171,14 @@ DECLARE_ACCESSOR(wpas_dbus_getter_networks);
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_engine_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_module_path);
  DECLARE_ACCESSOR(wpas_dbus_getter_blobs);
 +DECLARE_ACCESSOR(wpas_dbus_getter_stas);
 +DECLARE_ACCESSOR(wpas_dbus_getter_sta_address);
 +DECLARE_ACCESSOR(wpas_dbus_getter_sta_aid);
-+DECLARE_ACCESSOR(wpas_dbus_getter_sta_flags);
 +DECLARE_ACCESSOR(wpas_dbus_getter_sta_caps);
 +DECLARE_ACCESSOR(wpas_dbus_getter_sta_rx_packets);
 +DECLARE_ACCESSOR(wpas_dbus_getter_sta_tx_packets);
@@ -823,9 +817,11 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  DECLARE_ACCESSOR(wpas_dbus_getter_bss_bssid);
  DECLARE_ACCESSOR(wpas_dbus_getter_bss_ssid);
  DECLARE_ACCESSOR(wpas_dbus_getter_bss_privacy);
+diff --git a/wpa_supplicant/notify.c b/wpa_supplicant/notify.c
+index 83df04f39..75f762daf 100644
 --- a/wpa_supplicant/notify.c
 +++ b/wpa_supplicant/notify.c
-@@ -720,6 +720,9 @@
+@@ -720,6 +720,9 @@ static void wpas_notify_ap_sta_authorized(struct wpa_supplicant *wpa_s,
  		wpas_dbus_signal_p2p_peer_joined(wpa_s, p2p_dev_addr);
  #endif /* CONFIG_P2P */
  
@@ -835,7 +831,7 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  	/* Notify listeners a new station has been authorized */
  	wpas_dbus_signal_sta_authorized(wpa_s, sta);
  }
-@@ -740,6 +743,9 @@
+@@ -740,6 +743,9 @@ static void wpas_notify_ap_sta_deauthorized(struct wpa_supplicant *wpa_s,
  
  	/* Notify listeners a station has been deauthorized */
  	wpas_dbus_signal_sta_deauthorized(wpa_s, sta);
@@ -845,3 +841,6 @@ Signed-off-by: Andrej Shadura <andrew.shadura@collabora.co.uk>
  }
  
  
+-- 
+2.19.1
+

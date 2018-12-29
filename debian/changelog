@@ -49,6 +49,48 @@ wpa (2:2.7~git20180504+60a5737-1) experimental; urgency=medium
 
  -- Andrej Shadura <andrewsh@debian.org>  Mon, 07 May 2018 19:57:47 +0200
 
+wpa (2:2.6-21) unstable; urgency=medium
+
+  * Fix a typo in the patch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 17:38:19 +0100
+
+wpa (2:2.6-20) unstable; urgency=medium
+
+  * Rework the TLSv1.0 patch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:53:58 +0100
+
+wpa (2:2.6-19) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/copyright: Use https protocol in Format field
+  * d/changelog: Remove trailing whitespaces
+
+  [ Andrej Shadura ]
+  * Re-enable TLSv1.0 and security level 1 for wpasupplicant.
+    (Closes: #907518, #911297).
+  * Modernise debian/rules.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Dec 2018 15:21:08 +0100
+
+wpa (2:2.6-18) unstable; urgency=high
+
+  * Fix NL80211_ATTR_SMPS_MODE encoding (Closes: #903952)
+  * SECURITY UPDATE:
+    - CVE-2018-14526: Ignore unauthenticated encrypted EAPOL-Key data
+      (Closes: #905739)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 08 Aug 2018 22:50:11 +0200
+
+wpa (2:2.6-17) unstable; urgency=medium
+
+  * Fix get-orig-source so that it can produce pre-release snapshots.
+  * Remove dbus changes to StaAuthorized/StaDeauthorized after discussions
+    with the upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 08 Jun 2018 14:30:54 +0200
+
 wpa (2:2.6-16) unstable; urgency=medium
 
   * Fix README.Debian: MyNetWork, not NETBEER (Closes: #791333).
@@ -314,7 +356,7 @@ wpa (2.5-2+v2.4-1) unstable; urgency=medium
     Don't add a versioned build-dependency in order to avoid unnecessary
     complications with backports.
   * change Vcs-Browser location to prefer https, but keep the unsecure tag for
-    Vcs-Svn, as there is no option allowing to pull from the svn+ssh:// 
+    Vcs-Svn, as there is no option allowing to pull from the svn+ssh://
     location without an alioth account, this only makes lintian partially happy
     in regards to vcs-field-uses-insecure-uri.
   * debian/*: fix spelling errors noticed by lintian.
@@ -514,7 +556,7 @@ wpa (2.2-1) unstable; urgency=medium
       + hostapd: keep sqlite3 support disabled for the time being.
     - update debian/copyright manually, the wpa v2 branch was relicensed from
       (BSD-3-clause || GPL-2) to BSD-3-clause only (for the most part). This
-      doesn't change the licensing state as the BSD-3-clause license is 
+      doesn't change the licensing state as the BSD-3-clause license is
       compatible with GPL-2.
   * drop pre-wheezy /lib/init/rw/sendsigs.omit.d/ migration support, invert the
     versioned initscripts dependency to a versioned breaks relation.

@@ -2,7 +2,7 @@
 
 set -e
 
-if [ -x /bin/systemctl ] && [ "$1" = purge ]
+if [ -d /run/systemd/system ] && [ "$1" = purge ]
 then
 	systemctl unmask hostapd.service
 fi

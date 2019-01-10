@@ -2,7 +2,7 @@
 
 set -e
 
-if [ -x /bin/systemctl ] && [ "$1" = configure ]
+if [ -d /run/systemd/system ] && [ "$1" = configure ]
 then
     DAEMON_CONF=
     . /etc/default/hostapd

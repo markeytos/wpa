@@ -1,3 +1,19 @@
+wpa (2:2.7-3) unstable; urgency=medium
+
+  * Upload to unstable.
+  * Refresh dbus-available-sta.patch from the upstream.
+  * Since we use Type=forking, pass -B to hostapd (Closes: #918861).
+  * Apply upstream fixes for 802.1X 4-way handshake offload.
+  * Bump Standards-Version to 4.3.0.
+  * Use debhelper-compat (= 12).
+  * Use dh_installsystemd instead of dh_systemd_enable.
+  * Move manual installs into .install as much as possible.
+  * Drop ancient preinst scripts.
+  * Add Pre-Depends to hostapd.
+  * Display a warning if DAEMON_CONF is not /etc/hostapd/hostapd.conf.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 10 Jan 2019 21:33:04 +0100
+
 wpa (2:2.7-2) experimental; urgency=medium
 
   * Re-enable TLSv1.0 and security level 1 for wpasupplicant

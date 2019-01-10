@@ -16,7 +16,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON_SBIN=/usr/sbin/hostapd
 DAEMON_DEFS=/etc/default/hostapd
-DAEMON_CONF=
+DAEMON_CONF=/etc/hostapd/hostapd.conf
 NAME=hostapd
 DESC="advanced IEEE 802.11 management"
 PIDFILE=/run/hostapd.pid
@@ -24,6 +24,12 @@ PIDFILE=/run/hostapd.pid
 [ -x "$DAEMON_SBIN" ] || exit 0
 [ -s "$DAEMON_DEFS" ] && . /etc/default/hostapd
 [ -n "$DAEMON_CONF" ] || exit 0
+
+if [ ! -r "$DAEMON_CONF" ]
+then
+    log_action_msg "No hostapd config found, not starting hostapd."
+    exit 0
+fi
 
 DAEMON_OPTS="-B -P $PIDFILE $DAEMON_OPTS $DAEMON_CONF"
 

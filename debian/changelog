@@ -6,13 +6,15 @@ wpa (2:2.7-3) unstable; urgency=medium
   * Apply upstream fixes for 802.1X 4-way handshake offload.
   * Bump Standards-Version to 4.3.0.
   * Use debhelper-compat (= 12).
-  * Use dh_installsystemd instead of dh_systemd_enable.
+  * Drop dh_systemd_enable calls and overrides.
   * Move manual installs into .install as much as possible.
   * Drop ancient preinst scripts.
   * Add Pre-Depends to hostapd.
   * Display a warning if DAEMON_CONF is not /etc/hostapd/hostapd.conf.
+  * Default to /etc/hostapd/hostapd.conf.
+  * Update README.Debian in hostapd.
 
- -- Andrej Shadura <andrewsh@debian.org>  Thu, 10 Jan 2019 21:33:04 +0100
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 11 Jan 2019 00:17:14 +0100
 
 wpa (2:2.7-2) experimental; urgency=medium
 

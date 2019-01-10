@@ -31,6 +31,10 @@ DAEMON_OPTS="-B -P $PIDFILE $DAEMON_OPTS $DAEMON_CONF"
 
 case "$1" in
   start)
+	if [ "$DAEMON_CONF" != /etc/hostapd/hostapd.conf ]
+	then
+		log_warning_msg "hostapd config not in /etc/hostapd/hostapd.conf -- read /usr/share/doc/hostapd/NEWS.Debian.gz"
+	fi
 	log_daemon_msg "Starting $DESC" "$NAME"
 	start-stop-daemon --start --oknodo --quiet --exec "$DAEMON_SBIN" \
 		--pidfile "$PIDFILE" -- $DAEMON_OPTS >/dev/null

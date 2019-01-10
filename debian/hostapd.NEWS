@@ -1,3 +1,12 @@
+wpa (2:2.7-3) unstable; urgency=medium
+
+  Starting from this version, the init script of hostapd will display
+  a warning if DAEMON_CONF is set to a value different from
+  /etc/hostapd/hostapd.conf. A future upload will also attempt
+  to migrate the configuration file to the new location.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 10 Jan 2019 21:29:31 +0100
+
 wpa (2:2.6-10) unstable; urgency=medium
 
   The hostapd .service file is now automatically masked every time the

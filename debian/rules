@@ -80,31 +80,9 @@ override_dh_clean:
 
 override_dh_install:
 	dh_install
-	# install systemd support
-	install --mode=644 -D wpa_supplicant/systemd/wpa_supplicant.service \
-		debian/wpasupplicant/lib/systemd/system/wpa_supplicant.service
-	install --mode=644 -D wpa_supplicant/systemd/wpa_supplicant@.service \
-		debian/wpasupplicant/lib/systemd/system/wpa_supplicant@.service
-	install --mode=644 -D wpa_supplicant/systemd/wpa_supplicant-wired@.service \
-		debian/wpasupplicant/lib/systemd/system/wpa_supplicant-wired@.service
 	# install D-Bus service activation files & configuration
 	install --mode=644 -D wpa_supplicant/dbus/dbus-wpa_supplicant.conf \
 		debian/wpasupplicant/etc/dbus-1/system.d/wpa_supplicant.conf
-	install --mode=644 -D wpa_supplicant/dbus/fi.epitest.hostap.WPASupplicant.service \
-		debian/wpasupplicant/usr/share/dbus-1/system-services/fi.epitest.hostap.WPASupplicant.service
-	install --mode=644 -D wpa_supplicant/dbus/fi.w1.wpa_supplicant1.service \
-		debian/wpasupplicant/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
-	install --mode=755 -D wpa_supplicant/examples/60_wpa_supplicant \
-		debian/wpasupplicant/usr/lib/pm-utils/sleep.d/60_wpa_supplicant
-	# install ifupdown hook scripts
-	install --mode=755 -D debian/ifupdown/action_wpa.sh \
-		debian/wpasupplicant/etc/wpa_supplicant/action_wpa.sh
-	install --mode=755 -D debian/ifupdown/functions.sh \
-		debian/wpasupplicant/etc/wpa_supplicant/functions.sh
-	install --mode=755 -D debian/ifupdown/wpasupplicant.sh \
-		debian/wpasupplicant/etc/wpa_supplicant/ifupdown.sh
-	install --mode=755 -D debian/ifupdown/hostapd.sh \
-		debian/hostapd/etc/hostapd/ifupdown.sh
 	# Install udeb
 	install --mode=755 -D wpa_supplicant/wpa_supplicant-udeb \
 		debian/wpasupplicant-udeb/sbin/wpa_supplicant

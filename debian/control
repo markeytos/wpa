@@ -27,6 +27,7 @@ Homepage: http://w1.fi/wpa_supplicant/
 Package: hostapd
 Architecture: linux-any kfreebsd-any
 Multi-Arch: foreign
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
  ${misc:Depends},
  lsb-base

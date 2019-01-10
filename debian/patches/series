@@ -7,3 +7,5 @@ networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 dbus-available-sta.patch
 allow-tlsv1.patch
+4way-handshake/0001-drivers-Add-separate-driver-flags-for-802.1X-and-PSK.patch
+4way-handshake/0002-nl80211-Indicate-802.1X-4-way-handshake-offload-in-c.patch

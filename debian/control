@@ -4,7 +4,7 @@ Uploaders:
  Andrej Shadura <andrewsh@debian.org>
 Section: net
 Priority: optional
-Build-Depends: debhelper (>> 10),
+Build-Depends: debhelper-compat (= 12),
  libdbus-1-dev,
  libssl-dev,
  qtbase5-dev,

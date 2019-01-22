@@ -558,14 +558,14 @@ CONFIG_FST=y
 CONFIG_ACS=y
 
 # Support Multi Band Operation
-CONFIG_MBO=y
+#CONFIG_MBO=y
 
 # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
 # Note: This is an experimental and not yet complete implementation. This
 # should not be enabled for production use.
-CONFIG_FILS=y
+#CONFIG_FILS=y
 # FILS shared key authentication with PFS
-CONFIG_FILS_SK_PFS=y
+#CONFIG_FILS_SK_PFS=y
 
 # Support RSN on IBSS networks
 # This is needed to be able to use mode=1 network profile with proto=RSN and
@@ -578,7 +578,7 @@ CONFIG_IBSS_RSN=y
 CONFIG_PMKSA_CACHE_EXTERNAL=y
 
 # Mesh Networking (IEEE 802.11s)
-CONFIG_MESH=y
+#CONFIG_MESH=y
 
 # Background scanning modules
 # These can be used to request wpa_supplicant to perform background scanning

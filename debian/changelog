@@ -1,3 +1,10 @@
+wpa (2:2.7+git20190108+11ce7a1-2) experimental; urgency=medium
+
+  * Disable MBO, FILS, FILS_SK_PFS, MESH, they cause failures
+    with some drivers.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 22 Jan 2019 17:45:26 +0100
+
 wpa (2:2.7+git20190108+11ce7a1-1) experimental; urgency=medium
 
   * New upstream snapshot.

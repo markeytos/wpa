@@ -6,7 +6,7 @@ Some older networks may support for TLSv1.0 and less secure cyphers.
 
 --- a/src/crypto/tls_openssl.c
 +++ b/src/crypto/tls_openssl.c
-@@ -988,6 +988,13 @@
+@@ -1027,6 +1027,13 @@
  		os_free(data);
  		return NULL;
  	}
@@ -18,5 +18,5 @@ Some older networks may support for TLSv1.0 and less secure cyphers.
 +#endif
 +
  	data->ssl = ssl;
- 	if (conf)
+ 	if (conf) {
  		data->tls_session_lifetime = conf->tls_session_lifetime;

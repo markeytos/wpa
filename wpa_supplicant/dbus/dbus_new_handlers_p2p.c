@@ -384,14 +384,14 @@ DBusMessage * wpas_dbus_handler_p2p_group_add(DBusMessage *message,
 			goto inv_args;
 
 		if (wpas_p2p_group_add_persistent(wpa_s, ssid, 0, freq, 0, 0, 0,
-						  0, 0, NULL, 0, 0)) {
+						  0, 0, 0, NULL, 0, 0)) {
 			reply = wpas_dbus_error_unknown_error(
 				message,
 				"Failed to reinvoke a persistent group");
 			goto out;
 		}
 	} else if (wpas_p2p_group_add(wpa_s, persistent_group, freq, 0, 0, 0,
-				      0))
+				      0, 0))
 		goto inv_args;
 
 out:
@@ -505,6 +505,7 @@ DBusMessage * wpas_dbus_handler_p2p_flush(DBusMessage *message,
 
 	wpa_s = wpa_s->global->p2p_init_wpa_s;
 
+	wpas_p2p_stop_find(wpa_s);
 	os_memset(wpa_s->p2p_auth_invite, 0, ETH_ALEN);
 	wpa_s->force_long_sd = 0;
 	p2p_flush(wpa_s->global->p2p);
@@ -604,7 +605,8 @@ DBusMessage * wpas_dbus_handler_p2p_connect(DBusMessage *message,
 
 	new_pin = wpas_p2p_connect(wpa_s, addr, pin, wps_method,
 				   persistent_group, 0, join, authorize_only,
-				   go_intent, freq, 0, -1, 0, 0, 0, 0, NULL, 0);
+				   go_intent, freq, 0, -1, 0, 0, 0, 0, 0,
+				   NULL, 0);
 
 	if (new_pin >= 0) {
 		char npin[9];
@@ -761,7 +763,7 @@ DBusMessage * wpas_dbus_handler_p2p_invite(DBusMessage *message,
 			goto err;
 
 		if (wpas_p2p_invite(wpa_s, peer_addr, ssid, NULL, 0, 0, 0, 0, 0,
-				    0) < 0) {
+				    0, 0) < 0) {
 			reply = wpas_dbus_error_unknown_error(
 				message,
 				"Failed to reinvoke a persistent group");

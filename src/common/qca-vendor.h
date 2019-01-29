@@ -42,8 +42,12 @@ enum qca_radiotap_vendor_ids {
  *
  * @QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY: Recommendation of frequency
  *	ranges to avoid to reduce issues due to interference or internal
- *	co-existence information in the driver. The event data structure is
- *	defined in struct qca_avoid_freq_list.
+ *	co-existence information in the driver. These frequencies aim to
+ *	minimize the traffic but not to totally avoid the traffic. That said
+ *	for a P2P use case, these frequencies are allowed for the P2P
+ *	discovery/negotiation but avoid the group to get formed on these
+ *	frequencies. The event data structure is defined in
+ *	struct qca_avoid_freq_list.
  *
  * @QCA_NL80211_VENDOR_SUBCMD_DFS_CAPABILITY: Command to check driver support
  *	for DFS offloading.
@@ -848,6 +852,12 @@ enum qca_wlan_vendor_attr {
 	 * to report the corresponding antenna index to the chain RSSI value
 	 */
 	QCA_WLAN_VENDOR_ATTR_ANTENNA_INFO = 40,
+	/* Used in QCA_NL80211_VENDOR_SUBCMD_GET_CHAIN_RSSI command to report
+	 * the specific antenna EVM value (unsigned 32 bit value). With a
+	 * determinate group of antennas, the driver specifies the EVM value
+	 * for each antenna ID, and application extract them in user space.
+	 */
+	QCA_WLAN_VENDOR_ATTR_CHAIN_EVM = 41,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_AFTER_LAST,

@@ -1,3 +1,14 @@
+wpa (2:2.7+git20190128+0c1e29f-1) unstable; urgency=medium
+
+  * Upload to unstable.
+  * New upstream snapshot 2.7+git20190128+0c1e29f.
+  * Add Files-Excluded to debian/copyright.
+  * Watch the upstream git.
+  * Refresh hostapd/wpasupplicant configs, enable CONFIG_GETRANDOM
+    (Closes: #914490)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 29 Jan 2019 18:11:01 +0100
+
 wpa (2:2.7+git20190108+11ce7a1-2) experimental; urgency=medium
 
   * Disable MBO, FILS, FILS_SK_PFS, MESH, they cause failures

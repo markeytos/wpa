@@ -19,7 +19,7 @@ V = 1
 
 PKG_CONFIG ?= $(DEB_HOST_GNU_TYPE)-pkg-config
 
-export CC BINDIR V PKG_CONFIG
+export BINDIR V PKG_CONFIG
 
 DEB_HOST_ARCH_OS              ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 HOSTAPD_DOT_CONFIG            := debian/config/hostapd/$(DEB_HOST_ARCH_OS)

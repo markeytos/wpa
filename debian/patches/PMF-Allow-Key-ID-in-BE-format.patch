@@ -1,0 +1,49 @@
+From: Mikael Kanstrup <mikael.kanstrup@sony.com>
+To: <hostap@lists.infradead.org>
+Subject: [RFC] PMF: Allow Key ID in big endian format to workaround faulty APs
+Date: Thu, 14 Feb 2019 13:46:53 +0100
+Message-ID: <20190214124653.24793-1-mikael.kanstrup@sony.com>
+
+From: Daisuke Niwa <daisuke.niwa@sony.com>
+
+A few APs out on the market have got the byte order of IGTK key
+index wrong making PMF enabled connections fail to connect. The faulty
+APs request STAs to configure IGTK with key ID value 1024 or 1280.
+
+IEEE Std 802.11-2016 Chapter 9.4.2.55 "Management MIC element"
+define the key ID to be either 4 or 5. All other key IDs are reserved.
+
+Out of spec values get rejected by lower cfg80211 layer set key
+operation which in turn brings the connection down.
+
+Looking more closely into the values requested, 4 and 5 in 16-bit
+network byte order/big endian byte order happens to correspond to
+1024 and 1280 respectively in wireless little endian byte order. As
+connect attempts using out of spec values will anyway fail detect
+and workaround the problem by reading the incorrect values in big
+endian format.
+
+Signed-off-by: Mikael Kanstrup <mikael.kanstrup@sony.com>
+---
+ src/rsn_supp/wpa.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/rsn_supp/wpa.c b/src/rsn_supp/wpa.c
+index 86593ab78..32b9b9326 100644
+--- a/src/rsn_supp/wpa.c
++++ b/src/rsn_supp/wpa.c
+@@ -1024,6 +1024,12 @@ static int wpa_supplicant_install_igtk(struct wpa_sm *sm,
+ {
+ 	size_t len = wpa_cipher_key_len(sm->mgmt_group_cipher);
+ 	u16 keyidx = WPA_GET_LE16(igtk->keyid);
++	if (keyidx == 1024 || keyidx == 1280) {
++		/* Workaround incorrectly behaving APs that send Key ID in big endian format */
++		wpa_printf(MSG_INFO, "PMF: Workaround - Allow Key ID in big endian format(%d)",
++			   keyidx);
++		keyidx = WPA_GET_BE16(igtk->keyid);
++	}
+ 
+ 	/* Detect possible key reinstallation */
+ 	if ((sm->igtk.igtk_len == len &&
+-- 
+2.17.1

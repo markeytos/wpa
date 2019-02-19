@@ -1,49 +1,62 @@
-From: Mikael Kanstrup <mikael.kanstrup@sony.com>
-To: <hostap@lists.infradead.org>
-Subject: [RFC] PMF: Allow Key ID in big endian format to workaround faulty APs
-Date: Thu, 14 Feb 2019 13:46:53 +0100
-Message-ID: <20190214124653.24793-1-mikael.kanstrup@sony.com>
+From: Jouni Malinen <j@w1.fi>
+Subject: Re: SV: [RFC] PMF: Allow Key ID in big endian format to workaround faulty APs
+Date: Fri, 15 Feb 2019 17:35:12 +0200
+Message-ID: <20190215153512.GA16110@w1.fi>
 
-From: Daisuke Niwa <daisuke.niwa@sony.com>
+: The following description was taken from the original email from
+: Mikael Kanstrup <mikael.kanstrup@sony.com>, Message-ID:
+: <20190214124653.24793-1-mikael.kanstrup@sony.com>
 
-A few APs out on the market have got the byte order of IGTK key
-index wrong making PMF enabled connections fail to connect. The faulty
-APs request STAs to configure IGTK with key ID value 1024 or 1280.
+>> From: Daisuke Niwa <daisuke.niwa@sony.com>
+>> 
+>> A few APs out on the market have got the byte order of IGTK key
+>> index wrong making PMF enabled connections fail to connect. The faulty
+>> APs request STAs to configure IGTK with key ID value 1024 or 1280.
+>> 
+>> IEEE Std 802.11-2016 Chapter 9.4.2.55 "Management MIC element"
+>> define the key ID to be either 4 or 5. All other key IDs are reserved.
+>> 
+>> Out of spec values get rejected by lower cfg80211 layer set key
+>> operation which in turn brings the connection down.
+>> 
+>> Looking more closely into the values requested, 4 and 5 in 16-bit
+>> network byte order/big endian byte order happens to correspond to
+>> 1024 and 1280 respectively in wireless little endian byte order. As
+>> connect attempts using out of spec values will anyway fail detect
+>> and workaround the problem and leave the IGTK unconfigured
+>> while allowing unicast PMF to be used.
 
-IEEE Std 802.11-2016 Chapter 9.4.2.55 "Management MIC element"
-define the key ID to be either 4 or 5. All other key IDs are reserved.
+: Bits of the original email by Jouni follow:
 
-Out of spec values get rejected by lower cfg80211 layer set key
-operation which in turn brings the connection down.
+> > And maybe more importantly, that the particular IGTK is not a predictable
+> > value where this type of workaround would result in a security vulnerability.
+>
+> Hard to tell just by looking at the IGTK received. But yeah good point.
 
-Looking more closely into the values requested, 4 and 5 in 16-bit
-network byte order/big endian byte order happens to correspond to
-1024 and 1280 respectively in wireless little endian byte order. As
-connect attempts using out of spec values will anyway fail detect
-and workaround the problem by reading the incorrect values in big
-endian format.
+One option here would be to modify wpa_supplicant_install_igtk() to
+ignore wpa_sm_set_key() failure if keyidx is 0x0400 or 0x0500. In other
+words, do not configure IGTK at all if the AP is using unexpected KeyID
+and the local driver does not support that value instead of trying to
+guess that the AP really meant keyidx 4 or 5. Would just need to confirm
+that the local driver is rejecting any group-addressed robust management
+frame if there is no key configured for the keyidx. The main benefit
+here would be in the local driver not getting that IGTK value enabled if
+there is a risk of it being predictable value that an attacker could use
+to inject frames.
 
-Signed-off-by: Mikael Kanstrup <mikael.kanstrup@sony.com>
----
- src/rsn_supp/wpa.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/src/rsn_supp/wpa.c b/src/rsn_supp/wpa.c
-index 86593ab78..32b9b9326 100644
 --- a/src/rsn_supp/wpa.c
 +++ b/src/rsn_supp/wpa.c
-@@ -1024,6 +1024,12 @@ static int wpa_supplicant_install_igtk(struct wpa_sm *sm,
- {
- 	size_t len = wpa_cipher_key_len(sm->mgmt_group_cipher);
- 	u16 keyidx = WPA_GET_LE16(igtk->keyid);
-+	if (keyidx == 1024 || keyidx == 1280) {
-+		/* Workaround incorrectly behaving APs that send Key ID in big endian format */
-+		wpa_printf(MSG_INFO, "PMF: Workaround - Allow Key ID in big endian format(%d)",
-+			   keyidx);
-+		keyidx = WPA_GET_BE16(igtk->keyid);
-+	}
+@@ -1050,7 +1050,12 @@
+ 			   igtk->igtk, len) < 0) {
+ 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+ 			"WPA: Failed to configure IGTK to the driver");
+-		return -1;
++		/* Work around issues with APs that are know to use incorrect
++		* byte order for the KeyID field. Leave the IGTK unconfigured
++		* while allowing unicast PMF to be used.
++		*/
++		if (keyidx != 0x0400 && keyidx != 0x0500)
++			return -1;
+ 	}
  
- 	/* Detect possible key reinstallation */
- 	if ((sm->igtk.igtk_len == len &&
--- 
-2.17.1
+ 	if (wnm_sleep) {

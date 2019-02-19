@@ -1,3 +1,10 @@
+wpa (2:2.7+git20190128+0c1e29f-2) unstable; urgency=medium
+
+  * Apply an RFC patch to work around big endian keyidx.
+    This is likely to fix #919138, but more testing is needed.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 19 Feb 2019 19:14:56 +0100
+
 wpa (2:2.7+git20190128+0c1e29f-1) unstable; urgency=medium
 
   * Upload to unstable.

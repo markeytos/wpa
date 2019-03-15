@@ -1,3 +1,12 @@
+wpa (2:2.7+git20190128+0c1e29f-3) unstable; urgency=medium
+
+  * Print the warning and exit after sourcing /lib/lsb/init-functions
+    (Closes: #924666).
+  * Recognise multiple configs in DAEMON_CONF and verify them all.
+  * Fix ENGINE support with OpenSSL 1.1+ (Closes: #924632).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 15 Mar 2019 17:44:51 +0100
+
 wpa (2:2.7+git20190128+0c1e29f-2) unstable; urgency=medium
 
   * Apply an RFC patch to work around big endian keyidx.

@@ -25,15 +25,15 @@ PIDFILE=/run/hostapd.pid
 [ -s "$DAEMON_DEFS" ] && . /etc/default/hostapd
 [ -n "$DAEMON_CONF" ] || exit 0
 
+DAEMON_OPTS="-B -P $PIDFILE $DAEMON_OPTS $DAEMON_CONF"
+
+. /lib/lsb/init-functions
+
 if [ ! -r "$DAEMON_CONF" ]
 then
     log_action_msg "No hostapd config found, not starting hostapd."
     exit 0
 fi
-
-DAEMON_OPTS="-B -P $PIDFILE $DAEMON_OPTS $DAEMON_CONF"
-
-. /lib/lsb/init-functions
 
 case "$1" in
   start)

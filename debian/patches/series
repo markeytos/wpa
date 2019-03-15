@@ -7,3 +7,4 @@ networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
 PMF-Allow-Key-ID-in-BE-format.patch
+fix-ENGINE-support-with-openssl-1.1.patch

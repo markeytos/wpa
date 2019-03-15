@@ -29,17 +29,20 @@ DAEMON_OPTS="-B -P $PIDFILE $DAEMON_OPTS $DAEMON_CONF"
 
 . /lib/lsb/init-functions
 
-if [ ! -r "$DAEMON_CONF" ]
-then
-    log_action_msg "No hostapd config found, not starting hostapd."
-    exit 0
-fi
+for conf in $DAEMON_CONF
+do
+    if [ ! -r "$conf" ]
+    then
+        log_action_msg "hostapd config $conf not found, not starting hostapd."
+        exit 0
+    fi
+done
 
 case "$1" in
   start)
 	if [ "$DAEMON_CONF" != /etc/hostapd/hostapd.conf ]
 	then
-		log_warning_msg "hostapd config not in /etc/hostapd/hostapd.conf -- read /usr/share/doc/hostapd/NEWS.Debian.gz"
+		log_warning_msg "hostapd config not in /etc/hostapd/hostapd.conf -- please read /usr/share/doc/hostapd/NEWS.Debian.gz"
 	fi
 	log_daemon_msg "Starting $DESC" "$NAME"
 	start-stop-daemon --start --oknodo --quiet --exec "$DAEMON_SBIN" \

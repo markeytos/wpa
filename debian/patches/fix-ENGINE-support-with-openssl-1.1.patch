@@ -21,6 +21,8 @@ Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 
 diff --git a/src/crypto/tls_openssl.c b/src/crypto/tls_openssl.c
 index 705fa29a3..ee7ed7c9b 100644
+--- a/src/crypto/tls_openssl.c
++++ b/src/crypto/tls_openssl.c
 @@ -1034,10 +1034,7 @@ void * tls_init(const struct tls_config *conf)
 
  #ifndef OPENSSL_NO_ENGINE

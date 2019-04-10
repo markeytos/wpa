@@ -1,3 +1,21 @@
+wpa (2:2.7+git20190128+0c1e29f-4) UNRELEASED; urgency=high
+
+  * Apply security fixes:
+    - CVE-2019-9494: SAE cache attack against ECC groups
+    - CVE-2019-9495: EAP-pwd cache attack against ECC groups
+    - CVE-2019-9496: SAE confirm missing state validation
+    - CVE-2019-9497: EAP-pwd server not checking for reflection attack
+    - CVE-2019-9498: EAP-pwd server missing commit validation for scalar/element
+    - CVE-2019-9499: EAP-pwd peer missing commit validation for scalar/element
+
+    For more details, see:
+    - https://w1.fi/security/2019-1/
+    - https://w1.fi/security/2019-2/
+    - https://w1.fi/security/2019-3/
+    - https://w1.fi/security/2019-4/
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 10 Apr 2019 16:04:47 +0200
+
 wpa (2:2.7+git20190128+0c1e29f-3) unstable; urgency=medium
 
   * Print the warning and exit after sourcing /lib/lsb/init-functions

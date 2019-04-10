@@ -1,7 +1,7 @@
 wpa (2:2.7+git20190128+0c1e29f-4) UNRELEASED; urgency=high
 
-  * Apply security fixes:
-    - CVE-2019-9494: SAE cache attack against ECC groups
+  * Apply security fixes (Closes: #926801):
+    - CVE-2019-9494: SAE cache attack against ECC groups (VU#871675)
     - CVE-2019-9495: EAP-pwd cache attack against ECC groups
     - CVE-2019-9496: SAE confirm missing state validation
     - CVE-2019-9497: EAP-pwd server not checking for reflection attack

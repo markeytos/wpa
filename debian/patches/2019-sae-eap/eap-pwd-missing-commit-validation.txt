@@ -1,9 +1,3 @@
----[ EMBARGO NOTE START ]-----------------------------------------------
-- This is an *UNPUBLISHED DRAFT* and subject to change
-- Do *NOT* distribute any details outside your organization
-- Embargo is in place until April 10, 2019, 3pm UTC
----[ EMBARGO NOTE END ]-------------------------------------------------
-
 EAP-pwd missing commit validation
 
 Published: April 10, 2019

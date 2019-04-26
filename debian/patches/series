@@ -22,3 +22,5 @@ fix-ENGINE-support-with-openssl-1.1.patch
 2019-sae-eap/0012-EAP-pwd-server-Detect-reflection-attacks.patch
 2019-sae-eap/0013-EAP-pwd-client-Verify-received-scalar-and-element.patch
 2019-sae-eap/0014-EAP-pwd-Check-element-x-y-coordinates-explicitly.patch
+2019-5/0001-EAP-pwd-server-Fix-reassembly-buffer-handling.patch
+2019-5/0003-EAP-pwd-peer-Fix-reassembly-buffer-handling.patch

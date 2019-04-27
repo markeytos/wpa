@@ -40,6 +40,9 @@
 #include "driver_nl80211.h"
 
 
+#ifndef NETLINK_CAP_ACK
+#define NETLINK_CAP_ACK 10
+#endif /* NETLINK_CAP_ACK */
 /* support for extack if compilation headers are too old */
 #ifndef NETLINK_EXT_ACK
 #define NETLINK_EXT_ACK 11
@@ -304,6 +307,7 @@ void nl80211_mark_disconnected(struct wpa_driver_nl80211_data *drv)
 		os_memcpy(drv->prev_bssid, drv->bssid, ETH_ALEN);
 	drv->associated = 0;
 	os_memset(drv->bssid, 0, ETH_ALEN);
+	drv->first_bss->freq = 0;
 }
 
 
@@ -405,6 +409,11 @@ static int send_and_recv(struct nl80211_global *global,
 	opt = 1;
 	setsockopt(nl_socket_get_fd(nl_handle), SOL_NETLINK,
 		   NETLINK_EXT_ACK, &opt, sizeof(opt));
+
+	/* try to set NETLINK_CAP_ACK to 1, ignoring errors */
+	opt = 1;
+	setsockopt(nl_socket_get_fd(nl_handle), SOL_NETLINK,
+		   NETLINK_CAP_ACK, &opt, sizeof(opt));
 
 	err = nl_send_auto_complete(nl_handle, msg);
 	if (err < 0)
@@ -2461,6 +2470,16 @@ static int nl80211_mgmt_subscribe_ap_dev_sme(struct i802_bss *bss)
 	if (nl80211_action_subscribe_ap(bss))
 		goto out_err;
 
+	if (bss->drv->device_ap_sme) {
+		u16 type = (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_AUTH << 4);
+
+		/* Register for all Authentication frames */
+		if (nl80211_register_frame(bss, bss->nl_mgmt, type, NULL, 0)
+		    < 0)
+			wpa_printf(MSG_DEBUG,
+				   "nl80211: Failed to subscribe to handle Authentication frames - SAE offload may not work");
+	}
+
 	nl80211_mgmt_handle_register_eloop(bss);
 	return 0;
 
@@ -3469,8 +3488,8 @@ retry:
 			goto fail;
 	}
 	if (params->ssid) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-				  params->ssid, params->ssid_len);
+		wpa_printf(MSG_DEBUG, "  * SSID=%s",
+			   wpa_ssid_txt(params->ssid, params->ssid_len));
 		if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len,
 			    params->ssid))
 			goto fail;
@@ -4066,8 +4085,8 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	wpa_printf(MSG_DEBUG, "nl80211: beacon_rate=%u", params->beacon_rate);
 	wpa_printf(MSG_DEBUG, "nl80211: rate_type=%d", params->rate_type);
 	wpa_printf(MSG_DEBUG, "nl80211: dtim_period=%d", params->dtim_period);
-	wpa_hexdump_ascii(MSG_DEBUG, "nl80211: ssid",
-			  params->ssid, params->ssid_len);
+	wpa_printf(MSG_DEBUG, "nl80211: ssid=%s",
+		   wpa_ssid_txt(params->ssid, params->ssid_len));
 	if (!(msg = nl80211_bss_msg(bss, 0, cmd)) ||
 	    nla_put(msg, NL80211_ATTR_BEACON_HEAD, params->head_len,
 		    params->head) ||
@@ -4150,6 +4169,11 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	     params->pairwise_ciphers & (WPA_CIPHER_WEP104 | WPA_CIPHER_WEP40)) &&
 	    (nla_put_u16(msg, NL80211_ATTR_CONTROL_PORT_ETHERTYPE, ETH_P_PAE) ||
 	     nla_put_flag(msg, NL80211_ATTR_CONTROL_PORT_NO_ENCRYPT)))
+		goto fail;
+
+	if (drv->device_ap_sme &&
+	    (params->key_mgmt_suites & WPA_KEY_MGMT_SAE) &&
+	    nla_put_flag(msg, NL80211_ATTR_EXTERNAL_AUTH_SUPPORT))
 		goto fail;
 
 	wpa_printf(MSG_DEBUG, "nl80211: pairwise_ciphers=0x%x",
@@ -4671,7 +4695,8 @@ static int wpa_driver_nl80211_sta_add(void *priv,
 		goto fail;
 #endif /* CONFIG_MESH */
 
-	if (params->flags & WPA_STA_WMM) {
+	if ((!params->set || FULL_AP_CLIENT_STATE_SUPP(drv->capa.flags)) &&
+	    (params->flags & WPA_STA_WMM)) {
 		struct nlattr *wme = nla_nest_start(msg, NL80211_ATTR_STA_WME);
 
 		wpa_printf(MSG_DEBUG, "  * qosinfo=0x%x", params->qosinfo);
@@ -5281,8 +5306,8 @@ retry:
 	    params->ssid == NULL || params->ssid_len > sizeof(drv->ssid))
 		goto fail;
 
-	wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-			  params->ssid, params->ssid_len);
+	wpa_printf(MSG_DEBUG, "  * SSID=%s",
+		   wpa_ssid_txt(params->ssid, params->ssid_len));
 	if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len, params->ssid))
 		goto fail;
 	os_memcpy(drv->ssid, params->ssid, params->ssid_len);
@@ -5443,8 +5468,8 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 	}
 
 	if (params->ssid) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-				  params->ssid, params->ssid_len);
+		wpa_printf(MSG_DEBUG, "  * SSID=%s",
+			   wpa_ssid_txt(params->ssid, params->ssid_len));
 		if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len,
 			    params->ssid))
 			return -1;
@@ -5502,8 +5527,11 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 	    params->key_mgmt_suite == WPA_KEY_MGMT_OSEN ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SHA256 ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_PSK_SHA256 ||
+	    params->key_mgmt_suite == WPA_KEY_MGMT_SAE ||
+	    params->key_mgmt_suite == WPA_KEY_MGMT_FT_SAE ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SUITE_B ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SUITE_B_192 ||
+	    params->key_mgmt_suite == WPA_KEY_MGMT_FT_IEEE8021X_SHA384 ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_FILS_SHA256 ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_FILS_SHA384 ||
 	    params->key_mgmt_suite == WPA_KEY_MGMT_FT_FILS_SHA256 ||
@@ -5534,11 +5562,20 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 		case WPA_KEY_MGMT_OSEN:
 			mgmt = RSN_AUTH_KEY_MGMT_OSEN;
 			break;
+		case WPA_KEY_MGMT_SAE:
+			mgmt = RSN_AUTH_KEY_MGMT_SAE;
+			break;
+		case WPA_KEY_MGMT_FT_SAE:
+			mgmt = RSN_AUTH_KEY_MGMT_FT_SAE;
+			break;
 		case WPA_KEY_MGMT_IEEE8021X_SUITE_B:
 			mgmt = RSN_AUTH_KEY_MGMT_802_1X_SUITE_B;
 			break;
 		case WPA_KEY_MGMT_IEEE8021X_SUITE_B_192:
 			mgmt = RSN_AUTH_KEY_MGMT_802_1X_SUITE_B_192;
+			break;
+		case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
+			mgmt = RSN_AUTH_KEY_MGMT_FT_802_1X_SHA384;
 			break;
 		case WPA_KEY_MGMT_FILS_SHA256:
 			mgmt = RSN_AUTH_KEY_MGMT_FILS_SHA256;
@@ -5708,9 +5745,10 @@ skip_auth_type:
 		goto fail;
 
 	if (nl_connect)
-		ret = send_and_recv(drv->global, nl_connect, msg, NULL, NULL);
+		ret = send_and_recv(drv->global, nl_connect, msg,
+				    NULL, (void *) -1);
 	else
-		ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+		ret = send_and_recv_msgs(drv, msg, NULL, (void *) -1);
 
 	msg = NULL;
 	if (ret) {
@@ -5722,6 +5760,7 @@ skip_auth_type:
 	}
 
 fail:
+	nl80211_nlmsg_clear(msg);
 	nlmsg_free(msg);
 	return ret;
 
@@ -6122,6 +6161,7 @@ static int get_key_handler(struct nl_msg *msg, void *arg)
 	if (tb[NL80211_ATTR_KEY_SEQ])
 		memcpy(arg, nla_data(tb[NL80211_ATTR_KEY_SEQ]),
 		       min_int(nla_len(tb[NL80211_ATTR_KEY_SEQ]), 6));
+	nl80211_nlmsg_clear(msg);
 	return NL_SKIP;
 }
 
@@ -6156,7 +6196,7 @@ static int i802_set_rts(void *priv, int rts)
 	int ret;
 	u32 val;
 
-	if (rts >= 2347)
+	if (rts >= 2347 || rts == -1)
 		val = (u32) -1;
 	else
 		val = rts;
@@ -6184,7 +6224,7 @@ static int i802_set_frag(void *priv, int frag)
 	int ret;
 	u32 val;
 
-	if (frag >= 2346)
+	if (frag >= 2346 || frag == -1)
 		val = (u32) -1;
 	else
 		val = frag;
@@ -7917,13 +7957,15 @@ static int nl80211_pmkid(struct i802_bss *bss, int cmd,
 	    (params->fils_cache_id &&
 	     nla_put(msg, NL80211_ATTR_FILS_CACHE_ID, 2,
 		     params->fils_cache_id)) ||
-	    (params->pmk_len && params->pmk_len <= PMK_MAX_LEN &&
+	    (cmd != NL80211_CMD_DEL_PMKSA &&
+	     params->pmk_len && params->pmk_len <= PMK_MAX_LEN &&
 	     nla_put(msg, NL80211_ATTR_PMK, params->pmk_len, params->pmk))) {
+		nl80211_nlmsg_clear(msg);
 		nlmsg_free(msg);
 		return -ENOBUFS;
 	}
 
-	return send_and_recv_msgs(bss->drv, msg, NULL, NULL);
+	return send_and_recv_msgs(bss->drv, msg, NULL, (void *) -1);
 }
 
 
@@ -8246,6 +8288,7 @@ static void nl80211_poll_client(void *priv, const u8 *own_addr, const u8 *addr,
 	struct i802_bss *bss = priv;
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nl_msg *msg;
+	u64 cookie;
 	int ret;
 
 	if (!drv->poll_command_supported) {
@@ -8259,11 +8302,16 @@ static void nl80211_poll_client(void *priv, const u8 *own_addr, const u8 *addr,
 		return;
 	}
 
-	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+	ret = send_and_recv_msgs(drv, msg, cookie_handler, &cookie);
 	if (ret < 0) {
 		wpa_printf(MSG_DEBUG, "nl80211: Client probe request for "
 			   MACSTR " failed: ret=%d (%s)",
 			   MAC2STR(addr), ret, strerror(-ret));
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Client probe request addr=" MACSTR
+			   " cookie=%llu", MAC2STR(addr),
+			   (long long unsigned int) cookie);
 	}
 }
 
@@ -9424,8 +9472,8 @@ static int nl80211_put_mesh_id(struct nl_msg *msg, const u8 *mesh_id,
 			       size_t mesh_id_len)
 {
 	if (mesh_id) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * Mesh ID (SSID)",
-				  mesh_id, mesh_id_len);
+		wpa_printf(MSG_DEBUG, "  * Mesh ID (SSID)=%s",
+			   wpa_ssid_txt(mesh_id, mesh_id_len));
 		return nla_put(msg, NL80211_ATTR_MESH_ID, mesh_id_len, mesh_id);
 	}
 
@@ -10766,15 +10814,27 @@ static int nl80211_send_external_auth_status(void *priv,
 	struct nl_msg *msg = NULL;
 	int ret = -1;
 
+	/* External auth command/status is intended for drivers that implement
+	 * intenral SME but want to offload authentication processing (e.g.,
+	 * SAE) to hostapd/wpa_supplicant. Do nott send the status to drivers
+	 * which do not support AP SME or use wpa_supplicant/hostapd SME.
+	 */
+	if (!bss->drv->device_ap_sme ||
+	    (drv->capa.flags & WPA_DRIVER_FLAGS_SME))
+		return -1;
+
 	wpa_dbg(drv->ctx, MSG_DEBUG,
 		"nl80211: External auth status: %u", params->status);
 
 	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_EXTERNAL_AUTH);
 	if (!msg ||
 	    nla_put_u16(msg, NL80211_ATTR_STATUS_CODE, params->status) ||
-	    nla_put(msg, NL80211_ATTR_SSID, params->ssid_len,
-		    params->ssid) ||
-	    nla_put(msg, NL80211_ATTR_BSSID, ETH_ALEN, params->bssid))
+	    (params->ssid && params->ssid_len &&
+	     nla_put(msg, NL80211_ATTR_SSID, params->ssid_len, params->ssid)) ||
+	    (params->pmkid &&
+	     nla_put(msg, NL80211_ATTR_PMKID, PMKID_LEN, params->pmkid)) ||
+	    (params->bssid &&
+	     nla_put(msg, NL80211_ATTR_BSSID, ETH_ALEN, params->bssid)))
 		goto fail;
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	msg = NULL;

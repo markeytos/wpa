@@ -1,3 +1,12 @@
+wpa (2:2.8-1) experimental; urgency=medium
+
+  * Upload to experimental.
+  * New upstream release.
+  * Update the watch file.
+  * Drop debian/README-DPP, install shipped READMEs.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 27 Apr 2019 10:50:06 +0200
+
 wpa (2:2.7+git20190128+0c1e29f-5) unstable; urgency=high
 
   * Fix security issue 2019-5:

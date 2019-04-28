@@ -1,3 +1,12 @@
+wpa (2:2.8-2) experimental; urgency=medium
+
+  * Delete patches applied upstream.
+  * Apply upstream patch:
+    - Fix a regression in storing of external_auth SSID/BSSID
+  * Synchronise wpasupplicant configuration with the upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 28 Apr 2019 21:20:19 +0200
+
 wpa (2:2.8-1) experimental; urgency=medium
 
   * Upload to experimental.

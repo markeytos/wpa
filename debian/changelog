@@ -1,3 +1,10 @@
+wpa (2:2.7+git20190128+0c1e29f-6) unstable; urgency=medium
+
+  * Make sure the hostapd unit is masked when there’s no configuration
+    file available (Closes: #928948)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 06 Jun 2019 15:16:29 +0200
+
 wpa (2:2.7+git20190128+0c1e29f-5) unstable; urgency=high
 
   * Fix security issue 2019-5:

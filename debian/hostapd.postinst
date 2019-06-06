@@ -2,6 +2,8 @@
 
 set -e
 
+#DEBHELPER#
+
 if [ -d /run/systemd/system ] && [ "$1" = configure ]
 then
     DAEMON_CONF=
@@ -12,5 +14,4 @@ then
     fi
 fi
 
-#DEBHELPER#
 exit 0

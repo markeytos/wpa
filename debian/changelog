@@ -1,3 +1,13 @@
+wpa (2:2.8-3) unstable; urgency=medium
+
+  * Upload to unstable.
+  * Apply upstream patch:
+    - Use a separate flag for 4-way handshake offload.
+  * Spelling: meny -> menu.
+  * Add lintian overrides for known issues.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 11 Jul 2019 23:19:03 +0200
+
 wpa (2:2.8-2) experimental; urgency=medium
 
   * Delete patches applied upstream.

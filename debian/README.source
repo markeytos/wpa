@@ -1,6 +1,8 @@
 "wpa" sources for Debian
 ------------------------
 
+**WARNING**: THIS IS OUTDATED; check debian/watch for the actual URLs.
+
 This "wpa" source package merges wpa_supplicant and hostapd sources, which are
 maintained in one source repository[1] upstream and share considerable/
 duplicate amounts of source. Starting with the 1.x branch, both wpa_supplicant

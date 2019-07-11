@@ -1,3 +1,22 @@
+wpa (2:2.8-2) experimental; urgency=medium
+
+  * Delete patches applied upstream.
+  * Apply upstream patch:
+    - Fix a regression in storing of external_auth SSID/BSSID
+  * Synchronise wpasupplicant configuration with the upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 28 Apr 2019 21:20:19 +0200
+
+wpa (2:2.8-1) experimental; urgency=medium
+
+  * Upload to experimental.
+  * New upstream release.
+  * Update the watch file.
+  * Drop debian/README-DPP, install shipped READMEs.
+  * Refresh patches.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 27 Apr 2019 11:15:10 +0200
+
 wpa (2:2.7+git20190128+0c1e29f-6) unstable; urgency=medium
 
   * Make sure the hostapd unit is masked when there’s no configuration

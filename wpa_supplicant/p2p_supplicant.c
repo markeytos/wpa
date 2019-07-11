@@ -980,6 +980,7 @@ static int wpas_p2p_group_delete(struct wpa_supplicant *wpa_s,
 	os_free(wpa_s->p2p_group_common_freqs);
 	wpa_s->p2p_group_common_freqs = NULL;
 	wpa_s->p2p_group_common_freqs_num = 0;
+	wpa_s->p2p_go_do_acs = 0;
 
 	wpa_s->waiting_presence_resp = 0;
 
@@ -1584,20 +1585,27 @@ static int wpas_send_action_work(struct wpa_supplicant *wpa_s,
 
 static int wpas_send_action(void *ctx, unsigned int freq, const u8 *dst,
 			    const u8 *src, const u8 *bssid, const u8 *buf,
-			    size_t len, unsigned int wait_time)
+			    size_t len, unsigned int wait_time, int *scheduled)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	int listen_freq = -1, send_freq = -1;
 
+	if (scheduled)
+		*scheduled = 0;
 	if (wpa_s->p2p_listen_work)
 		listen_freq = wpa_s->p2p_listen_work->freq;
 	if (wpa_s->p2p_send_action_work)
 		send_freq = wpa_s->p2p_send_action_work->freq;
 	if (listen_freq != (int) freq && send_freq != (int) freq) {
-		wpa_printf(MSG_DEBUG, "P2P: Schedule new radio work for Action frame TX (listen_freq=%d send_freq=%d)",
-			   listen_freq, send_freq);
-		return wpas_send_action_work(wpa_s, freq, dst, src, bssid, buf,
-					     len, wait_time);
+		int res;
+
+		wpa_printf(MSG_DEBUG, "P2P: Schedule new radio work for Action frame TX (listen_freq=%d send_freq=%d freq=%u)",
+			   listen_freq, send_freq, freq);
+		res = wpas_send_action_work(wpa_s, freq, dst, src, bssid, buf,
+					    len, wait_time);
+		if (res == 0 && scheduled)
+			*scheduled = 1;
+		return res;
 	}
 
 	wpa_printf(MSG_DEBUG, "P2P: Use ongoing radio work for Action frame TX");
@@ -1649,7 +1657,7 @@ static void wpas_start_wps_enrollee(struct wpa_supplicant *wpa_s,
 	wpa_supplicant_ap_deinit(wpa_s);
 	wpas_copy_go_neg_results(wpa_s, res);
 	if (res->wps_method == WPS_PBC) {
-		wpas_wps_start_pbc(wpa_s, res->peer_interface_addr, 1);
+		wpas_wps_start_pbc(wpa_s, res->peer_interface_addr, 1, 0);
 #ifdef CONFIG_WPS_NFC
 	} else if (res->wps_method == WPS_NFC) {
 		wpas_wps_start_nfc(wpa_s, res->peer_device_addr,
@@ -4180,6 +4188,9 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 		return;
 	}
 
+	wpa_s->global->pending_p2ps_group = 0;
+	wpa_s->global->pending_p2ps_group_freq = 0;
+
 	if (conncap == P2PS_SETUP_GROUP_OWNER) {
 		/*
 		 * We need to copy the interface name. Simply saving a
@@ -4190,8 +4201,10 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 
 		go_ifname[0] = '\0';
 		if (!go_wpa_s) {
-			wpa_s->global->pending_p2ps_group = 1;
-			wpa_s->global->pending_p2ps_group_freq = freq;
+			if (!response_done) {
+				wpa_s->global->pending_p2ps_group = 1;
+				wpa_s->global->pending_p2ps_group_freq = freq;
+			}
 
 			if (!wpas_p2p_create_iface(wpa_s))
 				os_memcpy(go_ifname, wpa_s->ifname,
@@ -4498,7 +4511,10 @@ int wpas_p2p_init(struct wpa_global *global, struct wpa_supplicant *wpa_s)
 		 * channel.
 		 */
 		if (p2p_config_get_random_social(&p2p, &p2p.reg_class,
-						 &p2p.channel) != 0) {
+						 &p2p.channel,
+						 &global->p2p_go_avoid_freq,
+						 &global->p2p_disallow_freq) !=
+		    0) {
 			wpa_printf(MSG_INFO,
 				   "P2P: No social channels supported by the driver - do not enable P2P");
 			return 0;
@@ -4523,10 +4539,14 @@ int wpas_p2p_init(struct wpa_global *global, struct wpa_supplicant *wpa_s)
 		 * other preference is indicated.
 		 */
 		if (p2p_config_get_random_social(&p2p, &p2p.op_reg_class,
-						 &p2p.op_channel) != 0) {
-			wpa_printf(MSG_ERROR,
+						 &p2p.op_channel, NULL,
+						 NULL) != 0) {
+			wpa_printf(MSG_INFO,
 				   "P2P: Failed to select random social channel as operation channel");
-			return -1;
+			p2p.op_reg_class = 0;
+			p2p.op_channel = 0;
+			/* This will be overridden during group setup in
+			 * p2p_prepare_channel(), so allow setup to continue. */
 		}
 		p2p.cfg_op_channel = 0;
 		wpa_printf(MSG_DEBUG, "P2P: Random operating channel: "
@@ -7200,7 +7220,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 	u8 go_dev_addr[ETH_ALEN];
 	int persistent;
 	int freq;
-	u8 ip[3 * 4];
+	u8 ip[3 * 4], *ip_ptr = NULL;
 	char ip_addr[100];
 
 	if (ssid == NULL || ssid->mode != WPAS_MODE_P2P_GROUP_FORMATION) {
@@ -7247,6 +7267,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 				  ip[8], ip[9], ip[10], ip[11]);
 		if (os_snprintf_error(sizeof(ip_addr), res))
 			ip_addr[0] = '\0';
+		ip_ptr = ip;
 	}
 
 	wpas_p2p_group_started(wpa_s, 0, ssid, freq,
@@ -7259,7 +7280,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 		wpas_p2p_store_persistent_group(wpa_s->p2pdev,
 						ssid, go_dev_addr);
 
-	wpas_notify_p2p_group_started(wpa_s, ssid, persistent, 1, ip);
+	wpas_notify_p2p_group_started(wpa_s, ssid, persistent, 1, ip_ptr);
 }
 
 

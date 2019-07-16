@@ -1,3 +1,11 @@
+wpa (2:2.8+git20190713+b8491ae-1) experimental; urgency=medium
+
+  * Upload to experimental.
+  * New upstream snapshot.
+  * Drop patches applied upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 16 Jul 2019 18:47:25 -0300
+
 wpa (2:2.8-3) unstable; urgency=medium
 
   * Upload to unstable.

@@ -1,3 +1,17 @@
+wpa (2:2.9-1) unstable; urgency=high
+
+  * New upstream release (Closes: #934180):
+    - SECURITY UPDATE (CVE-2019-13377):
+      Timing-based side-channel attack against WPA3's Dragonfly handshake
+      when using Brainpool curves.
+      More details:
+      + https://w1.fi/security/2019-6/
+      + https://wpa3.mathyvanhoef.com/
+  * Drop a patch applied upstream.
+  * Update debian/watch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 08 Aug 2019 15:59:02 +0200
+
 wpa (2:2.8+git20190713+b8491ae-1) experimental; urgency=medium
 
   * Upload to experimental.

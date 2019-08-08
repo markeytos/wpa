@@ -4700,8 +4700,9 @@ static int wpa_driver_nl80211_sta_add(void *priv,
 		goto fail;
 #endif /* CONFIG_MESH */
 
-	if ((!params->set || FULL_AP_CLIENT_STATE_SUPP(drv->capa.flags)) &&
-	    (params->flags & WPA_STA_WMM)) {
+	if ((!params->set || (params->flags & WPA_STA_TDLS_PEER) ||
+	     FULL_AP_CLIENT_STATE_SUPP(drv->capa.flags)) &&
+	     (params->flags & WPA_STA_WMM)) {
 		struct nlattr *wme = nla_nest_start(msg, NL80211_ATTR_STA_WME);
 
 		wpa_printf(MSG_DEBUG, "  * qosinfo=0x%x", params->qosinfo);
@@ -5632,7 +5633,7 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 			return -1;
 	}
 
-	if (params->req_key_mgmt_offload &&
+	if (params->req_handshake_offload &&
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X)) {
 		    wpa_printf(MSG_DEBUG, "  * WANT_1X_4WAY_HS");
 		    if (nla_put_flag(msg, NL80211_ATTR_WANT_1X_4WAY_HS))
@@ -10745,22 +10746,37 @@ static int nl80211_write_to_file(const char *name, unsigned int val)
 {
 	int fd, len;
 	char tmp[128];
+	int ret = 0;
 
 	fd = open(name, O_RDWR);
 	if (fd < 0) {
-		wpa_printf(MSG_ERROR, "nl80211: Failed to open %s: %s",
+		int level;
+		/*
+		 * Flags may not exist on older kernels, or while we're tearing
+		 * down a disappearing device.
+		 */
+		if (errno == ENOENT) {
+			ret = 0;
+			level = MSG_DEBUG;
+		} else {
+			ret = -1;
+			level = MSG_ERROR;
+		}
+		wpa_printf(level, "nl80211: Failed to open %s: %s",
 			   name, strerror(errno));
-		return fd;
+		return ret;
 	}
 
 	len = os_snprintf(tmp, sizeof(tmp), "%u\n", val);
 	len = write(fd, tmp, len);
-	if (len < 0)
+	if (len < 0) {
+		ret = -1;
 		wpa_printf(MSG_ERROR, "nl80211: Failed to write to %s: %s",
 			   name, strerror(errno));
+	}
 	close(fd);
 
-	return 0;
+	return ret;
 }
 
 

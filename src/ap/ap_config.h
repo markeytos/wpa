@@ -301,6 +301,7 @@ struct hostapd_bss_config {
 	int radius_request_cui;
 	struct hostapd_radius_attr *radius_auth_req_attr;
 	struct hostapd_radius_attr *radius_acct_req_attr;
+	char *radius_req_attr_sqlite;
 	int radius_das_port;
 	unsigned int radius_das_time_window;
 	int radius_das_require_event_timestamp;
@@ -429,6 +430,7 @@ struct hostapd_bss_config {
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
 	int eap_sim_aka_result_ind;
+	int eap_sim_id;
 	int tnc;
 	int fragment_size;
 	u16 pwd_group;
@@ -1074,6 +1076,7 @@ hostapd_set_oper_centr_freq_seg1_idx(struct hostapd_config *conf,
 int hostapd_mac_comp(const void *a, const void *b);
 struct hostapd_config * hostapd_config_defaults(void);
 void hostapd_config_defaults_bss(struct hostapd_bss_config *bss);
+void hostapd_config_free_radius_attr(struct hostapd_radius_attr *attr);
 void hostapd_config_free_eap_user(struct hostapd_eap_user *user);
 void hostapd_config_free_eap_users(struct hostapd_eap_user *user);
 void hostapd_config_clear_wpa_psk(struct hostapd_wpa_psk **p);
@@ -1092,6 +1095,7 @@ const char * hostapd_get_vlan_id_ifname(struct hostapd_vlan *vlan,
 					int vlan_id);
 struct hostapd_radius_attr *
 hostapd_config_get_radius_attr(struct hostapd_radius_attr *attr, u8 type);
+struct hostapd_radius_attr * hostapd_parse_radius_attr(const char *value);
 int hostapd_config_check(struct hostapd_config *conf, int full_config);
 void hostapd_set_security_params(struct hostapd_bss_config *bss,
 				 int full_config);

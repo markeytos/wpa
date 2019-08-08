@@ -393,7 +393,10 @@ static int eap_aka_build_encr(struct eap_sm *sm, struct eap_aka_data *data,
 			      const u8 *nonce_s)
 {
 	os_free(data->next_pseudonym);
-	if (nonce_s == NULL) {
+	if (!(sm->eap_sim_id & 0x01)) {
+		/* Use of pseudonyms disabled in configuration */
+		data->next_pseudonym = NULL;
+	} else if (!nonce_s) {
 		data->next_pseudonym =
 			eap_sim_db_get_next_pseudonym(
 				sm->eap_sim_db_priv,
@@ -404,7 +407,10 @@ static int eap_aka_build_encr(struct eap_sm *sm, struct eap_aka_data *data,
 		data->next_pseudonym = NULL;
 	}
 	os_free(data->next_reauth_id);
-	if (data->counter <= EAP_AKA_MAX_FAST_REAUTHS) {
+	if (!(sm->eap_sim_id & 0x02)) {
+		/* Use of fast reauth disabled in configuration */
+		data->next_reauth_id = NULL;
+	} else if (data->counter <= EAP_AKA_MAX_FAST_REAUTHS) {
 		data->next_reauth_id =
 			eap_sim_db_get_next_reauth_id(
 				sm->eap_sim_db_priv,
@@ -589,7 +595,7 @@ static struct wpabuf * eap_aka_build_reauth(struct eap_sm *sm,
 	 * Session-Id calculation after receiving response from the peer and
 	 * after all other checks pass. */
 	os_memcpy(data->reauth_mac,
-		  wpabuf_head(buf) + wpabuf_len(buf) - EAP_SIM_MAC_LEN,
+		  wpabuf_head_u8(buf) + wpabuf_len(buf) - EAP_SIM_MAC_LEN,
 		  EAP_SIM_MAC_LEN);
 
 	return buf;

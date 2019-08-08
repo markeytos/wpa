@@ -78,6 +78,7 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 
 	bss->radius_server_auth_port = 1812;
 	bss->eap_sim_db_timeout = 1;
+	bss->eap_sim_id = 3;
 	bss->ap_max_inactivity = AP_MAX_INACTIVITY;
 	bss->eapol_version = EAPOL_VERSION;
 
@@ -476,7 +477,76 @@ hostapd_config_get_radius_attr(struct hostapd_radius_attr *attr, u8 type)
 }
 
 
-static void hostapd_config_free_radius_attr(struct hostapd_radius_attr *attr)
+struct hostapd_radius_attr * hostapd_parse_radius_attr(const char *value)
+{
+	const char *pos;
+	char syntax;
+	struct hostapd_radius_attr *attr;
+	size_t len;
+
+	attr = os_zalloc(sizeof(*attr));
+	if (!attr)
+		return NULL;
+
+	attr->type = atoi(value);
+
+	pos = os_strchr(value, ':');
+	if (!pos) {
+		attr->val = wpabuf_alloc(1);
+		if (!attr->val) {
+			os_free(attr);
+			return NULL;
+		}
+		wpabuf_put_u8(attr->val, 0);
+		return attr;
+	}
+
+	pos++;
+	if (pos[0] == '\0' || pos[1] != ':') {
+		os_free(attr);
+		return NULL;
+	}
+	syntax = *pos++;
+	pos++;
+
+	switch (syntax) {
+	case 's':
+		attr->val = wpabuf_alloc_copy(pos, os_strlen(pos));
+		break;
+	case 'x':
+		len = os_strlen(pos);
+		if (len & 1)
+			break;
+		len /= 2;
+		attr->val = wpabuf_alloc(len);
+		if (!attr->val)
+			break;
+		if (hexstr2bin(pos, wpabuf_put(attr->val, len), len) < 0) {
+			wpabuf_free(attr->val);
+			os_free(attr);
+			return NULL;
+		}
+		break;
+	case 'd':
+		attr->val = wpabuf_alloc(4);
+		if (attr->val)
+			wpabuf_put_be32(attr->val, atoi(pos));
+		break;
+	default:
+		os_free(attr);
+		return NULL;
+	}
+
+	if (!attr->val) {
+		os_free(attr);
+		return NULL;
+	}
+
+	return attr;
+}
+
+
+void hostapd_config_free_radius_attr(struct hostapd_radius_attr *attr)
 {
 	struct hostapd_radius_attr *prev;
 
@@ -625,6 +695,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	}
 	hostapd_config_free_radius_attr(conf->radius_auth_req_attr);
 	hostapd_config_free_radius_attr(conf->radius_acct_req_attr);
+	os_free(conf->radius_req_attr_sqlite);
 	os_free(conf->rsn_preauth_interfaces);
 	os_free(conf->ctrl_interface);
 	os_free(conf->ca_cert);

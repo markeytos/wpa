@@ -6,7 +6,5 @@
 networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
-fix-ENGINE-support-with-openssl-1.1.patch
 # regress fixes from 2.8+
-2.8-fixes/0001-Fix-a-regression-in-storing-of-external_auth-SSID-BS.patch
 2.8-fixes/0002-supplicant-use-separate-flag-for-4-way-handshake-offload.patch

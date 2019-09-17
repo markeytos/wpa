@@ -1,3 +1,13 @@
+wpa (2:2.9-2) unstable; urgency=medium
+
+  * SECURITY UPDATE:
+    - AP mode PMF disconnection protection bypass.
+      More details:
+       + https://w1.fi/security/2019-7/
+      Closes: #940080 (CVE-2019-16275)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 04 Oct 2019 10:11:47 +0200
+
 wpa (2:2.9-1) unstable; urgency=high
 
   * New upstream release (Closes: #934180):

@@ -7,7 +7,7 @@ Priority: optional
 Build-Depends: debhelper-compat (= 12),
  libdbus-1-dev,
  libssl-dev,
- qtbase5-dev,
+ qtbase5-dev <!pkg.wpa.nogui>,
  libncurses5-dev,
  libpcsclite-dev,
  libnl-3-dev (>= 3.4.0~) [linux-any],
@@ -54,6 +54,7 @@ Description: IEEE 802.11 AP and IEEE 802.1X/WPA/WPA2/EAP Authenticator
 
 Package: wpagui
 Architecture: linux-any kfreebsd-any
+Build-Profiles: <!pkg.wpa.nogui>
 Multi-Arch: foreign
 Depends: ${shlibs:Depends},
  ${misc:Depends},
@@ -84,6 +85,7 @@ Description: client support for WPA and WPA2 (IEEE 802.11i)
 
 Package: wpasupplicant-udeb
 Architecture: linux-any
+Build-Profiles: <!noudeb>
 Section: debian-installer
 Priority: standard
 Depends: ${shlibs:Depends},

@@ -1,3 +1,9 @@
+wpa (2:2.9-3) unstable; urgency=medium
+
+  * Add pkg.wpa.nogui and noudeb build profiles.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 04 Oct 2019 11:47:15 +0200
+
 wpa (2:2.9-2) unstable; urgency=medium
 
   * SECURITY UPDATE:

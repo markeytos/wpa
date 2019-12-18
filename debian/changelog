@@ -4,6 +4,7 @@ wpa (2:2.9-4) UNRELEASED; urgency=medium
   * Move source package lintian overrides to debian/source.
   * Use canonical URL in Vcs-Browser.
   * Rely on pre-initialized dpkg-architecture variables.
+  * Update standards version to 4.4.1, no changes needed.
 
  -- Debian Janitor <janitor@jelmer.uk>  Wed, 18 Dec 2019 08:30:54 +0000
 

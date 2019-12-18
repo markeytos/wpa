@@ -3,6 +3,7 @@ wpa (2:2.9-4) UNRELEASED; urgency=medium
   * Use secure URI in Homepage field.
   * Move source package lintian overrides to debian/source.
   * Use canonical URL in Vcs-Browser.
+  * Rely on pre-initialized dpkg-architecture variables.
 
  -- Debian Janitor <janitor@jelmer.uk>  Wed, 18 Dec 2019 08:30:54 +0000
 

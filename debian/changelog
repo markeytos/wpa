@@ -1,3 +1,9 @@
+wpa (2:2.9-4) UNRELEASED; urgency=medium
+
+  * Use secure URI in Homepage field.
+
+ -- Debian Janitor <janitor@jelmer.uk>  Wed, 18 Dec 2019 08:30:54 +0000
+
 wpa (2:2.9-3) unstable; urgency=medium
 
   * Add pkg.wpa.nogui and noudeb build profiles.

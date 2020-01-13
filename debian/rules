@@ -21,7 +21,7 @@ PKG_CONFIG ?= $(DEB_HOST_GNU_TYPE)-pkg-config
 
 export BINDIR V PKG_CONFIG
 
-DEB_HOST_ARCH_OS              ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+include /usr/share/dpkg/architecture.mk
 HOSTAPD_DOT_CONFIG            := debian/config/hostapd/$(DEB_HOST_ARCH_OS)
 WPASUPPLICANT_DOT_CONFIG      := debian/config/wpasupplicant/$(DEB_HOST_ARCH_OS)
 WPASUPPLICANT_UDEB_DOT_CONFIG := debian/config/wpasupplicant/$(DEB_HOST_ARCH_OS)-udeb

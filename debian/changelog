@@ -1,12 +1,16 @@
-wpa (2:2.9-6) UNRELEASED; urgency=medium
+wpa (2:2.9-6) unstable; urgency=medium
 
+  [ Debian Janitor ]
   * Use secure URI in Homepage field.
   * Move source package lintian overrides to debian/source.
   * Use canonical URL in Vcs-Browser.
   * Rely on pre-initialized dpkg-architecture variables.
   * Update standards version to 4.4.1, no changes needed.
 
- -- Debian Janitor <janitor@jelmer.uk>  Wed, 18 Dec 2019 08:30:54 +0000
+  [ Andrej Shadura ]
+  * Disable CONFIG_DRIVER_MACSEC_QCA on kfreebsd.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 13 Jan 2020 16:28:58 +0100
 
 wpa (2:2.9-5) unstable; urgency=medium
 

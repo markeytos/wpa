@@ -1,3 +1,15 @@
+wpa (2:2.9-4) unstable; urgency=medium
+
+  [ Helmut Grohne ]
+  * Fix FTCBFS: Don’t export CC=cc (Closes: #921998).
+
+  [ Andrej Shadura ]
+  * Don’t act in hostapd.postinst if we’re running in a chrootless root.
+  * Apply an upstream patch:
+    - wpa_supplicant: Do not try to detect PSK mismatch during PTK rekeying.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 13 Jan 2020 10:37:10 +0100
+
 wpa (2:2.9-3) unstable; urgency=medium
 
   * Add pkg.wpa.nogui and noudeb build profiles.

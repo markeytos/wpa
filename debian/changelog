@@ -1,3 +1,9 @@
+wpa (2:2.9-5) unstable; urgency=medium
+
+  * Fix erroneously inverted logic in postinst.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 13 Jan 2020 10:48:26 +0100
+
 wpa (2:2.9-4) unstable; urgency=medium
 
   [ Helmut Grohne ]

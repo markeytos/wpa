@@ -10,3 +10,4 @@ allow-tlsv1.patch
 upstream-fixes/0001-wpa_supplicant-Do-not-try-to-detect-PSK-mismatch-dur.patch
 upstream-fixes/0002-trace-handle-binutils-bfd.h-breakage.patch
 upstream-fixes/0003-check-for-ft-support.patch
+upstream-fixes/0004-fix-VERSION_STR-printf-calls.patch

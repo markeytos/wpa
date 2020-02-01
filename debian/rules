@@ -62,6 +62,10 @@ endif
 	dh_auto_build --sourcedirectory=hostapd \
 	              --buildsystem=makefile
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
+	# build eapol_test
+	dh_auto_build --sourcedirectory=wpa_supplicant \
+	              --buildsystem=makefile \
+	              -- eapol_test
 
 override_dh_auto_clean:
 	dh_auto_clean --sourcedirectory=wpa_supplicant/doc/docbook \

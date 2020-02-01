@@ -1,3 +1,10 @@
+wpa (2:2.9.0-9) UNRELEASED; urgency=medium
+
+  [ Terry Burton ]
+  * Build and install eapol_test in eapoltest package (Closes: #700870)
+
+ -- Didier Raboud <odyx@debian.org>  Sat, 22 Feb 2020 14:45:04 +0100
+
 wpa (2:2.9.0-8) unstable; urgency=medium
 
   * Reupload as 2.9.0 to undo an accidental experimental upload to unstable.

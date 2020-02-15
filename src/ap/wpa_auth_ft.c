@@ -951,8 +951,9 @@ wpa_ft_rrb_seq_req(struct wpa_authenticator *wpa_auth,
 		goto err;
 	}
 
-	wpa_printf(MSG_DEBUG, "FT: Send out sequence number request to " MACSTR,
-		   MAC2STR(src_addr));
+	wpa_printf(MSG_DEBUG, "FT: Send sequence number request from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
 	item = os_zalloc(sizeof(*item));
 	if (!item)
 		goto err;
@@ -1997,9 +1998,6 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 	key = r0kh->key;
 	key_len = sizeof(r0kh->key);
 
-	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull request to remote R0KH "
-		   "address " MACSTR, MAC2STR(r0kh->addr));
-
 	if (r0kh->seq->rx.num_last == 0) {
 		/* A sequence request will be sent out anyway when pull
 		 * response is received. Send it out now to avoid one RTT. */
@@ -2007,6 +2005,10 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 				   r0kh->id, r0kh->id_len, f_r1kh_id, key,
 				   key_len, NULL, 0, NULL, 0, NULL);
 	}
+
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull request from " MACSTR
+		   " to remote R0KH address " MACSTR,
+		   MAC2STR(sm->wpa_auth->addr), MAC2STR(r0kh->addr));
 
 	if (first &&
 	    random_get_bytes(sm->ft_pending_pull_nonce, FT_RRB_NONCE_LEN) < 0) {
@@ -2232,7 +2234,6 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 }
 
 
-#ifdef CONFIG_IEEE80211W
 static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 {
 	u8 *subelem, *pos;
@@ -2279,7 +2280,6 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	*len = subelem_len;
 	return subelem;
 }
-#endif /* CONFIG_IEEE80211W */
 
 
 static u8 * wpa_ft_process_rdie(struct wpa_state_machine *sm,
@@ -2420,6 +2420,8 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	u8 *end, *mdie, *ftie, *rsnie = NULL, *r0kh_id, *subelem = NULL;
 	u8 *fte_mic, *elem_count;
 	size_t mdie_len, ftie_len, rsnie_len = 0, r0kh_id_len, subelem_len = 0;
+	u8 rsnxe[10];
+	size_t rsnxe_len;
 	int res;
 	struct wpa_auth_config *conf;
 	struct wpa_ft_ies parse;
@@ -2487,7 +2489,6 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		r0kh_id_len = sm->r0kh_id_len;
 		anonce = sm->ANonce;
 		snonce = sm->SNonce;
-#ifdef CONFIG_IEEE80211W
 		if (sm->mgmt_frame_prot) {
 			u8 *igtk;
 			size_t igtk_len;
@@ -2510,7 +2511,6 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			subelem_len += igtk_len;
 			os_free(igtk);
 		}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_OCV
 		if (wpa_auth_uses_ocv(sm)) {
 			struct wpa_channel_info ci;
@@ -2584,6 +2584,13 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	if (ric_start == pos)
 		ric_start = NULL;
 
+	res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe, sizeof(rsnxe));
+	if (res < 0)
+		return NULL;
+	rsnxe_len = res;
+	if (auth_alg == WLAN_AUTH_FT && rsnxe_len)
+		*elem_count += 1;
+
 	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
 		kck = sm->PTK.kck2;
 		kck_len = sm->PTK.kck2_len;
@@ -2596,6 +2603,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		       mdie, mdie_len, ftie, ftie_len,
 		       rsnie, rsnie_len,
 		       ric_start, ric_start ? pos - ric_start : 0,
+		       rsnxe_len ? rsnxe : NULL, rsnxe_len,
 		       fte_mic) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to calculate MIC");
 		return NULL;
@@ -2614,12 +2622,13 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 				   int vlan_id,
 				   enum wpa_alg alg, const u8 *addr, int idx,
-				   u8 *key, size_t key_len)
+				   u8 *key, size_t key_len,
+				   enum key_flag key_flag)
 {
 	if (wpa_auth->cb->set_key == NULL)
 		return -1;
 	return wpa_auth->cb->set_key(wpa_auth->cb_ctx, vlan_id, alg, addr, idx,
-				     key, key_len);
+				     key, key_len, key_flag);
 }
 
 
@@ -2652,7 +2661,7 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm)
 	 * optimized by adding the STA entry earlier.
 	 */
 	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
-			     sm->PTK.tk, klen))
+			     sm->PTK.tk, klen, KEY_FLAG_PAIRWISE_RX_TX))
 		return;
 
 	/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */
@@ -3253,6 +3262,8 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 	count = 3;
 	if (parse.ric)
 		count += ieee802_11_ie_count(parse.ric, parse.ric_len);
+	if (parse.rsnxe)
+		count++;
 	if (fte_elem_count != count) {
 		wpa_printf(MSG_DEBUG, "FT: Unexpected IE count in MIC "
 			   "Control: received %u expected %u",
@@ -3272,6 +3283,8 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 		       parse.ftie - 2, parse.ftie_len + 2,
 		       parse.rsn - 2, parse.rsn_len + 2,
 		       parse.ric, parse.ric_len,
+		       parse.rsnxe ? parse.rsnxe - 2 : NULL,
+		       parse.rsnxe ? parse.rsnxe_len + 2 : 0,
 		       mic) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to calculate MIC");
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
@@ -3290,6 +3303,9 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    parse.ftie - 2, parse.ftie_len + 2);
 		wpa_hexdump(MSG_MSGDUMP, "FT: RSN",
 			    parse.rsn - 2, parse.rsn_len + 2);
+		wpa_hexdump(MSG_MSGDUMP, "FT: RSNXE",
+			    parse.rsnxe ? parse.rsnxe - 2 : NULL,
+			    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
 		return WLAN_STATUS_INVALID_FTIE;
 	}
 
@@ -3673,6 +3689,10 @@ static int wpa_ft_rrb_rx_pull(struct wpa_authenticator *wpa_auth,
 		wpa_printf(MSG_DEBUG, "FT: Failed to get seq num");
 		goto out;
 	}
+
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull response from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
 
 	resp[0].type = FT_RRB_S1KH_ID;
 	resp[0].len = f_s1kh_id_len;
@@ -4180,6 +4200,10 @@ static int wpa_ft_rrb_rx_seq_req(struct wpa_authenticator *wpa_auth,
 		goto out;
 	}
 
+	wpa_printf(MSG_DEBUG, "FT: Send sequence number response from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
+
 	seq_resp_auth[0].type = FT_RRB_NONCE;
 	seq_resp_auth[0].len = f_nonce_len;
 	seq_resp_auth[0].data = f_nonce;
@@ -4439,9 +4463,11 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 	size_t alen, elen;
 	int no_defer = 0;
 
-	wpa_printf(MSG_DEBUG, "FT: RRB-OUI received frame from remote AP "
-		   MACSTR, MAC2STR(src_addr));
-	wpa_printf(MSG_DEBUG, "FT: RRB-OUI frame - oui_suffix=%d", oui_suffix);
+	wpa_printf(MSG_DEBUG, "FT: RRB-OUI(" MACSTR
+		   ") received frame from remote AP "
+		   MACSTR " oui_suffix=%u dst=" MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr), oui_suffix,
+		   MAC2STR(dst_addr));
 	wpa_hexdump(MSG_MSGDUMP, "FT: RRB frame payload", data, data_len);
 
 	if (is_multicast_ether_addr(src_addr)) {
@@ -4451,13 +4477,8 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 		return;
 	}
 
-	if (is_multicast_ether_addr(dst_addr)) {
-		wpa_printf(MSG_DEBUG,
-			   "FT: RRB-OUI received frame from remote AP " MACSTR
-			   " to multicast address " MACSTR,
-			   MAC2STR(src_addr), MAC2STR(dst_addr));
+	if (is_multicast_ether_addr(dst_addr))
 		no_defer = 1;
-	}
 
 	if (data_len < sizeof(u16)) {
 		wpa_printf(MSG_DEBUG, "FT: RRB-OUI frame too short");
@@ -4531,6 +4552,10 @@ static int wpa_ft_generate_pmk_r1(struct wpa_authenticator *wpa_auth,
 		wpa_printf(MSG_DEBUG, "FT: Failed to get seq num");
 		return -1;
 	}
+
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 push from " MACSTR
+		   " to remote R0KH address " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(r1kh->addr));
 
 	if (wpa_ft_rrb_build_r0(r1kh->key, sizeof(r1kh->key), push, pmk_r0,
 				r1kh->id, s1kh_id, push_auth, wpa_auth->addr,

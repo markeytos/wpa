@@ -16,6 +16,8 @@
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
 #include "common/dpp.h"
+#include "common/sae.h"
+#include "common/hw_features_common.h"
 #include "crypto/random.h"
 #include "p2p/p2p.h"
 #include "wps/wps.h"
@@ -111,10 +113,8 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 	struct ieee802_11_elems elems;
 	const u8 *ie;
 	size_t ielen;
-#if defined(CONFIG_IEEE80211R_AP) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS) || defined(CONFIG_OWE)
 	u8 buf[sizeof(struct ieee80211_mgmt) + 1024];
 	u8 *p = buf;
-#endif /* CONFIG_IEEE80211R_AP || CONFIG_IEEE80211W || CONFIG_FILS || CONFIG_OWE */
 	u16 reason = WLAN_REASON_UNSPECIFIED;
 	u16 status = WLAN_STATUS_SUCCESS;
 	const u8 *p2p_dev_addr = NULL;
@@ -131,6 +131,19 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			   "hostapd_notif_assoc: Skip event with no address");
 		return -1;
 	}
+
+	if (is_multicast_ether_addr(addr) ||
+	    is_zero_ether_addr(addr) ||
+	    os_memcmp(addr, hapd->own_addr, ETH_ALEN) == 0) {
+		/* Do not process any frames with unexpected/invalid SA so that
+		 * we do not add any state for unexpected STA addresses or end
+		 * up sending out frames to unexpected destination. */
+		wpa_printf(MSG_DEBUG, "%s: Invalid SA=" MACSTR
+			   " in received indication - ignore this indication silently",
+			   __func__, MAC2STR(addr));
+		return 0;
+	}
+
 	random_add_randomness(addr, ETH_ALEN);
 
 	hostapd_logger(hapd, addr, HOSTAPD_MODULE_IEEE80211,
@@ -308,6 +321,8 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		res = wpa_validate_wpa_ie(hapd->wpa_auth, sta->wpa_sm,
 					  hapd->iface->freq,
 					  ie, ielen,
+					  elems.rsnxe ? elems.rsnxe - 2 : NULL,
+					  elems.rsnxe ? elems.rsnxe_len + 2 : 0,
 					  elems.mdie, elems.mdie_len,
 					  elems.owe_dh, elems.owe_dh_len);
 		if (res != WPA_IE_OK) {
@@ -324,23 +339,22 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			} else if (res == WPA_INVALID_AKMP) {
 				reason = WLAN_REASON_AKMP_NOT_VALID;
 				status = WLAN_STATUS_AKMP_NOT_VALID;
-			}
-#ifdef CONFIG_IEEE80211W
-			else if (res == WPA_MGMT_FRAME_PROTECTION_VIOLATION) {
+			} else if (res == WPA_MGMT_FRAME_PROTECTION_VIOLATION) {
 				reason = WLAN_REASON_INVALID_IE;
 				status = WLAN_STATUS_INVALID_IE;
 			} else if (res == WPA_INVALID_MGMT_GROUP_CIPHER) {
 				reason = WLAN_REASON_CIPHER_SUITE_REJECTED;
 				status = WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
-			}
-#endif /* CONFIG_IEEE80211W */
-			else {
+			} else if (res == WPA_INVALID_PMKID) {
+				reason = WLAN_REASON_INVALID_PMKID;
+				status = WLAN_STATUS_INVALID_PMKID;
+			} else {
 				reason = WLAN_REASON_INVALID_IE;
 				status = WLAN_STATUS_INVALID_IE;
 			}
 			goto fail;
 		}
-#ifdef CONFIG_IEEE80211W
+
 		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
 		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
 		    !sta->sa_query_timed_out &&
@@ -373,7 +387,6 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			sta->flags |= WLAN_STA_MFP;
 		else
 			sta->flags &= ~WLAN_STA_MFP;
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_IEEE80211R_AP
 		if (sta->auth_alg == WLAN_AUTH_FT) {
@@ -390,6 +403,20 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			}
 		}
 #endif /* CONFIG_IEEE80211R_AP */
+#ifdef CONFIG_SAE
+		if (hapd->conf->sae_pwe == 2 &&
+		    sta->auth_alg == WLAN_AUTH_SAE &&
+		    sta->sae && sta->sae->tmp && !sta->sae->tmp->h2e &&
+		    elems.rsnxe && elems.rsnxe_len >= 1 &&
+		    (elems.rsnxe[0] & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
+			wpa_printf(MSG_INFO, "SAE: " MACSTR
+				   " indicates support for SAE H2E, but did not use it",
+				   MAC2STR(sta->addr));
+			status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			reason = WLAN_REASON_UNSPECIFIED;
+			goto fail;
+		}
+#endif /* CONFIG_SAE */
 	} else if (hapd->conf->wps_state) {
 #ifdef CONFIG_WPS
 		struct wpabuf *wps;
@@ -909,6 +936,7 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 {
 	int ret, i;
 	int err = 0;
+	struct hostapd_channel_data *pri_chan;
 
 	if (hapd->iconf->channel) {
 		wpa_printf(MSG_INFO, "ACS: Channel was already set to %d",
@@ -916,12 +944,20 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		return;
 	}
 
+	hapd->iface->freq = acs_res->pri_freq;
+
 	if (!hapd->iface->current_mode) {
 		for (i = 0; i < hapd->iface->num_hw_features; i++) {
 			struct hostapd_hw_modes *mode =
 				&hapd->iface->hw_features[i];
 
 			if (mode->mode == acs_res->hw_mode) {
+				if (hapd->iface->freq > 0 &&
+				    !hw_get_chan(mode->mode,
+						 hapd->iface->freq,
+						 hapd->iface->hw_features,
+						 hapd->iface->num_hw_features))
+					continue;
 				hapd->iface->current_mode = mode;
 				break;
 			}
@@ -935,24 +971,33 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		}
 	}
 
-	hapd->iface->freq = hostapd_hw_get_freq(hapd, acs_res->pri_channel);
-
-	if (!acs_res->pri_channel) {
+	if (!acs_res->pri_freq) {
 		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_WARNING,
 			       "driver switched to bad channel");
 		err = 1;
 		goto out;
 	}
+	pri_chan = hw_get_channel_freq(hapd->iface->current_mode->mode,
+				       acs_res->pri_freq, NULL,
+				       hapd->iface->hw_features,
+				       hapd->iface->num_hw_features);
+	if (!pri_chan) {
+		wpa_printf(MSG_ERROR,
+			   "ACS: Could not determine primary channel number from pri_freq %u",
+			   acs_res->pri_freq);
+		err = 1;
+		goto out;
+	}
 
-	hapd->iconf->channel = acs_res->pri_channel;
+	hapd->iconf->channel = pri_chan->chan;
 	hapd->iconf->acs = 1;
 
-	if (acs_res->sec_channel == 0)
+	if (acs_res->sec_freq == 0)
 		hapd->iconf->secondary_channel = 0;
-	else if (acs_res->sec_channel < acs_res->pri_channel)
+	else if (acs_res->sec_freq < acs_res->pri_freq)
 		hapd->iconf->secondary_channel = -1;
-	else if (acs_res->sec_channel > acs_res->pri_channel)
+	else if (acs_res->sec_freq > acs_res->pri_freq)
 		hapd->iconf->secondary_channel = 1;
 	else {
 		wpa_printf(MSG_ERROR, "Invalid secondary channel!");
@@ -965,27 +1010,28 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		hostapd_set_oper_centr_freq_seg1_idx(hapd->iconf, 0);
 		hostapd_set_oper_centr_freq_seg0_idx(hapd->iconf, 0);
 		hostapd_set_oper_chwidth(hapd->iconf, CHANWIDTH_USE_HT);
-		if (acs_res->ch_width == 80) {
+		if (acs_res->ch_width == 40) {
+			if (is_6ghz_freq(acs_res->pri_freq))
+				hostapd_set_oper_centr_freq_seg0_idx(
+					hapd->iconf,
+					acs_res->vht_seg0_center_ch);
+		} else if (acs_res->ch_width == 80) {
 			hostapd_set_oper_centr_freq_seg0_idx(
 				hapd->iconf, acs_res->vht_seg0_center_ch);
-			hostapd_set_oper_chwidth(hapd->iconf, CHANWIDTH_80MHZ);
-		} else if (acs_res->ch_width == 160) {
 			if (acs_res->vht_seg1_center_ch == 0) {
-				hostapd_set_oper_centr_freq_seg0_idx(
-					hapd->iconf,
-					acs_res->vht_seg0_center_ch);
 				hostapd_set_oper_chwidth(hapd->iconf,
-							 CHANWIDTH_160MHZ);
+							 CHANWIDTH_80MHZ);
 			} else {
-				hostapd_set_oper_centr_freq_seg0_idx(
-					hapd->iconf,
-					acs_res->vht_seg0_center_ch);
+				hostapd_set_oper_chwidth(hapd->iconf,
+							 CHANWIDTH_80P80MHZ);
 				hostapd_set_oper_centr_freq_seg1_idx(
 					hapd->iconf,
 					acs_res->vht_seg1_center_ch);
-				hostapd_set_oper_chwidth(hapd->iconf,
-							 CHANWIDTH_80P80MHZ);
 			}
+		} else if (acs_res->ch_width == 160) {
+			hostapd_set_oper_chwidth(hapd->iconf, CHANWIDTH_160MHZ);
+			hostapd_set_oper_centr_freq_seg0_idx(
+				hapd->iconf, acs_res->vht_seg1_center_ch);
 		}
 	}
 
@@ -1164,12 +1210,10 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 		return;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
-#ifdef CONFIG_IEEE80211W
 	if (mgmt->u.action.category == WLAN_ACTION_SA_QUERY) {
 		ieee802_11_sa_query_action(hapd, mgmt, drv_mgmt->frame_len);
 		return;
 	}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WNM_AP
 	if (mgmt->u.action.category == WLAN_ACTION_WNM) {
 		ieee802_11_rx_wnm_action_ap(hapd, mgmt, drv_mgmt->frame_len);

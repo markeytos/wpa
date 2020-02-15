@@ -2186,8 +2186,11 @@ static int openssl_cert_tod(X509 *cert)
 			continue;
 		wpa_printf(MSG_DEBUG, "OpenSSL: Certificate Policy %s", buf);
 		if (os_strcmp(buf, "1.3.6.1.4.1.40808.1.3.1") == 0)
-			tod = 1;
+			tod = 1; /* TOD-STRICT */
+		else if (os_strcmp(buf, "1.3.6.1.4.1.40808.1.3.2") == 0 && !tod)
+			tod = 2; /* TOD-TOFU */
 	}
+	sk_POLICYINFO_pop_free(ext, POLICYINFO_free);
 
 	return tod;
 }
@@ -2294,6 +2297,38 @@ static void openssl_tls_cert_event(struct tls_connection *conn,
 }
 
 
+static void debug_print_cert(X509 *cert, const char *title)
+{
+#ifndef CONFIG_NO_STDOUT_DEBUG
+	BIO *out;
+	size_t rlen;
+	char *txt;
+	int res;
+
+	if (wpa_debug_level > MSG_DEBUG)
+		return;
+
+	out = BIO_new(BIO_s_mem());
+	if (!out)
+		return;
+
+	X509_print(out, cert);
+	rlen = BIO_ctrl_pending(out);
+	txt = os_malloc(rlen + 1);
+	if (txt) {
+		res = BIO_read(out, txt, rlen);
+		if (res > 0) {
+			txt[res] = '\0';
+			wpa_printf(MSG_DEBUG, "OpenSSL: %s\n%s", title, txt);
+		}
+		os_free(txt);
+	}
+
+	BIO_free(out);
+#endif /* CONFIG_NO_STDOUT_DEBUG */
+}
+
+
 static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 {
 	char buf[256];
@@ -2314,6 +2349,8 @@ static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 	depth = X509_STORE_CTX_get_error_depth(x509_ctx);
 	ssl = X509_STORE_CTX_get_ex_data(x509_ctx,
 					 SSL_get_ex_data_X509_STORE_CTX_idx());
+	os_snprintf(buf, sizeof(buf), "Peer certificate - depth %d", depth);
+	debug_print_cert(err_cert, buf);
 	X509_NAME_oneline(X509_get_subject_name(err_cert), buf, sizeof(buf));
 
 	conn = SSL_get_app_data(ssl);
@@ -4011,6 +4048,7 @@ static int openssl_get_keyblock_size(SSL *ssl)
 	int cipher, digest;
 	const EVP_CIPHER *c;
 	const EVP_MD *h;
+	int mac_key_len, enc_key_len, fixed_iv_len;
 
 	ssl_cipher = SSL_get_current_cipher(ssl);
 	if (!ssl_cipher)
@@ -4021,17 +4059,33 @@ static int openssl_get_keyblock_size(SSL *ssl)
 		   cipher, digest);
 	if (cipher < 0 || digest < 0)
 		return -1;
-	c = EVP_get_cipherbynid(cipher);
-	h = EVP_get_digestbynid(digest);
-	if (!c || !h)
+	if (cipher == NID_undef) {
+		wpa_printf(MSG_DEBUG, "OpenSSL: no cipher in use?!");
 		return -1;
+	}
+	c = EVP_get_cipherbynid(cipher);
+	if (!c)
+		return -1;
+	enc_key_len = EVP_CIPHER_key_length(c);
+	if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE ||
+	    EVP_CIPHER_mode(c) == EVP_CIPH_CCM_MODE)
+		fixed_iv_len = 4; /* only part of IV from PRF */
+	else
+		fixed_iv_len = EVP_CIPHER_iv_length(c);
+	if (digest == NID_undef) {
+		wpa_printf(MSG_DEBUG, "OpenSSL: no digest in use (e.g., AEAD)");
+		mac_key_len = 0;
+	} else {
+		h = EVP_get_digestbynid(digest);
+		if (!h)
+			return -1;
+		mac_key_len = EVP_MD_size(h);
+	}
 
 	wpa_printf(MSG_DEBUG,
-		   "OpenSSL: keyblock size: key_len=%d MD_size=%d IV_len=%d",
-		   EVP_CIPHER_key_length(c), EVP_MD_size(h),
-		   EVP_CIPHER_iv_length(c));
-	return 2 * (EVP_CIPHER_key_length(c) + EVP_MD_size(h) +
-		    EVP_CIPHER_iv_length(c));
+		   "OpenSSL: keyblock size: mac_key_len=%d enc_key_len=%d fixed_iv_len=%d",
+		   mac_key_len, enc_key_len, fixed_iv_len);
+	return 2 * (mac_key_len + enc_key_len + fixed_iv_len);
 #endif
 }
 #endif /* OPENSSL_NEED_EAP_FAST_PRF */
@@ -4656,41 +4710,6 @@ static void ocsp_debug_print_resp(OCSP_RESPONSE *rsp)
 }
 
 
-static void debug_print_cert(X509 *cert, const char *title)
-{
-#ifndef CONFIG_NO_STDOUT_DEBUG
-	BIO *out;
-	size_t rlen;
-	char *txt;
-	int res;
-
-	if (wpa_debug_level > MSG_DEBUG)
-		return;
-
-	out = BIO_new(BIO_s_mem());
-	if (!out)
-		return;
-
-	X509_print(out, cert);
-	rlen = BIO_ctrl_pending(out);
-	txt = os_malloc(rlen + 1);
-	if (!txt) {
-		BIO_free(out);
-		return;
-	}
-
-	res = BIO_read(out, txt, rlen);
-	if (res > 0) {
-		txt[res] = '\0';
-		wpa_printf(MSG_DEBUG, "OpenSSL: %s\n%s", title, txt);
-	}
-	os_free(txt);
-
-	BIO_free(out);
-#endif /* CONFIG_NO_STDOUT_DEBUG */
-}
-
-
 static int ocsp_resp_cb(SSL *s, void *arg)
 {
 	struct tls_connection *conn = arg;
@@ -4890,6 +4909,76 @@ static int ocsp_status_cb(SSL *s, void *arg)
 #endif /* HAVE_OCSP */
 
 
+static size_t max_str_len(const char **lines)
+{
+	const char **p;
+	size_t max_len = 0;
+
+	for (p = lines; *p; p++) {
+		size_t len = os_strlen(*p);
+
+		if (len > max_len)
+			max_len = len;
+	}
+
+	return max_len;
+}
+
+
+static int match_lines_in_file(const char *path, const char **lines)
+{
+	FILE *f;
+	char *buf;
+	size_t bufsize;
+	int found = 0, is_linestart = 1;
+
+	bufsize = max_str_len(lines) + sizeof("\r\n");
+	buf = os_malloc(bufsize);
+	if (!buf)
+		return 0;
+
+	f = fopen(path, "r");
+	if (!f) {
+		os_free(buf);
+		return 0;
+	}
+
+	while (!found && fgets(buf, bufsize, f)) {
+		int is_lineend;
+		size_t len;
+		const char **p;
+
+		len = strcspn(buf, "\r\n");
+		is_lineend = buf[len] != '\0';
+		buf[len] = '\0';
+
+		if (is_linestart && is_lineend) {
+			for (p = lines; !found && *p; p++)
+				found = os_strcmp(buf, *p) == 0;
+		}
+		is_linestart = is_lineend;
+	}
+
+	fclose(f);
+	bin_clear_free(buf, bufsize);
+
+	return found;
+}
+
+
+static int is_tpm2_key(const char *path)
+{
+	/* Check both new and old format of TPM2 PEM guard tag */
+	static const char *tpm2_tags[] = {
+		"-----BEGIN TSS2 PRIVATE KEY-----",
+		"-----BEGIN TSS2 KEY BLOB-----",
+		NULL
+	};
+
+	return match_lines_in_file(path, tpm2_tags);
+}
+
+
 int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 			      const struct tls_connection_params *params)
 {
@@ -4942,6 +5031,17 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 	if (can_pkcs11 == 2 && !engine_id)
 		engine_id = "pkcs11";
 
+	/* If private_key points to a TPM2-wrapped key, automatically enable
+	 * tpm2 engine and use it to unwrap the key. */
+	if (params->private_key &&
+	    (!engine_id || os_strcmp(engine_id, "tpm2") == 0) &&
+	    is_tpm2_key(params->private_key)) {
+		wpa_printf(MSG_DEBUG, "OpenSSL: Found TPM2 wrapped key %s",
+			   params->private_key);
+		key_id = key_id ? key_id : params->private_key;
+		engine_id = engine_id ? engine_id : "tpm2";
+	}
+
 #if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || defined(EAP_SERVER_FAST)
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 	if (params->flags & TLS_CONN_EAP_FAST) {
@@ -4973,7 +5073,8 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 	}
 
 	if (engine_id) {
-		wpa_printf(MSG_DEBUG, "SSL: Initializing TLS engine");
+		wpa_printf(MSG_DEBUG, "SSL: Initializing TLS engine %s",
+			   engine_id);
 		ret = tls_engine_init(conn, engine_id, params->pin,
 				      key_id, cert_id, ca_cert_id);
 		if (ret)

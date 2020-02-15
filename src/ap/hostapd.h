@@ -179,13 +179,12 @@ struct hostapd_data {
 	u64 acct_session_id;
 	struct radius_das_data *radius_das;
 
-	struct iapp_data *iapp;
-
 	struct hostapd_cached_radius_acl *acl_cache;
 	struct hostapd_acl_query_data *acl_queries;
 
 	struct wpa_authenticator *wpa_auth;
 	struct eapol_authenticator *eapol_auth;
+	struct eap_config *eap_cfg;
 
 	struct rsn_preauth_interface *preauth_iface;
 	struct os_reltime michael_mic_failure;
@@ -337,12 +336,10 @@ struct hostapd_data {
 	u8 last_gtk[WPA_GTK_MAX_LEN];
 	size_t last_gtk_len;
 
-#ifdef CONFIG_IEEE80211W
 	enum wpa_alg last_igtk_alg;
 	int last_igtk_key_idx;
 	u8 last_igtk[WPA_IGTK_MAX_LEN];
 	size_t last_igtk_len;
-#endif /* CONFIG_IEEE80211W */
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_MBO

@@ -5,12 +5,14 @@ Bug-Debian: http://bugs.debian.org/582793
 ---
 --- a/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
 +++ b/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
-@@ -11,11 +11,14 @@
+@@ -11,13 +11,16 @@
  #endif /* CONFIG_NATIVE_WINDOWS */
  
  #include <cstdio>
 +#include <cstdlib>
  #include <unistd.h>
+ #include <chrono>
+ #include <thread>
  #include <QMessageBox>
  #include <QCloseEvent>
  #include <QImageReader>
@@ -20,7 +22,7 @@ Bug-Debian: http://bugs.debian.org/582793
  
  #include "wpagui.h"
  #include "dirent.h"
-@@ -1415,10 +1418,21 @@
+@@ -1430,10 +1433,21 @@
  void WpaGui::showTrayMessage(QSystemTrayIcon::MessageIcon type, int sec,
  			     const QString & msg)
  {

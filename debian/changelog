@@ -1,3 +1,10 @@
+wpa (2:2.9+git20200213+877d9a0-1) unstable; urgency=medium
+
+  * New upstream snapshot.
+  * Refresh patches.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Feb 2020 16:53:28 +0100
+
 wpa (2:2.9-7) unstable; urgency=medium
 
   * Apply upstream patches:

@@ -6,7 +6,3 @@
 networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
-2019-7/0001-AP-Silently-ignore-management-frame-from-unexpected-.patch
-upstream-fixes/0001-wpa_supplicant-Do-not-try-to-detect-PSK-mismatch-dur.patch
-upstream-fixes/0002-trace-handle-binutils-bfd.h-breakage.patch
-upstream-fixes/0003-check-for-ft-support.patch

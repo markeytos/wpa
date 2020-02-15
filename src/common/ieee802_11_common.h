@@ -40,6 +40,7 @@ struct ieee802_11_elems {
 	const u8 *ext_supp_rates;
 	const u8 *wpa_ie;
 	const u8 *rsn_ie;
+	const u8 *rsnxe;
 	const u8 *wmm; /* WMM Information or Parameter Element */
 	const u8 *wmm_tspec;
 	const u8 *wps_ie;
@@ -95,6 +96,7 @@ struct ieee802_11_elems {
 	const u8 *multi_ap;
 	const u8 *he_capabilities;
 	const u8 *he_operation;
+	const u8 *short_ssid_list;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -102,6 +104,7 @@ struct ieee802_11_elems {
 	u8 ext_supp_rates_len;
 	u8 wpa_ie_len;
 	u8 rsn_ie_len;
+	u8 rsnxe_len;
 	u8 wmm_len; /* 7 = WMM Information; 24 = WMM Parameter */
 	u8 wmm_tspec_len;
 	u8 wps_ie_len;
@@ -145,6 +148,7 @@ struct ieee802_11_elems {
 	u8 multi_ap_len;
 	u8 he_capabilities_len;
 	u8 he_operation_len;
+	u8 short_ssid_list_len;
 
 	struct mb_ies_info mb_ies;
 };
@@ -196,7 +200,8 @@ struct oper_class_map {
 	u8 min_chan;
 	u8 max_chan;
 	u8 inc;
-	enum { BW20, BW40PLUS, BW40MINUS, BW80, BW2160, BW160, BW80P80 } bw;
+	enum { BW20, BW40PLUS, BW40MINUS, BW80, BW2160, BW160, BW80P80, BW4320,
+	       BW6480, BW8640} bw;
 	enum { P2P_SUPP, NO_P2P_SUPP } p2p;
 };
 
@@ -220,11 +225,17 @@ u8 country_to_global_op_class(const char *country, u8 op_class);
 
 const struct oper_class_map * get_oper_class(const char *country, u8 op_class);
 int oper_class_bw_to_int(const struct oper_class_map *map);
+int center_idx_to_bw_6ghz(u8 idx);
+int is_6ghz_freq(int freq);
+int is_6ghz_op_class(u8 op_class);
+int is_6ghz_psc_frequency(int freq);
 
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len);
 
 int ieee802_11_ext_capab(const u8 *ie, unsigned int capab);
+int op_class_to_bandwidth(u8 op_class);
+int op_class_to_ch_width(u8 op_class);
 
 /* element iteration helpers */
 #define for_each_element(_elem, _data, _datalen)			\
@@ -272,5 +283,14 @@ static inline int for_each_element_completed(const struct element *element,
 {
 	return (const u8 *) element == (const u8 *) data + datalen;
 }
+
+struct ieee80211_edmg_config;
+
+void hostapd_encode_edmg_chan(int edmg_enable, u8 edmg_channel,
+			      int primary_channel,
+			      struct ieee80211_edmg_config *edmg);
+
+int ieee802_edmg_is_allowed(struct ieee80211_edmg_config allowed,
+			    struct ieee80211_edmg_config requested);
 
 #endif /* IEEE802_11_COMMON_H */

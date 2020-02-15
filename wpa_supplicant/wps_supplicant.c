@@ -533,9 +533,7 @@ static int wpa_supplicant_wps_cred(void *ctx,
 		if (wpa_s->conf->wps_cred_add_sae &&
 		    cred->key_len != 2 * PMK_LEN) {
 			ssid->key_mgmt |= WPA_KEY_MGMT_SAE;
-#ifdef CONFIG_IEEE80211W
 			ssid->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;
-#endif /* CONFIG_IEEE80211W */
 		}
 		ssid->proto = WPA_PROTO_RSN;
 		break;
@@ -1180,6 +1178,11 @@ int wpas_wps_start_pbc(struct wpa_supplicant *wpa_s, const u8 *bssid,
 				/* P2P in 60 GHz uses PBSS */
 				ssid->pbss = 1;
 			}
+			if (wpa_s->go_params->edmg &&
+			    wpas_p2p_try_edmg_channel(wpa_s,
+						      wpa_s->go_params) == 0)
+				ssid->enable_edmg = 1;
+
 			wpa_hexdump_ascii(MSG_DEBUG, "WPS: Use specific AP "
 					  "SSID", ssid->ssid, ssid->ssid_len);
 		}
@@ -1263,6 +1266,11 @@ static int wpas_wps_start_dev_pw(struct wpa_supplicant *wpa_s,
 				/* P2P in 60 GHz uses PBSS */
 				ssid->pbss = 1;
 			}
+			if (wpa_s->go_params->edmg &&
+			    wpas_p2p_try_edmg_channel(wpa_s,
+						      wpa_s->go_params) == 0)
+				ssid->enable_edmg = 1;
+
 			wpa_hexdump_ascii(MSG_DEBUG, "WPS: Use specific AP "
 					  "SSID", ssid->ssid, ssid->ssid_len);
 		}
@@ -1286,6 +1294,10 @@ static int wpas_wps_start_dev_pw(struct wpa_supplicant *wpa_s,
 		wpa_printf(MSG_DEBUG, "WPS: Failed to set phase1 '%s'", val);
 		return -1;
 	}
+
+	if (dev_pw_id != DEV_PW_NFC_CONNECTION_HANDOVER)
+		wpa_msg(wpa_s, MSG_INFO, WPS_EVENT_PIN_ACTIVE);
+
 	if (wpa_s->wps_fragment_size)
 		ssid->eap.fragment_size = wpa_s->wps_fragment_size;
 	eloop_register_timeout(WPS_PBC_WALK_TIME, 0, wpas_wps_timeout,
@@ -1351,6 +1363,7 @@ int wpas_wps_cancel(struct wpa_supplicant *wpa_s)
 			wpas_clear_wps(wpa_s);
 	}
 
+	wpa_msg(wpa_s, MSG_INFO, WPS_EVENT_CANCEL);
 	wpa_s->after_wps = 0;
 
 	return 0;
@@ -2235,6 +2248,16 @@ void wpas_wps_update_config(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_wps_update_mac_addr(struct wpa_supplicant *wpa_s)
+{
+	struct wps_context *wps;
+
+	wps = wpa_s->wps;
+	if (wps)
+		os_memcpy(wps->dev.mac_addr, wpa_s->own_addr, ETH_ALEN);
+}
+
+
 #ifdef CONFIG_WPS_NFC
 
 #ifdef CONFIG_WPS_ER
@@ -2681,7 +2704,7 @@ static int wpas_wps_nfc_rx_handover_sel(struct wpa_supplicant *wpa_s,
 			 (attr.rf_bands == NULL ||
 			  *attr.rf_bands & WPS_RF_50GHZ))
 			freq = 5000 + 5 * chan;
-		else if (chan >= 1 && chan <= 4 &&
+		else if (chan >= 1 && chan <= 6 &&
 			 (attr.rf_bands == NULL ||
 			  *attr.rf_bands & WPS_RF_60GHZ))
 			freq = 56160 + 2160 * chan;

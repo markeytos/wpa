@@ -81,9 +81,6 @@ static void hostapd_logger_cb(void *ctx, const u8 *addr, unsigned int module,
 	case HOSTAPD_MODULE_DRIVER:
 		module_str = "DRIVER";
 		break;
-	case HOSTAPD_MODULE_IAPP:
-		module_str = "IAPP";
-		break;
 	case HOSTAPD_MODULE_MLME:
 		module_str = "MLME";
 		break;
@@ -263,7 +260,7 @@ hostapd_interface_init(struct hapd_interfaces *interfaces, const char *if_name,
 	struct hostapd_iface *iface;
 	int k;
 
-	wpa_printf(MSG_ERROR, "Configuration file: %s", config_fname);
+	wpa_printf(MSG_DEBUG, "Configuration file: %s", config_fname);
 	iface = hostapd_init(interfaces, config_fname);
 	if (!iface)
 		return NULL;
@@ -771,7 +768,7 @@ int main(int argc, char *argv[])
 
 	if (log_file)
 		wpa_debug_open_file(log_file);
-	else
+	if (!log_file && !wpa_debug_syslog)
 		wpa_debug_setup_stdout();
 #ifdef CONFIG_DEBUG_SYSLOG
 	if (wpa_debug_syslog)

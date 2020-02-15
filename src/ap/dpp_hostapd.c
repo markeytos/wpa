@@ -1,6 +1,7 @@
 /*
  * hostapd / DPP integration
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2018-2020, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -59,6 +60,89 @@ int hostapd_dpp_qr_code(struct hostapd_data *hapd, const char *cmd)
 	}
 
 	return bi->id;
+}
+
+
+/**
+ * hostapd_dpp_nfc_uri - Parse and add DPP bootstrapping info from NFC Tag (URI)
+ * @hapd: Pointer to hostapd_data
+ * @cmd: DPP URI read from a NFC Tag (URI NDEF message)
+ * Returns: Identifier of the stored info or -1 on failure
+ */
+int hostapd_dpp_nfc_uri(struct hostapd_data *hapd, const char *cmd)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_add_nfc_uri(hapd->iface->interfaces->dpp, cmd);
+	if (!bi)
+		return -1;
+
+	return bi->id;
+}
+
+
+int hostapd_dpp_nfc_handover_req(struct hostapd_data *hapd, const char *cmd)
+{
+	const char *pos;
+	struct dpp_bootstrap_info *peer_bi, *own_bi;
+
+	pos = os_strstr(cmd, " own=");
+	if (!pos)
+		return -1;
+	pos += 5;
+	own_bi = dpp_bootstrap_get_id(hapd->iface->interfaces->dpp, atoi(pos));
+	if (!own_bi)
+		return -1;
+
+	pos = os_strstr(cmd, " uri=");
+	if (!pos)
+		return -1;
+	pos += 5;
+	peer_bi = dpp_add_nfc_uri(hapd->iface->interfaces->dpp, pos);
+	if (!peer_bi) {
+		wpa_printf(MSG_INFO,
+			   "DPP: Failed to parse URI from NFC Handover Request");
+		return -1;
+	}
+
+	if (dpp_nfc_update_bi(own_bi, peer_bi) < 0)
+		return -1;
+
+	return peer_bi->id;
+}
+
+
+int hostapd_dpp_nfc_handover_sel(struct hostapd_data *hapd, const char *cmd)
+{
+	const char *pos;
+	struct dpp_bootstrap_info *peer_bi, *own_bi;
+
+	pos = os_strstr(cmd, " own=");
+	if (!pos)
+		return -1;
+	pos += 5;
+	own_bi = dpp_bootstrap_get_id(hapd->iface->interfaces->dpp, atoi(pos));
+	if (!own_bi)
+		return -1;
+
+	pos = os_strstr(cmd, " uri=");
+	if (!pos)
+		return -1;
+	pos += 5;
+	peer_bi = dpp_add_nfc_uri(hapd->iface->interfaces->dpp, pos);
+	if (!peer_bi) {
+		wpa_printf(MSG_INFO,
+			   "DPP: Failed to parse URI from NFC Handover Select");
+		return -1;
+	}
+
+	if (peer_bi->curve != own_bi->curve) {
+		wpa_printf(MSG_INFO,
+			   "DPP: Peer (NFC Handover Selector) used different curve");
+		return -1;
+	}
+
+	return peer_bi->id;
 }
 
 
@@ -607,47 +691,48 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 
 
 static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
-					  struct dpp_authentication *auth)
+					  struct dpp_authentication *auth,
+					  struct dpp_config_obj *conf)
 {
 	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
 	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_AKM "%s",
-		dpp_akm_str(auth->akm));
-	if (auth->ssid_len)
+		dpp_akm_str(conf->akm));
+	if (conf->ssid_len)
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_SSID "%s",
-			wpa_ssid_txt(auth->ssid, auth->ssid_len));
-	if (auth->connector) {
+			wpa_ssid_txt(conf->ssid, conf->ssid_len));
+	if (conf->connector) {
 		/* TODO: Save the Connector and consider using a command
 		 * to fetch the value instead of sending an event with
 		 * it. The Connector could end up being larger than what
 		 * most clients are ready to receive as an event
 		 * message. */
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONNECTOR "%s",
-			auth->connector);
-	} else if (auth->passphrase[0]) {
+			conf->connector);
+	} else if (conf->passphrase[0]) {
 		char hex[64 * 2 + 1];
 
 		wpa_snprintf_hex(hex, sizeof(hex),
-				 (const u8 *) auth->passphrase,
-				 os_strlen(auth->passphrase));
+				 (const u8 *) conf->passphrase,
+				 os_strlen(conf->passphrase));
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_PASS "%s",
 			hex);
-	} else if (auth->psk_set) {
+	} else if (conf->psk_set) {
 		char hex[PMK_LEN * 2 + 1];
 
-		wpa_snprintf_hex(hex, sizeof(hex), auth->psk, PMK_LEN);
+		wpa_snprintf_hex(hex, sizeof(hex), conf->psk, PMK_LEN);
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_PSK "%s",
 			hex);
 	}
-	if (auth->c_sign_key) {
+	if (conf->c_sign_key) {
 		char *hex;
 		size_t hexlen;
 
-		hexlen = 2 * wpabuf_len(auth->c_sign_key) + 1;
+		hexlen = 2 * wpabuf_len(conf->c_sign_key) + 1;
 		hex = os_malloc(hexlen);
 		if (hex) {
 			wpa_snprintf_hex(hex, hexlen,
-					 wpabuf_head(auth->c_sign_key),
-					 wpabuf_len(auth->c_sign_key));
+					 wpabuf_head(conf->c_sign_key),
+					 wpabuf_len(conf->c_sign_key));
 			wpa_msg(hapd->msg_ctx, MSG_INFO,
 				DPP_EVENT_C_SIGN_KEY "%s", hex);
 			os_free(hex);
@@ -674,6 +759,33 @@ static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
 			os_free(hex);
 		}
 	}
+}
+
+
+static int hostapd_dpp_handle_key_pkg(struct hostapd_data *hapd,
+				      struct dpp_asymmetric_key *key)
+{
+#ifdef CONFIG_DPP2
+	int res;
+
+	if (!key)
+		return 0;
+
+	wpa_printf(MSG_DEBUG, "DPP: Received Configurator backup");
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
+
+	while (key) {
+		res = dpp_configurator_from_backup(
+			hapd->iface->interfaces->dpp, key);
+		if (res < 0)
+			return -1;
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFIGURATOR_ID "%d",
+			res);
+		key = key->next;
+	}
+#endif /* CONFIG_DPP2 */
+
+	return 0;
 }
 
 
@@ -720,7 +832,10 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		goto fail;
 	}
 
-	hostapd_dpp_handle_config_obj(hapd, auth);
+	hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
+	if (hostapd_dpp_handle_key_pkg(hapd, auth->conf_key_pkg) < 0)
+		goto fail;
+
 	status = DPP_STATUS_OK;
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_REJECT_CONFIG) {
@@ -765,18 +880,11 @@ static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 {
 	struct dpp_authentication *auth = hapd->dpp_auth;
 	struct wpabuf *buf;
-	char json[100];
 	int res;
-	int netrole_ap = 1;
 
-	os_snprintf(json, sizeof(json),
-		    "{\"name\":\"Test\","
-		    "\"wi-fi_tech\":\"infra\","
-		    "\"netRole\":\"%s\"}",
-		    netrole_ap ? "ap" : "sta");
-	wpa_printf(MSG_DEBUG, "DPP: GAS Config Attributes: %s", json);
-
-	buf = dpp_build_conf_req(auth, json);
+	buf = dpp_build_conf_req_helper(auth, hapd->conf->dpp_name,
+					DPP_NETROLE_AP,
+					hapd->conf->dpp_mud_url, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
@@ -922,6 +1030,24 @@ static void hostapd_dpp_config_result_wait_timeout(void *eloop_ctx,
 }
 
 
+static void hostapd_dpp_conn_status_result_wait_timeout(void *eloop_ctx,
+							void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	struct dpp_authentication *auth = hapd->dpp_auth;
+
+	if (!auth || !auth->waiting_conf_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Connection Status Result");
+	wpa_msg(hapd->msg_ctx, MSG_INFO,
+		DPP_EVENT_CONN_STATUS_RESULT "timeout");
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+}
+
+
 static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 				       const u8 *hdr, const u8 *buf, size_t len)
 {
@@ -945,6 +1071,20 @@ static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
 
+	if (status == DPP_STATUS_OK && auth->send_conn_status) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			DPP_EVENT_CONF_SENT "wait_conn_status=1");
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Connection Status Result");
+		eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout,
+				     hapd, NULL);
+		eloop_cancel_timeout(
+			hostapd_dpp_conn_status_result_wait_timeout,
+			hapd, NULL);
+		eloop_register_timeout(
+			16, 0, hostapd_dpp_conn_status_result_wait_timeout,
+			hapd, NULL);
+		return;
+	}
 	hostapd_drv_send_action_cancel_wait(hapd);
 	hostapd_dpp_listen_stop(hapd);
 	if (status == DPP_STATUS_OK)
@@ -956,6 +1096,41 @@ static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
 			     NULL);
 }
+
+
+static void hostapd_dpp_rx_conn_status_result(struct hostapd_data *hapd,
+					      const u8 *src, const u8 *hdr,
+					      const u8 *buf, size_t len)
+{
+	struct dpp_authentication *auth = hapd->dpp_auth;
+	enum dpp_status_error status;
+	u8 ssid[SSID_MAX_LEN];
+	size_t ssid_len = 0;
+	char *channel_list = NULL;
+
+	wpa_printf(MSG_DEBUG, "DPP: Connection Status Result");
+
+	if (!auth || !auth->waiting_conn_status_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for connection status result - drop");
+		return;
+	}
+
+	status = dpp_conn_status_result_rx(auth, hdr, buf, len,
+					   ssid, &ssid_len, &channel_list);
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONN_STATUS_RESULT
+		"result=%d ssid=%s channel_list=%s",
+		status, wpa_ssid_txt(ssid, ssid_len),
+		channel_list ? channel_list : "N/A");
+	os_free(channel_list);
+	hostapd_drv_send_action_cancel_wait(hapd);
+	hostapd_dpp_listen_stop(hapd);
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout,
+			     hapd, NULL);
+}
+
 
 #endif /* CONFIG_DPP2 */
 
@@ -1403,6 +1578,9 @@ void hostapd_dpp_rx_action(struct hostapd_data *hapd, const u8 *src,
 	case DPP_PA_CONFIGURATION_RESULT:
 		hostapd_dpp_rx_conf_result(hapd, src, hdr, buf, len);
 		break;
+	case DPP_PA_CONNECTION_STATUS_RESULT:
+		hostapd_dpp_rx_conn_status_result(hapd, src, hdr, buf, len);
+		break;
 #endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
@@ -1506,7 +1684,7 @@ int hostapd_dpp_configurator_sign(struct hostapd_data *hapd, const char *cmd)
 	if (dpp_set_configurator(hapd->iface->interfaces->dpp, hapd->msg_ctx,
 				 auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 1) == 0) {
-		hostapd_dpp_handle_config_obj(hapd, auth);
+		hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
 		ret = 0;
 	}
 
@@ -1714,6 +1892,8 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
 #ifdef CONFIG_DPP2
 	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
+			     NULL);
+	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout, hapd,
 			     NULL);
 #endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(hapd->dpp_auth);

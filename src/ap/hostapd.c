@@ -13,6 +13,7 @@
 
 #include "utils/common.h"
 #include "utils/eloop.h"
+#include "utils/crc32.h"
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_ctrl.h"
 #include "common/hw_features_common.h"
@@ -28,7 +29,6 @@
 #include "accounting.h"
 #include "ap_list.h"
 #include "beacon.h"
-#include "iapp.h"
 #include "ieee802_1x.h"
 #include "ieee802_11_auth.h"
 #include "vlan_init.h"
@@ -292,26 +292,24 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 	if (!ifname || !hapd->drv_priv)
 		return;
 	for (i = 0; i < NUM_WEP_KEYS; i++) {
-		if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE, NULL, i,
-					0, NULL, 0, NULL, 0)) {
+		if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE, NULL, i, 0,
+					0, NULL, 0, NULL, 0, KEY_FLAG_GROUP)) {
 			wpa_printf(MSG_DEBUG, "Failed to clear default "
 				   "encryption keys (ifname=%s keyidx=%d)",
 				   ifname, i);
 		}
 	}
-#ifdef CONFIG_IEEE80211W
 	if (hapd->conf->ieee80211w) {
 		for (i = NUM_WEP_KEYS; i < NUM_WEP_KEYS + 2; i++) {
 			if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE,
-						NULL, i, 0, NULL,
-						0, NULL, 0)) {
+						NULL, i, 0, 0, NULL,
+						0, NULL, 0, KEY_FLAG_GROUP)) {
 				wpa_printf(MSG_DEBUG, "Failed to clear "
 					   "default mgmt encryption keys "
 					   "(ifname=%s keyidx=%d)", ifname, i);
 			}
 		}
 	}
-#endif /* CONFIG_IEEE80211W */
 }
 
 
@@ -330,9 +328,10 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 	idx = ssid->wep.idx;
 	if (ssid->wep.default_len &&
 	    hostapd_drv_set_key(hapd->conf->iface,
-				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx,
+				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx, 0,
 				1, NULL, 0, ssid->wep.key[idx],
-				ssid->wep.len[idx])) {
+				ssid->wep.len[idx],
+				KEY_FLAG_GROUP_RX_TX_DEFAULT)) {
 		wpa_printf(MSG_WARNING, "Could not set WEP encryption.");
 		errors++;
 	}
@@ -363,8 +362,6 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 	hapd->beacon_set_done = 0;
 
 	wpa_printf(MSG_DEBUG, "%s(%s)", __func__, hapd->conf->iface);
-	iapp_deinit(hapd->iapp);
-	hapd->iapp = NULL;
 	accounting_deinit(hapd);
 	hostapd_deinit_wpa(hapd);
 	vlan_deinit(hapd);
@@ -557,10 +554,13 @@ static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd)
 
 	for (i = 0; i < 4; i++) {
 		if (hapd->conf->ssid.wep.key[i] &&
-		    hostapd_drv_set_key(iface, hapd, WPA_ALG_WEP, NULL, i,
+		    hostapd_drv_set_key(iface, hapd, WPA_ALG_WEP, NULL, i, 0,
 					i == hapd->conf->ssid.wep.idx, NULL, 0,
 					hapd->conf->ssid.wep.key[i],
-					hapd->conf->ssid.wep.len[i])) {
+					hapd->conf->ssid.wep.len[i],
+					i == hapd->conf->ssid.wep.idx ?
+					KEY_FLAG_GROUP_RX_TX_DEFAULT :
+					KEY_FLAG_GROUP_RX_TX)) {
 			wpa_printf(MSG_WARNING, "Could not set WEP "
 				   "encryption.");
 			return -1;
@@ -1195,8 +1195,14 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 		os_memcpy(conf->ssid.ssid, ssid, conf->ssid.ssid_len);
 	}
 
+	/*
+	 * Short SSID calculation is identical to FCS and it is defined in
+	 * IEEE P802.11-REVmd/D3.0, 9.4.2.170.3 (Calculating the Short-SSID).
+	 */
+	conf->ssid.short_ssid = crc32(conf->ssid.ssid, conf->ssid.ssid_len);
+
 	if (!hostapd_drv_none(hapd)) {
-		wpa_printf(MSG_ERROR, "Using interface %s with hwaddr " MACSTR
+		wpa_printf(MSG_DEBUG, "Using interface %s with hwaddr " MACSTR
 			   " and ssid \"%s\"",
 			   conf->iface, MAC2STR(hapd->own_addr),
 			   wpa_ssid_txt(conf->ssid.ssid, conf->ssid.ssid_len));
@@ -1295,13 +1301,6 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 
 	if (accounting_init(hapd)) {
 		wpa_printf(MSG_ERROR, "Accounting initialization failed.");
-		return -1;
-	}
-
-	if (conf->ieee802_11f &&
-	    (hapd->iapp = iapp_init(hapd, conf->iapp_iface)) == NULL) {
-		wpa_printf(MSG_ERROR, "IEEE 802.11F (IAPP) initialization "
-			   "failed.");
 		return -1;
 	}
 
@@ -1584,6 +1583,51 @@ static int setup_interface(struct hostapd_iface *iface)
 }
 
 
+static int configured_fixed_chan_to_freq(struct hostapd_iface *iface)
+{
+	int freq, i, j;
+
+	if (!iface->conf->channel)
+		return 0;
+	if (iface->conf->op_class) {
+		freq = ieee80211_chan_to_freq(NULL, iface->conf->op_class,
+					      iface->conf->channel);
+		if (freq < 0) {
+			wpa_printf(MSG_INFO,
+				   "Could not convert op_class %u channel %u to operating frequency",
+				   iface->conf->op_class, iface->conf->channel);
+			return -1;
+		}
+		iface->freq = freq;
+		return 0;
+	}
+
+	/* Old configurations using only 2.4/5/60 GHz bands may not specify the
+	 * op_class parameter. Select a matching channel from the configured
+	 * mode using the channel parameter for these cases.
+	 */
+	for (j = 0; j < iface->num_hw_features; j++) {
+		struct hostapd_hw_modes *mode = &iface->hw_features[j];
+
+		if (iface->conf->hw_mode != HOSTAPD_MODE_IEEE80211ANY &&
+		    iface->conf->hw_mode != mode->mode)
+			continue;
+		for (i = 0; i < mode->num_channels; i++) {
+			struct hostapd_channel_data *chan = &mode->channels[i];
+
+			if (chan->chan == iface->conf->channel &&
+			    !is_6ghz_freq(chan->freq)) {
+				iface->freq = chan->freq;
+				return 0;
+			}
+		}
+	}
+
+	wpa_printf(MSG_INFO, "Could not determine operating frequency");
+	return -1;
+}
+
+
 static int setup_interface2(struct hostapd_iface *iface)
 {
 	iface->wait_channel_update = 0;
@@ -1592,7 +1636,20 @@ static int setup_interface2(struct hostapd_iface *iface)
 		/* Not all drivers support this yet, so continue without hw
 		 * feature data. */
 	} else {
-		int ret = hostapd_select_hw_mode(iface);
+		int ret;
+
+		ret = configured_fixed_chan_to_freq(iface);
+		if (ret < 0)
+			goto fail;
+
+		if (iface->conf->op_class) {
+			int ch_width;
+
+			ch_width = op_class_to_ch_width(iface->conf->op_class);
+			hostapd_set_oper_chwidth(iface->conf, ch_width);
+		}
+
+		ret = hostapd_select_hw_mode(iface);
 		if (ret < 0) {
 			wpa_printf(MSG_ERROR, "Could not select hw_mode and "
 				   "channel. (%d)", ret);
@@ -1602,6 +1659,9 @@ static int setup_interface2(struct hostapd_iface *iface)
 			wpa_printf(MSG_DEBUG, "Interface initialization will be completed in a callback (ACS)");
 			return 0;
 		}
+		ret = hostapd_check_edmg_capab(iface);
+		if (ret < 0)
+			goto fail;
 		ret = hostapd_check_ht_capab(iface);
 		if (ret < 0)
 			goto fail;
@@ -1873,12 +1933,11 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 		goto fail;
 
 	wpa_printf(MSG_DEBUG, "Completing interface initialization");
-	if (iface->conf->channel) {
+	if (iface->freq) {
 #ifdef NEED_AP_MLME
 		int res;
 #endif /* NEED_AP_MLME */
 
-		iface->freq = hostapd_hw_get_freq(hapd, iface->conf->channel);
 		wpa_printf(MSG_DEBUG, "Mode: %s  Channel: %d  "
 			   "Frequency: %d MHz",
 			   hostapd_hw_mode_txt(iface->conf->hw_mode),
@@ -1926,6 +1985,8 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 		if (!delay_apply_cfg &&
 		    hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
 				     hapd->iconf->channel,
+				     hapd->iconf->enable_edmg,
+				     hapd->iconf->edmg_channel,
 				     hapd->iconf->ieee80211n,
 				     hapd->iconf->ieee80211ac,
 				     hapd->iconf->ieee80211ax,
@@ -3058,10 +3119,6 @@ void hostapd_new_assoc_sta(struct hostapd_data *hapd, struct sta_info *sta,
 	hostapd_prune_associations(hapd, sta->addr);
 	ap_sta_clear_disconnect_timeouts(hapd, sta);
 
-	/* IEEE 802.11F (IAPP) */
-	if (hapd->conf->ieee802_11f)
-		iapp_new_station(hapd->iapp, sta);
-
 #ifdef CONFIG_P2P
 	if (sta->p2p_ie == NULL && !sta->no_p2p_set) {
 		sta->no_p2p_set = 1;
@@ -3298,7 +3355,8 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 	if (old_params &&
 	    hostapd_set_freq_params(old_params, conf->hw_mode,
 				    hostapd_hw_get_freq(hapd, conf->channel),
-				    conf->channel, conf->ieee80211n,
+				    conf->channel, conf->enable_edmg,
+				    conf->edmg_channel, conf->ieee80211n,
 				    conf->ieee80211ac, conf->ieee80211ax,
 				    conf->secondary_channel,
 				    hostapd_get_oper_chwidth(conf),

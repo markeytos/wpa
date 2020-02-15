@@ -78,6 +78,7 @@ struct wiphy_info_data {
 	unsigned int wmm_ac_supported:1;
 	unsigned int mac_addr_rand_scan_supported:1;
 	unsigned int mac_addr_rand_sched_scan_supported:1;
+	unsigned int update_ft_ies_supported:1;
 };
 
 
@@ -242,6 +243,9 @@ static void wiphy_info_supp_cmds(struct wiphy_info_data *info,
 			break;
 		case NL80211_CMD_SET_QOS_MAP:
 			info->set_qos_map_supported = 1;
+			break;
+		case NL80211_CMD_UPDATE_FT_IES:
+			info->update_ft_ies_supported = 1;
 			break;
 		}
 	}
@@ -433,6 +437,14 @@ static void wiphy_info_ext_feature_flags(struct wiphy_info_data *info,
 	if (ext_feature_isset(ext_features, len,
 			      NL80211_EXT_FEATURE_ENABLE_FTM_RESPONDER))
 		capa->flags |= WPA_DRIVER_FLAGS_FTM_RESPONDER;
+
+	if (ext_feature_isset(ext_features, len,
+			      NL80211_EXT_FEATURE_CONTROL_PORT_OVER_NL80211))
+		capa->flags |= WPA_DRIVER_FLAGS_CONTROL_PORT;
+
+	if (ext_feature_isset(ext_features, len,
+			      NL80211_EXT_FEATURE_VLAN_OFFLOAD))
+		capa->flags |= WPA_DRIVER_FLAGS_VLAN_OFFLOAD;
 }
 
 
@@ -787,6 +799,9 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
 				case QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS:
 					drv->get_supported_akm_suites_avail = 1;
 					break;
+				case QCA_NL80211_VENDOR_SUBCMD_ADD_STA_NODE:
+					drv->add_sta_node_vendor_cmd_avail = 1;
+					break;
 #endif /* CONFIG_DRIVER_NL80211_QCA */
 				}
 			}
@@ -900,6 +915,9 @@ static int wpa_driver_nl80211_get_info(struct wpa_driver_nl80211_data *drv,
 		drv->capa.max_sched_scan_plan_interval = UINT32_MAX;
 		drv->capa.max_sched_scan_plan_iterations = 0;
 	}
+
+	if (info->update_ft_ies_supported)
+		drv->capa.flags |= WPA_DRIVER_FLAGS_UPDATE_FT_IES;
 
 	return 0;
 }
@@ -1202,9 +1220,12 @@ int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
 		WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
 		WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK |
 		WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B |
-		WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192 |
 		WPA_DRIVER_CAPA_KEY_MGMT_OWE |
 		WPA_DRIVER_CAPA_KEY_MGMT_DPP;
+
+	if (drv->capa.enc & (WPA_DRIVER_CAPA_ENC_CCMP_256 |
+			     WPA_DRIVER_CAPA_ENC_GCMP_256))
+		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192;
 
 	if (drv->capa.flags & WPA_DRIVER_FLAGS_SME)
 		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
@@ -1337,17 +1358,54 @@ static void phy_info_vht_capa(struct hostapd_hw_modes *mode,
 }
 
 
+static int phy_info_edmg_capa(struct hostapd_hw_modes *mode,
+			      struct nlattr *bw_config,
+			      struct nlattr *channels)
+{
+	if (!bw_config || !channels)
+		return NL_OK;
+
+	mode->edmg.bw_config = nla_get_u8(bw_config);
+	mode->edmg.channels = nla_get_u8(channels);
+
+	if (!mode->edmg.channels || !mode->edmg.bw_config)
+		return NL_STOP;
+
+	return NL_OK;
+}
+
+
+static int cw2ecw(unsigned int cw)
+{
+	int bit;
+
+	if (cw == 0)
+		return 0;
+
+	for (bit = 1; cw != 1; bit++)
+		cw >>= 1;
+
+	return bit;
+}
+
+
 static void phy_info_freq(struct hostapd_hw_modes *mode,
 			  struct hostapd_channel_data *chan,
 			  struct nlattr *tb_freq[])
 {
 	u8 channel;
+
+	os_memset(chan, 0, sizeof(*chan));
 	chan->freq = nla_get_u32(tb_freq[NL80211_FREQUENCY_ATTR_FREQ]);
 	chan->flag = 0;
 	chan->allowed_bw = ~0;
 	chan->dfs_cac_ms = 0;
 	if (ieee80211_freq_to_chan(chan->freq, &channel) != NUM_HOSTAPD_MODES)
 		chan->chan = channel;
+	else
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: No channel number found for frequency %u MHz",
+			   chan->freq);
 
 	if (tb_freq[NL80211_FREQUENCY_ATTR_DISABLED])
 		chan->flag |= HOSTAPD_CHAN_DISABLED;
@@ -1403,6 +1461,12 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 			[NL80211_WMMR_AIFSN] = { .type = NLA_U8 },
 			[NL80211_WMMR_TXOP] = { .type = NLA_U16 },
 		};
+		static const u8 wmm_map[4] = {
+			[NL80211_AC_BE] = WMM_AC_BE,
+			[NL80211_AC_BK] = WMM_AC_BK,
+			[NL80211_AC_VI] = WMM_AC_VI,
+			[NL80211_AC_VO] = WMM_AC_VO,
+		};
 		struct nlattr *nl_wmm;
 		struct nlattr *tb_wmm[NL80211_WMMR_MAX + 1];
 		int rem_wmm, ac, count = 0;
@@ -1424,16 +1488,19 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 				return;
 			}
 			ac = nl_wmm->nla_type;
-			if (ac < 0 || ac >= WMM_AC_NUM) {
+			if ((unsigned int) ac >= ARRAY_SIZE(wmm_map)) {
 				wpa_printf(MSG_DEBUG,
 					   "nl80211: Invalid AC value %d", ac);
 				return;
 			}
 
+			ac = wmm_map[ac];
 			chan->wmm_rules[ac].min_cwmin =
-				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MIN]);
+				cw2ecw(nla_get_u16(
+					       tb_wmm[NL80211_WMMR_CW_MIN]));
 			chan->wmm_rules[ac].min_cwmax =
-				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MAX]);
+				cw2ecw(nla_get_u16(
+					       tb_wmm[NL80211_WMMR_CW_MAX]));
 			chan->wmm_rules[ac].min_aifs =
 				nla_get_u8(tb_wmm[NL80211_WMMR_AIFSN]);
 			chan->wmm_rules[ac].max_txop =
@@ -1694,7 +1761,12 @@ static int phy_info_band(struct phy_info_arg *phy_info, struct nlattr *nl_band)
 			 tb_band[NL80211_BAND_ATTR_HT_MCS_SET]);
 	phy_info_vht_capa(mode, tb_band[NL80211_BAND_ATTR_VHT_CAPA],
 			  tb_band[NL80211_BAND_ATTR_VHT_MCS_SET]);
-	ret = phy_info_freqs(phy_info, mode, tb_band[NL80211_BAND_ATTR_FREQS]);
+	ret = phy_info_edmg_capa(mode,
+				 tb_band[NL80211_BAND_ATTR_EDMG_BW_CONFIG],
+				 tb_band[NL80211_BAND_ATTR_EDMG_CHANNELS]);
+	if (ret == NL_OK)
+		ret = phy_info_freqs(phy_info, mode,
+				     tb_band[NL80211_BAND_ATTR_FREQS]);
 	if (ret == NL_OK)
 		ret = phy_info_rates(mode, tb_band[NL80211_BAND_ATTR_RATES]);
 	if (ret != NL_OK) {

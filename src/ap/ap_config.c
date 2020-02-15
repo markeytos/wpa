@@ -16,6 +16,7 @@
 #include "common/ieee802_1x_defs.h"
 #include "common/eapol_common.h"
 #include "common/dhcp.h"
+#include "common/sae.h"
 #include "eap_common/eap_wsc_common.h"
 #include "eap_server/eap.h"
 #include "wpa_auth.h"
@@ -86,11 +87,9 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 
 	bss->pwd_group = 19; /* ECC: GF(p=256) */
 
-#ifdef CONFIG_IEEE80211W
 	bss->assoc_sa_query_max_timeout = 1000;
 	bss->assoc_sa_query_retry_timeout = 201;
 	bss->group_mgmt_cipher = WPA_CIPHER_AES_128_CMAC;
-#endif /* CONFIG_IEEE80211W */
 #ifdef EAP_SERVER_FAST
 	 /* both anonymous and authenticated provisioning */
 	bss->eap_fast_prov = 3;
@@ -134,6 +133,9 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	 * This can be enabled by default once the implementation has been fully
 	 * completed and tested with other implementations. */
 	bss->tls_flags = TLS_CONN_DISABLE_TLSv1_3;
+
+	bss->max_auth_rounds = 100;
+	bss->max_auth_rounds_short = 50;
 
 	bss->send_probe_response = 1;
 
@@ -433,9 +435,51 @@ static int hostapd_derive_psk(struct hostapd_ssid *ssid)
 }
 
 
+int hostapd_setup_sae_pt(struct hostapd_bss_config *conf)
+{
+#ifdef CONFIG_SAE
+	struct hostapd_ssid *ssid = &conf->ssid;
+	struct sae_password_entry *pw;
+
+	if ((conf->sae_pwe == 0 && !hostapd_sae_pw_id_in_use(conf)) ||
+	    conf->sae_pwe == 3 ||
+	    !wpa_key_mgmt_sae(conf->wpa_key_mgmt))
+		return 0; /* PT not needed */
+
+	sae_deinit_pt(ssid->pt);
+	ssid->pt = NULL;
+	if (ssid->wpa_passphrase) {
+		ssid->pt = sae_derive_pt(conf->sae_groups, ssid->ssid,
+					 ssid->ssid_len,
+					 (const u8 *) ssid->wpa_passphrase,
+					 os_strlen(ssid->wpa_passphrase),
+					 NULL);
+		if (!ssid->pt)
+			return -1;
+	}
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		sae_deinit_pt(pw->pt);
+		pw->pt = sae_derive_pt(conf->sae_groups, ssid->ssid,
+				       ssid->ssid_len,
+				       (const u8 *) pw->password,
+				       os_strlen(pw->password),
+				       pw->identifier);
+		if (!pw->pt)
+			return -1;
+	}
+#endif /* CONFIG_SAE */
+
+	return 0;
+}
+
+
 int hostapd_setup_wpa_psk(struct hostapd_bss_config *conf)
 {
 	struct hostapd_ssid *ssid = &conf->ssid;
+
+	if (hostapd_setup_sae_pt(conf) < 0)
+		return -1;
 
 	if (ssid->wpa_passphrase != NULL) {
 		if (ssid->wpa_psk != NULL) {
@@ -642,6 +686,9 @@ static void hostapd_config_free_sae_passwords(struct hostapd_bss_config *conf)
 		pw = pw->next;
 		str_clear_free(tmp->password);
 		os_free(tmp->identifier);
+#ifdef CONFIG_SAE
+		sae_deinit_pt(tmp->pt);
+#endif /* CONFIG_SAE */
 		os_free(tmp);
 	}
 }
@@ -678,6 +725,9 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 #ifdef CONFIG_FULL_DYNAMIC_VLAN
 	os_free(conf->ssid.vlan_tagged_interface);
 #endif /* CONFIG_FULL_DYNAMIC_VLAN */
+#ifdef CONFIG_SAE
+	sae_deinit_pt(conf->ssid.pt);
+#endif /* CONFIG_SAE */
 
 	hostapd_config_free_eap_users(conf->eap_user);
 	os_free(conf->eap_user_sqlite);
@@ -765,6 +815,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	os_free(conf->upc);
 	for (i = 0; i < MAX_WPS_VENDOR_EXTENSIONS; i++)
 		wpabuf_free(conf->wps_vendor_ext[i]);
+	wpabuf_free(conf->wps_application_ext);
 	wpabuf_free(conf->wps_nfc_dh_pubkey);
 	wpabuf_free(conf->wps_nfc_dh_privkey);
 	wpabuf_free(conf->wps_nfc_dev_pw);
@@ -832,6 +883,9 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 #ifdef CONFIG_TESTING_OPTIONS
 	wpabuf_free(conf->own_ie_override);
 	wpabuf_free(conf->sae_commit_override);
+	wpabuf_free(conf->rsnxe_override_eapol);
+	wpabuf_free(conf->gtk_rsc_override);
+	wpabuf_free(conf->igtk_rsc_override);
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	os_free(conf->no_probe_resp_if_seen_on);
@@ -840,6 +894,8 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	hostapd_config_free_fils_realms(conf);
 
 #ifdef CONFIG_DPP
+	os_free(conf->dpp_name);
+	os_free(conf->dpp_mud_url);
 	os_free(conf->dpp_connector);
 	wpabuf_free(conf->dpp_netaccesskey);
 	wpabuf_free(conf->dpp_csign);
@@ -885,6 +941,7 @@ void hostapd_config_free(struct hostapd_config *conf)
 	os_free(conf->supported_rates);
 	os_free(conf->basic_rates);
 	os_free(conf->acs_ch_list.range);
+	os_free(conf->acs_freq_list.range);
 	os_free(conf->driver_params);
 #ifdef CONFIG_ACS
 	os_free(conf->acs_chan_bias);

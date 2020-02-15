@@ -1,3 +1,11 @@
+wpa (2:2.9-7) unstable; urgency=medium
+
+  * Apply upstream patches:
+    - trace: handle binutils bfd.h breakage
+    - Check for FT support when selecting FT suites (Closes: #942164)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 15 Feb 2020 16:42:04 +0100
+
 wpa (2:2.9-6) unstable; urgency=medium
 
   [ Debian Janitor ]

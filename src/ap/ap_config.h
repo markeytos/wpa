@@ -152,6 +152,7 @@ struct hostapd_wpa_psk {
 	struct hostapd_wpa_psk *next;
 	int group;
 	char keyid[KEYID_LEN];
+	int wps;
 	u8 psk[PMK_LEN];
 	u8 addr[ETH_ALEN];
 	u8 p2p_dev_addr[ETH_ALEN];
@@ -348,6 +349,7 @@ struct hostapd_bss_config {
 	int wpa_key_mgmt;
 	enum mfp_options ieee80211w;
 	int group_mgmt_cipher;
+	int beacon_prot;
 	/* dot11AssociationSAQueryMaximumTimeout (in TUs) */
 	unsigned int assoc_sa_query_max_timeout;
 	/* dot11AssociationSAQueryRetryTimeout (in TUs) */
@@ -853,6 +855,8 @@ struct he_phy_capabilities_info {
  */
 struct he_operation {
 	u8 he_bss_color;
+	u8 he_bss_color_disabled;
+	u8 he_bss_color_partial;
 	u8 he_default_pe_duration;
 	u8 he_twt_required;
 	u16 he_rts_threshold;

@@ -182,6 +182,7 @@ struct hostapd_channel_data {
 	struct hostapd_wmm_rule wmm_rules[WMM_AC_NUM];
 };
 
+#define HE_MAC_CAPAB_0		0
 #define HE_MAX_MAC_CAPAB_SIZE	6
 #define HE_MAX_PHY_CAPAB_SIZE	11
 #define HE_MAX_MCS_CAPAB_SIZE	12
@@ -1402,14 +1403,6 @@ struct wpa_driver_ap_params {
 	u8 p2p_go_ctwindow;
 
 	/**
-	 * smps_mode - SMPS mode
-	 *
-	 * SMPS mode to be used by the AP, specified as the relevant bits of
-	 * ht_capab (i.e. HT_CAP_INFO_SMPS_*).
-	 */
-	unsigned int smps_mode;
-
-	/**
 	 * disable_dgaf - Whether group-addressed frames are disabled
 	 */
 	int disable_dgaf;
@@ -1487,6 +1480,26 @@ struct wpa_driver_ap_params {
 	 * he_spr_srg_obss_pd_max_offset - Maximum TX power offset
 	 */
 	 int he_spr_srg_obss_pd_max_offset;
+
+	/**
+	 * he_bss_color - Whether the BSS Color is disabled
+	 */
+	int he_bss_color_disabled;
+
+	/**
+	 * he_bss_color_partial - The BSS Color AID equation
+	 */
+	int he_bss_color_partial;
+
+	/**
+	 * he_bss_color - The BSS Color of the AP
+	 */
+	int he_bss_color;
+
+	/**
+	 * twt_responder - Whether Target Wait Time responder is enabled
+	 */
+	int twt_responder;
 };
 
 struct wpa_driver_mesh_bss_params {
@@ -1552,7 +1565,7 @@ struct wpa_driver_set_key_params {
 	/**
 	 * key_idx - Key index
 	 *
-	 * (0..3), usually 0 for unicast keys; 0..4095 for IGTK */
+	 * (0..3), usually 0 for unicast keys; 4..5 for IGTK; 6..7 for BIGTK */
 	int key_idx;
 
 	/**
@@ -1829,10 +1842,6 @@ struct wpa_driver_capa {
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
 	(drv_flags & WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE)
-
-#define WPA_DRIVER_SMPS_MODE_STATIC			0x00000001
-#define WPA_DRIVER_SMPS_MODE_DYNAMIC			0x00000002
-	unsigned int smps_modes;
 
 	unsigned int wmm_ac_supported:1;
 

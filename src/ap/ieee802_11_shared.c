@@ -377,6 +377,11 @@ static void hostapd_ext_capab_byte(struct hostapd_data *hapd, u8 *pos, int idx)
 		    wpa_key_mgmt_fils(hapd->conf->wpa_key_mgmt))
 			*pos |= 0x01;
 #endif /* CONFIG_FILS */
+#ifdef CONFIG_IEEE80211AX
+		if (hapd->iconf->ieee80211ax &&
+		    hostapd_get_he_twt_responder(hapd, IEEE80211_MODE_AP))
+			*pos |= 0x40; /* Bit 78 - TWT responder */
+#endif /* CONFIG_IEEE80211AX */
 		break;
 	case 10: /* Bits 80-87 */
 #ifdef CONFIG_SAE
@@ -392,6 +397,8 @@ static void hostapd_ext_capab_byte(struct hostapd_data *hapd, u8 *pos, int idx)
 					       * Identifiers Used Exclusively */
 		}
 #endif /* CONFIG_SAE */
+		if (hapd->conf->beacon_prot)
+			*pos |= 0x10; /* Bit 84 - Beacon Protection Enabled */
 		break;
 	}
 }
@@ -440,12 +447,19 @@ u8 * hostapd_eid_ext_capab(struct hostapd_data *hapd, u8 *eid)
 	     !wpa_key_mgmt_fils(hapd->conf->wpa_key_mgmt)) && len < 10)
 		len = 10;
 #endif /* CONFIG_FILS */
+#ifdef CONFIG_IEEE80211AX
+	if (len < 10 && hapd->iconf->ieee80211ax &&
+	    hostapd_get_he_twt_responder(hapd, IEEE80211_MODE_AP))
+		len = 10;
+#endif /* CONFIG_IEEE80211AX */
 #ifdef CONFIG_SAE
 	if (len < 11 && hapd->conf->wpa &&
 	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt) &&
 	    hostapd_sae_pw_id_in_use(hapd->conf))
 		len = 11;
 #endif /* CONFIG_SAE */
+	if (len < 11 && hapd->conf->beacon_prot)
+		len = 11;
 	if (len < hapd->iface->extended_capa_len)
 		len = hapd->iface->extended_capa_len;
 	if (len == 0)

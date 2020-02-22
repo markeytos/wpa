@@ -188,6 +188,7 @@ struct wpa_auth_config {
 	int okc;
 	int tx_status;
 	enum mfp_options ieee80211w;
+	int beacon_prot;
 	int group_mgmt_cipher;
 	int sae_require_mfp;
 #ifdef CONFIG_OCV
@@ -437,6 +438,7 @@ void wpa_wnmsleep_rekey_gtk(struct wpa_state_machine *sm);
 void wpa_set_wnmsleep(struct wpa_state_machine *sm, int flag);
 int wpa_wnmsleep_gtk_subelem(struct wpa_state_machine *sm, u8 *pos);
 int wpa_wnmsleep_igtk_subelem(struct wpa_state_machine *sm, u8 *pos);
+int wpa_wnmsleep_bigtk_subelem(struct wpa_state_machine *sm, u8 *pos);
 
 int wpa_auth_uses_sae(struct wpa_state_machine *sm);
 int wpa_auth_uses_ft_sae(struct wpa_state_machine *sm);

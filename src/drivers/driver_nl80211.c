@@ -2942,6 +2942,40 @@ static int wpa_cipher_to_cipher_suites(unsigned int ciphers, u32 suites[],
 }
 
 
+static int wpa_key_mgmt_to_suites(unsigned int key_mgmt_suites, u32 suites[],
+				  int max_suites)
+{
+	int num_suites = 0;
+
+#define __AKM(a, b) \
+	if (num_suites < max_suites && \
+	    (key_mgmt_suites & (WPA_KEY_MGMT_ ## a))) \
+		suites[num_suites++] = (RSN_AUTH_KEY_MGMT_ ## b)
+	__AKM(IEEE8021X, UNSPEC_802_1X);
+	__AKM(PSK, PSK_OVER_802_1X);
+	__AKM(FT_IEEE8021X, FT_802_1X);
+	__AKM(FT_PSK, FT_PSK);
+	__AKM(IEEE8021X_SHA256, 802_1X_SHA256);
+	__AKM(PSK_SHA256, PSK_SHA256);
+	__AKM(SAE, SAE);
+	__AKM(FT_SAE, FT_SAE);
+	__AKM(CCKM, CCKM);
+	__AKM(OSEN, OSEN);
+	__AKM(IEEE8021X_SUITE_B, 802_1X_SUITE_B);
+	__AKM(IEEE8021X_SUITE_B_192, 802_1X_SUITE_B_192);
+	__AKM(FILS_SHA256, FILS_SHA256);
+	__AKM(FILS_SHA384, FILS_SHA384);
+	__AKM(FT_FILS_SHA256, FT_FILS_SHA256);
+	__AKM(FT_FILS_SHA384, FT_FILS_SHA384);
+	__AKM(OWE, OWE);
+	__AKM(DPP, DPP);
+	__AKM(FT_IEEE8021X_SHA384, FT_802_1X_SHA384);
+#undef __AKM
+
+	return num_suites;
+}
+
+
 #ifdef CONFIG_DRIVER_NL80211_QCA
 static int issue_key_mgmt_set_key(struct wpa_driver_nl80211_data *drv,
 				  const u8 *key, size_t key_len)
@@ -3129,7 +3163,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if ((ret == -ENOENT || ret == -ENOLINK) && alg == WPA_ALG_NONE)
 		ret = 0;
 	if (ret)
-		wpa_printf(MSG_DEBUG, "nl80211: set_key failed; err=%d %s)",
+		wpa_printf(MSG_DEBUG, "nl80211: set_key failed; err=%d %s",
 			   ret, strerror(-ret));
 
 	/*
@@ -3193,8 +3227,9 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if (ret == -ENOENT)
 		ret = 0;
 	if (ret)
-		wpa_printf(MSG_DEBUG, "nl80211: set_key default failed; "
-			   "err=%d %s)", ret, strerror(-ret));
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: set_key default failed; err=%d %s",
+			   ret, strerror(-ret));
 	return ret;
 
 fail:
@@ -4102,8 +4137,7 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	int ret = -ENOBUFS;
 	int beacon_set;
 	int num_suites;
-	int smps_mode;
-	u32 suites[10], suite;
+	u32 suites[20], suite;
 	u32 ver;
 #ifdef CONFIG_MESH
 	struct wpa_driver_mesh_bss_params mesh_params;
@@ -4197,14 +4231,15 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 
 	wpa_printf(MSG_DEBUG, "nl80211: key_mgmt_suites=0x%x",
 		   params->key_mgmt_suites);
-	num_suites = 0;
-	if (params->key_mgmt_suites & WPA_KEY_MGMT_IEEE8021X)
-		suites[num_suites++] = RSN_AUTH_KEY_MGMT_UNSPEC_802_1X;
-	if (params->key_mgmt_suites & WPA_KEY_MGMT_PSK)
-		suites[num_suites++] = RSN_AUTH_KEY_MGMT_PSK_OVER_802_1X;
-	if (num_suites &&
-	    nla_put(msg, NL80211_ATTR_AKM_SUITES, num_suites * sizeof(u32),
-		    suites))
+	num_suites = wpa_key_mgmt_to_suites(params->key_mgmt_suites,
+					    suites, ARRAY_SIZE(suites));
+	if (num_suites > NL80211_MAX_NR_AKM_SUITES)
+		wpa_printf(MSG_WARNING,
+			   "nl80211: Not enough room for all AKM suites (num_suites=%d > NL80211_MAX_NR_AKM_SUITES)",
+			   num_suites);
+	else if (num_suites &&
+		 nla_put(msg, NL80211_ATTR_AKM_SUITES, num_suites * sizeof(u32),
+			 suites))
 		goto fail;
 
 	if (params->key_mgmt_suites & WPA_KEY_MGMT_IEEE8021X_NO_WPA &&
@@ -4234,27 +4269,6 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	if (suite &&
 	    nla_put_u32(msg, NL80211_ATTR_CIPHER_SUITE_GROUP, suite))
 		goto fail;
-
-	if (params->ht_opmode != -1) {
-		switch (params->smps_mode) {
-		case HT_CAP_INFO_SMPS_DYNAMIC:
-			wpa_printf(MSG_DEBUG, "nl80211: SMPS mode - dynamic");
-			smps_mode = NL80211_SMPS_DYNAMIC;
-			break;
-		case HT_CAP_INFO_SMPS_STATIC:
-			wpa_printf(MSG_DEBUG, "nl80211: SMPS mode - static");
-			smps_mode = NL80211_SMPS_STATIC;
-			break;
-		default:
-			/* invalid - fallback to smps off */
-		case HT_CAP_INFO_SMPS_DISABLED:
-			wpa_printf(MSG_DEBUG, "nl80211: SMPS mode - off");
-			smps_mode = NL80211_SMPS_OFF;
-			break;
-		}
-		if (nla_put_u8(msg, NL80211_ATTR_SMPS_MODE, smps_mode))
-			goto fail;
-	}
 
 	if (params->beacon_ies) {
 		wpa_hexdump_buf(MSG_DEBUG, "nl80211: beacon_ies",
@@ -4340,13 +4354,36 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 		spr = nla_nest_start(msg, NL80211_ATTR_HE_OBSS_PD);
 		wpa_printf(MSG_DEBUG, "nl80211: he_spr=%d", params->he_spr);
 
-		if (nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MIN_OFFSET,
+		if (!spr ||
+		    nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MIN_OFFSET,
 			       params->he_spr_srg_obss_pd_min_offset) ||
 		    nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MAX_OFFSET,
 			       params->he_spr_srg_obss_pd_max_offset))
 			goto fail;
 
 		nla_nest_end(msg, spr);
+	}
+
+	if (params->freq && params->freq->he_enabled) {
+		struct nlattr *bss_color;
+
+		bss_color = nla_nest_start(msg, NL80211_ATTR_HE_BSS_COLOR);
+		if (!bss_color ||
+		    (params->he_bss_color_disabled &&
+		     nla_put_flag(msg, NL80211_HE_BSS_COLOR_ATTR_DISABLED)) ||
+		    (params->he_bss_color_partial &&
+		     nla_put_flag(msg, NL80211_HE_BSS_COLOR_ATTR_PARTIAL)) ||
+		    nla_put_u8(msg, NL80211_HE_BSS_COLOR_ATTR_COLOR,
+			       params->he_bss_color))
+			goto fail;
+		nla_nest_end(msg, bss_color);
+	}
+
+	if (params->twt_responder) {
+		wpa_printf(MSG_DEBUG, "nl80211: twt_responder=%d",
+			   params->twt_responder);
+		if (nla_put_flag(msg, NL80211_ATTR_TWT_RESPONDER))
+			goto fail;
 	}
 #endif /* CONFIG_IEEE80211AX */
 

@@ -218,7 +218,6 @@ static int hostapd_driver_init(struct hostapd_iface *iface)
 		struct wowlan_triggers *triggs;
 
 		iface->drv_flags = capa.flags;
-		iface->smps_modes = capa.smps_modes;
 		iface->probe_resp_offloads = capa.probe_resp_offloads;
 		/*
 		 * Use default extended capa values from per-radio information
@@ -451,11 +450,12 @@ static int hostapd_global_run(struct hapd_interfaces *ifaces, int daemonize,
 static void show_version(void)
 {
 	fprintf(stderr,
-		"hostapd v" VERSION_STR "\n"
+		"hostapd v%s\n"
 		"User space daemon for IEEE 802.11 AP management,\n"
 		"IEEE 802.1X/WPA/WPA2/EAP/RADIUS Authenticator\n"
 		"Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi> "
-		"and contributors\n");
+		"and contributors\n",
+		VERSION_STR);
 }
 
 

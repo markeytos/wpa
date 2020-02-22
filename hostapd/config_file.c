@@ -1171,14 +1171,6 @@ static int hostapd_config_ht_capab(struct hostapd_config *conf,
 	}
 	if (!os_strstr(capab, "[HT40+]") && !os_strstr(capab, "[HT40-]"))
 		conf->secondary_channel = 0;
-	if (os_strstr(capab, "[SMPS-STATIC]")) {
-		conf->ht_capab &= ~HT_CAP_INFO_SMPS_MASK;
-		conf->ht_capab |= HT_CAP_INFO_SMPS_STATIC;
-	}
-	if (os_strstr(capab, "[SMPS-DYNAMIC]")) {
-		conf->ht_capab &= ~HT_CAP_INFO_SMPS_MASK;
-		conf->ht_capab |= HT_CAP_INFO_SMPS_DYNAMIC;
-	}
 	if (os_strstr(capab, "[GF]"))
 		conf->ht_capab |= HT_CAP_INFO_GREEN_FIELD;
 	if (os_strstr(capab, "[SHORT-GI-20]"))
@@ -3408,6 +3400,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				   line, pos);
 			return 1;
 		}
+	} else if (os_strcmp(buf, "beacon_prot") == 0) {
+		bss->beacon_prot = atoi(pos);
 	} else if (os_strcmp(buf, "assoc_sa_query_max_timeout") == 0) {
 		bss->assoc_sa_query_max_timeout = atoi(pos);
 		if (bss->assoc_sa_query_max_timeout == 0) {
@@ -3474,7 +3468,10 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "he_mu_beamformer") == 0) {
 		conf->he_phy_capab.he_mu_beamformer = atoi(pos);
 	} else if (os_strcmp(buf, "he_bss_color") == 0) {
-		conf->he_op.he_bss_color = atoi(pos);
+		conf->he_op.he_bss_color = atoi(pos) & 0x3f;
+		conf->he_op.he_bss_color_disabled = 0;
+	} else if (os_strcmp(buf, "he_bss_color_partial") == 0) {
+		conf->he_op.he_bss_color_partial = atoi(pos);
 	} else if (os_strcmp(buf, "he_default_pe_duration") == 0) {
 		conf->he_op.he_default_pe_duration = atoi(pos);
 	} else if (os_strcmp(buf, "he_twt_required") == 0) {

@@ -251,6 +251,9 @@ struct hostapd_config * hostapd_config_defaults(void)
 		HE_OPERATION_RTS_THRESHOLD_OFFSET;
 	/* Set default basic MCS/NSS set to single stream MCS 0-7 */
 	conf->he_op.he_basic_mcs_nss_set = 0xfffc;
+	conf->he_op.he_bss_color_disabled = 1;
+	conf->he_op.he_bss_color_partial = 0;
+	conf->he_op.he_bss_color = 1;
 #endif /* CONFIG_IEEE80211AX */
 
 	/* The third octet of the country string uses an ASCII space character
@@ -301,6 +304,7 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 
 	while (fgets(buf, sizeof(buf), f)) {
 		int vlan_id = 0;
+		int wps = 0;
 
 		line++;
 
@@ -331,6 +335,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				value = "";
 			if (!os_strcmp(name, "keyid")) {
 				keyid = value;
+			} else if (!os_strcmp(name, "wps")) {
+				wps = atoi(value);
 			} else if (!os_strcmp(name, "vlanid")) {
 				vlan_id = atoi(value);
 			} else {
@@ -348,8 +354,9 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 		if (!token)
 			token = "";
 		if (hwaddr_aton(token, addr)) {
-			wpa_printf(MSG_ERROR, "Invalid MAC address '%s' on "
-				   "line %d in '%s'", token, line, fname);
+			wpa_printf(MSG_ERROR,
+				   "Invalid MAC address '%s' on line %d in '%s'",
+				   token, line, fname);
 			ret = -1;
 			break;
 		}
@@ -377,16 +384,17 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 
 		ok = 0;
 		len = os_strlen(pos);
-		if (len == 64 && hexstr2bin(pos, psk->psk, PMK_LEN) == 0)
+		if (len == 2 * PMK_LEN &&
+		    hexstr2bin(pos, psk->psk, PMK_LEN) == 0)
 			ok = 1;
-		else if (len >= 8 && len < 64) {
-			pbkdf2_sha1(pos, ssid->ssid, ssid->ssid_len,
-				    4096, psk->psk, PMK_LEN);
+		else if (len >= 8 && len < 64 &&
+			 pbkdf2_sha1(pos, ssid->ssid, ssid->ssid_len,
+				     4096, psk->psk, PMK_LEN) == 0)
 			ok = 1;
-		}
 		if (!ok) {
-			wpa_printf(MSG_ERROR, "Invalid PSK '%s' on line %d in "
-				   "'%s'", pos, line, fname);
+			wpa_printf(MSG_ERROR,
+				   "Invalid PSK '%s' on line %d in '%s'",
+				   pos, line, fname);
 			os_free(psk);
 			ret = -1;
 			break;
@@ -403,6 +411,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				break;
 			}
 		}
+
+		psk->wps = wps;
 
 		psk->next = ssid->wpa_psk;
 		ssid->wpa_psk = psk;

@@ -925,6 +925,10 @@ static int wpa_ft_parse_ftie(const u8 *ie, size_t ie_len,
 			parse->oci_len = len;
 			break;
 #endif /* CONFIG_OCV */
+		case FTIE_SUBELEM_BIGTK:
+			parse->bigtk = pos;
+			parse->bigtk_len = len;
+			break;
 		default:
 			wpa_printf(MSG_DEBUG, "FT: Unknown subelem id %u", id);
 			break;
@@ -2100,8 +2104,6 @@ u32 wpa_akm_to_suite(int akm)
 		return RSN_AUTH_KEY_MGMT_OWE;
 	if (akm & WPA_KEY_MGMT_DPP)
 		return RSN_AUTH_KEY_MGMT_DPP;
-	if (akm & WPA_KEY_MGMT_OSEN)
-		return RSN_AUTH_KEY_MGMT_OSEN;
 	return 0;
 }
 
@@ -2725,6 +2727,15 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 		ie->igtk = pos + 2 + RSN_SELECTOR_LEN;
 		ie->igtk_len = pos[1] - RSN_SELECTOR_LEN;
 		wpa_hexdump_key(MSG_DEBUG, "WPA: IGTK in EAPOL-Key",
+				pos, pos[1] + 2);
+		return 0;
+	}
+
+	if (pos[1] > RSN_SELECTOR_LEN + 2 &&
+	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_BIGTK) {
+		ie->bigtk = pos + 2 + RSN_SELECTOR_LEN;
+		ie->bigtk_len = pos[1] - RSN_SELECTOR_LEN;
+		wpa_hexdump_key(MSG_DEBUG, "WPA: BIGTK in EAPOL-Key",
 				pos, pos[1] + 2);
 		return 0;
 	}

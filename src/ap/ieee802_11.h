@@ -96,6 +96,8 @@ u16 set_sta_vht_opmode(struct hostapd_data *hapd, struct sta_info *sta,
 u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 		      enum ieee80211_op_mode opmode, const u8 *he_capab,
 		      size_t he_capab_len);
+int hostapd_get_he_twt_responder(struct hostapd_data *hapd,
+				 enum ieee80211_op_mode mode);
 void hostapd_tx_status(struct hostapd_data *hapd, const u8 *addr,
 		       const u8 *buf, size_t len, int ack);
 void hostapd_eapol_tx_status(struct hostapd_data *hapd, const u8 *dst,
@@ -163,7 +165,7 @@ void ieee802_11_finish_fils_auth(struct hostapd_data *hapd,
 				 const u8 *msk, size_t msk_len);
 u8 * owe_assoc_req_process(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *owe_dh, u8 owe_dh_len,
-			   u8 *owe_buf, size_t owe_buf_len, u16 *reason);
+			   u8 *owe_buf, size_t owe_buf_len, u16 *status);
 u16 owe_process_rsn_ie(struct hostapd_data *hapd, struct sta_info *sta,
 		       const u8 *rsn_ie, size_t rsn_ie_len,
 		       const u8 *owe_dh, size_t owe_dh_len);

@@ -33,6 +33,8 @@ struct wpa_sm {
 	struct wpa_gtk gtk_wnm_sleep;
 	struct wpa_igtk igtk;
 	struct wpa_igtk igtk_wnm_sleep;
+	struct wpa_bigtk bigtk;
+	struct wpa_bigtk bigtk_wnm_sleep;
 
 	struct eapol_sm *eapol; /* EAPOL state machine from upper level code */
 
@@ -64,6 +66,7 @@ struct wpa_sm {
 	int p2p;
 	int wpa_rsc_relaxation;
 	int owe_ptk_workaround;
+	int beacon_prot;
 
 	u8 own_addr[ETH_ALEN];
 	const char *ifname;

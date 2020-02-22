@@ -1,3 +1,9 @@
+wpa (2:2.9.0-8) unstable; urgency=medium
+
+  * Reupload as 2.9.0 to undo an accidental experimental upload to unstable.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 22 Feb 2020 11:25:29 +0300
+
 wpa (2:2.9-7) unstable; urgency=medium
 
   * Apply upstream patches:

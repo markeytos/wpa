@@ -3,6 +3,10 @@ wpa (2:2.9.0-9) UNRELEASED; urgency=medium
   [ Terry Burton ]
   * Build and install eapol_test in eapoltest package (Closes: #700870)
 
+  [ Andrew Lee (李健秋) ]
+  * Build libwpa-dev binary package which contains a static
+    libwpa_client library and the wpa_ctrl header.
+
  -- Didier Raboud <odyx@debian.org>  Sat, 22 Feb 2020 14:45:04 +0100
 
 wpa (2:2.9.0-8) unstable; urgency=medium

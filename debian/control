@@ -109,3 +109,15 @@ Description: EAPoL testing utility
  a full 802.1X connection. It is frequently used to test the EAP
  configuration of RADIUS systems. It is an administrator tool and not
  required for standard 802.1X authentication.
+
+Package: libwpa-dev
+Architecture: linux-any kfreebsd-any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: development files for WPA/WPA2 client support (IEEE 802.11i)
+ WPA and WPA2 are methods for securing wireless networks, the former
+ using IEEE 802.1X, and the latter using IEEE 802.11i. This software
+ provides key negotiation with the WPA Authenticator, and controls
+ association with IEEE 802.11i networks.
+ .
+ This package contains static libwpa_client library and header files.

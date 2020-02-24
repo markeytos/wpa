@@ -47,10 +47,10 @@ ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean --sourcedirectory=wpa_supplicant \
 	              --buildsystem=makefile
 endif
-	# build wpasupplicant
+	# build wpasupplicant, libwpa_client and eapol_test
 	cp -v --remove-destination $(WPASUPPLICANT_DOT_CONFIG) wpa_supplicant/.config
 	dh_auto_build --sourcedirectory=wpa_supplicant \
-	              --buildsystem=makefile
+	              --buildsystem=makefile -- all libwpa_client.a eapol_test
 ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 	# build wpa_gui-qt4
 	dh_auto_build --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
@@ -62,10 +62,6 @@ endif
 	dh_auto_build --sourcedirectory=hostapd \
 	              --buildsystem=makefile
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
-	# build eapol_test
-	dh_auto_build --sourcedirectory=wpa_supplicant \
-	              --buildsystem=makefile \
-	              -- eapol_test
 
 override_dh_auto_clean:
 	dh_auto_clean --sourcedirectory=wpa_supplicant/doc/docbook \

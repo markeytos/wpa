@@ -97,3 +97,16 @@ Signed-off-by: Didier Raboud <odyx@debian.org>
  		if (realm &&
  		    domain_name_list_contains(domain_names, realm, 1))
  			return 1;
+--- a/wpa_supplicant/dbus/dbus_new.c
++++ b/wpa_supplicant/dbus/dbus_new.c
+@@ -4791,8 +4791,8 @@
+ 
+ 	if (!wpa_s->dbus_groupobj_path) {
+ 		wpa_printf(MSG_DEBUG,
+-			   "%s: Group object '%s' already unregistered",
+-			   __func__, wpa_s->dbus_groupobj_path);
++			   "%s: Group object already unregistered",
++			   __func__);
+ 		return;
+ 	}
+ 

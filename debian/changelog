@@ -1,4 +1,4 @@
-wpa (2:2.9.0-9) UNRELEASED; urgency=medium
+wpa (2:2.9.0-9) unstable; urgency=medium
 
   [ Terry Burton ]
   * Build and install eapol_test in eapoltest package (Closes: #700870)
@@ -7,7 +7,12 @@ wpa (2:2.9.0-9) UNRELEASED; urgency=medium
   * Build libwpa-dev binary package which contains a static
     libwpa_client library and the wpa_ctrl header with an example program.
 
- -- Didier Raboud <odyx@debian.org>  Sat, 22 Feb 2020 14:45:04 +0100
+  [ Andrej Shadura ]
+  * Add a patch to provide the BIT() macro locally in wpa_ctrl.h.
+  * Patch the example to use stddef.h and wpa_ctrl.h from the global location.
+  * Add an autopkgtest for libwpa-dev and libwpa_test.c.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 25 Feb 2020 18:21:35 +0100
 
 wpa (2:2.9.0-8) unstable; urgency=medium
 

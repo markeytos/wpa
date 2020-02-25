@@ -5,6 +5,7 @@ Uploaders:
 Section: net
 Priority: optional
 Build-Depends: debhelper-compat (= 12),
+ dh-exec,
  libdbus-1-dev,
  libssl-dev,
  qtbase5-dev <!pkg.wpa.nogui>,
@@ -112,7 +113,7 @@ Description: EAPoL testing utility
 
 Package: libwpa-dev
 Architecture: linux-any kfreebsd-any
-Multi-Arch: foreign
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: development files for WPA/WPA2 client support (IEEE 802.11i)
  WPA and WPA2 are methods for securing wireless networks, the former

@@ -3,6 +3,9 @@ wpa (2:2.9.0-9) unstable; urgency=medium
   [ Terry Burton ]
   * Build and install eapol_test in eapoltest package (Closes: #700870)
 
+  [ Didier Raboud ]
+  * Backport upstream patch to fix build with Debian's VERSION_STR.
+
   [ Andrew Lee (李健秋) ]
   * Build libwpa-dev binary package which contains a static
     libwpa_client library and the wpa_ctrl header with an example program.

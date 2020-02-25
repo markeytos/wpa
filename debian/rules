@@ -103,6 +103,7 @@ override_dh_installchangelogs:
 ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 	dh_installchangelogs --package=wpagui wpa_supplicant/ChangeLog
 endif
+	dh_installchangelogs --remaining-packages
 ### end dh overrides
 
 override_dh_installexamples:

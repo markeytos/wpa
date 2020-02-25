@@ -105,6 +105,10 @@ ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 endif
 ### end dh overrides
 
+override_dh_installexamples:
+	dh_installexamples
+	sed -e 's="includes.h"=<stddef.h>=' -e 's="common/wpa_ctrl.h"=<wpa_ctrl.h>=' -i debian/*/usr/share/doc/*/examples/*.c
+
 %:
 	dh ${@}
 

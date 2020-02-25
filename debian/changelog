@@ -1,3 +1,9 @@
+wpa (2:2.9.0-10) unstable; urgency=medium
+
+  * Rename the package with the client library to libwpa-client-dev.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 25 Feb 2020 20:19:52 +0100
+
 wpa (2:2.9.0-9) unstable; urgency=medium
 
   [ Terry Burton ]

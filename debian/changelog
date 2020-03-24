@@ -1,3 +1,10 @@
+wpa (2:2.9.0-12) unstable; urgency=medium
+
+  * Add an upstream patch to fix the MAC randomisation issue with some cards
+    (LP: #1867908).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 24 Mar 2020 11:13:16 +0100
+
 wpa (2:2.9.0-11) unstable; urgency=medium
 
   * Actually add autopkgtest for libwpa-client-dev and libwpa_test.c.

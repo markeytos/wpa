@@ -13,4 +13,4 @@ Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
 +ExecStart=@BINDIR@/wpa_supplicant -c/etc/wpa_supplicant/wpa_supplicant-%I.conf -Dnl80211,wext -i%I
  
  [Install]
- Alias=multi-user.target.wants/wpa_supplicant@%i.service
+ WantedBy=multi-user.target

@@ -47,10 +47,10 @@ ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean --sourcedirectory=wpa_supplicant \
 	              --buildsystem=makefile
 endif
-	# build wpasupplicant
+	# build wpasupplicant, libwpa_client and eapol_test
 	cp -v --remove-destination $(WPASUPPLICANT_DOT_CONFIG) wpa_supplicant/.config
 	dh_auto_build --sourcedirectory=wpa_supplicant \
-	              --buildsystem=makefile
+	              --buildsystem=makefile -- all libwpa_client.a eapol_test
 ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 	# build wpa_gui-qt4
 	dh_auto_build --sourcedirectory=wpa_supplicant/wpa_gui-qt4 \
@@ -103,7 +103,12 @@ override_dh_installchangelogs:
 ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 	dh_installchangelogs --package=wpagui wpa_supplicant/ChangeLog
 endif
+	dh_installchangelogs --remaining-packages
 ### end dh overrides
+
+override_dh_installexamples:
+	dh_installexamples
+	sed -e 's="includes.h"=<stddef.h>=' -e 's="common/wpa_ctrl.h"=<wpa_ctrl.h>=' -i debian/*/usr/share/doc/*/examples/*.c
 
 %:
 	dh ${@}

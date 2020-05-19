@@ -191,7 +191,7 @@ CONFIG_HT_OVERRIDES=y
 CONFIG_VHT_OVERRIDES=y
 
 # Development testing
-#CONFIG_EAPOL_TEST=y
+CONFIG_EAPOL_TEST=y
 
 # Select control interface backend for external programs, e.g, wpa_cli:
 # unix = UNIX domain sockets (default for Linux/*BSD)

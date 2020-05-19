@@ -4,6 +4,58 @@ wpa (2:2.9.0+git20200221+f65da0c-1) experimental; urgency=medium
 
  -- Andrej Shadura <andrewsh@debian.org>  Sat, 22 Feb 2020 11:31:25 +0300
 
+wpa (2:2.9.0-13) unstable; urgency=medium
+
+  * Apply upstream patches:
+    - Avoid sending invalid mgmt frames at startup
+    - Increase introspection buffer size for D-Bus
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 19 May 2020 14:29:29 +0200
+
+wpa (2:2.9.0-12) unstable; urgency=medium
+
+  * Add an upstream patch to fix the MAC randomisation issue with some cards
+    (LP: #1867908).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 24 Mar 2020 11:13:16 +0100
+
+wpa (2:2.9.0-11) unstable; urgency=medium
+
+  * Actually add autopkgtest for libwpa-client-dev and libwpa_test.c.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 07 Mar 2020 13:18:19 +0100
+
+wpa (2:2.9.0-10) unstable; urgency=medium
+
+  * Rename the package with the client library to libwpa-client-dev.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 25 Feb 2020 20:19:52 +0100
+
+wpa (2:2.9.0-9) unstable; urgency=medium
+
+  [ Terry Burton ]
+  * Build and install eapol_test in eapoltest package (Closes: #700870)
+
+  [ Didier Raboud ]
+  * Backport upstream patch to fix build with Debian's VERSION_STR.
+
+  [ Andrew Lee (李健秋) ]
+  * Build libwpa-dev binary package which contains a static
+    libwpa_client library and the wpa_ctrl header with an example program.
+
+  [ Andrej Shadura ]
+  * Add a patch to provide the BIT() macro locally in wpa_ctrl.h.
+  * Patch the example to use stddef.h and wpa_ctrl.h from the global location.
+  * Add an autopkgtest for libwpa-dev and libwpa_test.c.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 25 Feb 2020 18:21:35 +0100
+
+wpa (2:2.9.0-8) unstable; urgency=medium
+
+  * Reupload as 2.9.0 to undo an accidental experimental upload to unstable.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 22 Feb 2020 11:25:29 +0300
+
 wpa (2:2.9+git20200213+877d9a0-1) unstable; urgency=medium
 
   * New upstream snapshot.

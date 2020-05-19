@@ -1,3 +1,10 @@
+wpa (2:2.9.0+git20200517+dd2daf0-1) experimental; urgency=medium
+
+  * New upstream snapshot.
+  * Refresh patches.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 19 May 2020 14:45:27 +0200
+
 wpa (2:2.9.0+git20200221+f65da0c-1) experimental; urgency=medium
 
   * New upstream snapshot.

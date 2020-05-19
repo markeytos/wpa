@@ -13,3 +13,5 @@ upstream-fixes/0003-check-for-ft-support.patch
 upstream-fixes/0004-fix-VERSION_STR-printf-calls.patch
 upstream-fixes/0005-common-Provide-the-BIT-macro-locally.patch
 upstream-fixes/0006-nl80211-fix-RTM-NEW-DELLINK-IFLA_IFNAME.patch
+upstream-fixes/0007-Move-deauthentication-at-AP-start-to-be-after-beacon.patch
+upstream-fixes/0008-Ignore-Management-frames-while-AP-interface-is-not-f.patch

@@ -296,6 +296,7 @@ CFLAGS += -DCONFIG_SAE
 OBJS += ../src/common/sae.o
 NEED_ECC=y
 NEED_DH_GROUPS=y
+NEED_HMAC_SHA256_KDF=y
 NEED_AP_MLME=y
 NEED_DRAGONFLY=y
 endif
@@ -329,10 +330,6 @@ endif
 ifdef CONFIG_WNM
 CFLAGS += -DCONFIG_WNM -DCONFIG_WNM_AP
 OBJS += ../src/ap/wnm_ap.o
-endif
-
-ifdef CONFIG_IEEE80211N
-CFLAGS += -DCONFIG_IEEE80211N
 endif
 
 ifdef CONFIG_IEEE80211AC
@@ -571,6 +568,12 @@ endif
 ifdef CONFIG_DPP
 CFLAGS += -DCONFIG_DPP
 OBJS += ../src/common/dpp.o
+OBJS += ../src/common/dpp_auth.o
+OBJS += ../src/common/dpp_backup.o
+OBJS += ../src/common/dpp_crypto.o
+OBJS += ../src/common/dpp_pkex.o
+OBJS += ../src/common/dpp_reconfig.o
+OBJS += ../src/common/dpp_tcp.o
 OBJS += ../src/ap/dpp_hostapd.o
 OBJS += ../src/ap/gas_query_ap.o
 NEED_AES_SIV=y
@@ -1155,9 +1158,7 @@ OBJS += ../src/ap/hw_features.o
 OBJS += ../src/ap/dfs.o
 CFLAGS += -DNEED_AP_MLME
 endif
-ifdef CONFIG_IEEE80211N
 OBJS += ../src/ap/ieee802_11_ht.o
-endif
 
 ifdef CONFIG_IEEE80211AC
 OBJS += ../src/ap/ieee802_11_vht.o
@@ -1242,6 +1243,14 @@ endif
 ifndef CONFIG_NO_CTRL_IFACE
 OBJS += ../src/fst/fst_ctrl_iface.o
 endif
+endif
+
+ifdef CONFIG_WEP
+CFLAGS += -DCONFIG_WEP
+endif
+
+ifdef CONFIG_NO_TKIP
+CFLAGS += -DCONFIG_NO_TKIP
 endif
 
 ALL=hostapd hostapd_cli

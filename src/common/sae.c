@@ -169,7 +169,7 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	 * being smaller than prime. */
 	in_range = const_time_fill_msb((unsigned int) cmp_prime);
 	/* The algorithm description would skip the next steps if
-	 * cmp_prime >= 0 (reutnr 0 here), but go through them regardless to
+	 * cmp_prime >= 0 (return 0 here), but go through them regardless to
 	 * minimize externally observable differences in behavior. */
 
 	x_cand = crypto_bignum_init_set(pwd_value, sae->tmp->prime_len);
@@ -1623,13 +1623,13 @@ int sae_process_commit(struct sae_data *sae)
 }
 
 
-void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
-		      const struct wpabuf *token, const char *identifier)
+int sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
+		     const struct wpabuf *token, const char *identifier)
 {
 	u8 *pos;
 
 	if (sae->tmp == NULL)
-		return;
+		return -1;
 
 	wpabuf_put_le16(buf, sae->group); /* Finite Cyclic Group */
 	if (!sae->tmp->h2e && token) {
@@ -1638,23 +1638,27 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 			    wpabuf_head(token), wpabuf_len(token));
 	}
 	pos = wpabuf_put(buf, sae->tmp->prime_len);
-	crypto_bignum_to_bin(sae->tmp->own_commit_scalar, pos,
-			     sae->tmp->prime_len, sae->tmp->prime_len);
+	if (crypto_bignum_to_bin(sae->tmp->own_commit_scalar, pos,
+				 sae->tmp->prime_len, sae->tmp->prime_len) < 0)
+		return -1;
 	wpa_hexdump(MSG_DEBUG, "SAE: own commit-scalar",
 		    pos, sae->tmp->prime_len);
 	if (sae->tmp->ec) {
 		pos = wpabuf_put(buf, 2 * sae->tmp->prime_len);
-		crypto_ec_point_to_bin(sae->tmp->ec,
-				       sae->tmp->own_commit_element_ecc,
-				       pos, pos + sae->tmp->prime_len);
+		if (crypto_ec_point_to_bin(sae->tmp->ec,
+					   sae->tmp->own_commit_element_ecc,
+					   pos, pos + sae->tmp->prime_len) < 0)
+			return -1;
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element(x)",
 			    pos, sae->tmp->prime_len);
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element(y)",
 			    pos + sae->tmp->prime_len, sae->tmp->prime_len);
 	} else {
 		pos = wpabuf_put(buf, sae->tmp->prime_len);
-		crypto_bignum_to_bin(sae->tmp->own_commit_element_ffc, pos,
-				     sae->tmp->prime_len, sae->tmp->prime_len);
+		if (crypto_bignum_to_bin(sae->tmp->own_commit_element_ffc, pos,
+					 sae->tmp->prime_len,
+					 sae->tmp->prime_len) < 0)
+			return -1;
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element",
 			    pos, sae->tmp->prime_len);
 	}
@@ -1688,6 +1692,8 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 				"SAE: Anti-clogging token (in container)",
 				token);
 	}
+
+	return 0;
 }
 
 

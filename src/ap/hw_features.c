@@ -224,7 +224,6 @@ int hostapd_prepare_rates(struct hostapd_iface *iface,
 }
 
 
-#ifdef CONFIG_IEEE80211N
 static int ieee80211n_allowed_ht40_channel_pair(struct hostapd_iface *iface)
 {
 	int pri_freq, sec_freq;
@@ -667,12 +666,9 @@ static int ieee80211ax_supported_he_capab(struct hostapd_iface *iface)
 }
 #endif /* CONFIG_IEEE80211AX */
 
-#endif /* CONFIG_IEEE80211N */
-
 
 int hostapd_check_ht_capab(struct hostapd_iface *iface)
 {
-#ifdef CONFIG_IEEE80211N
 	int ret;
 
 	if (is_6ghz_freq(iface->freq))
@@ -705,7 +701,6 @@ int hostapd_check_ht_capab(struct hostapd_iface *iface)
 		return ret;
 	if (!ieee80211n_allowed_ht40_channel_pair(iface))
 		return -1;
-#endif /* CONFIG_IEEE80211N */
 
 	return 0;
 }
@@ -790,7 +785,7 @@ static int hostapd_is_usable_edmg(struct hostapd_iface *iface)
 
 	/* 60 GHz channels 1..6 */
 	for (i = 0; i < 6; i++) {
-		int freq = 56160 + 2160 * i;
+		int freq = 56160 + 2160 * (i + 1);
 
 		if (edmg.channels & BIT(i)) {
 			contiguous++;
@@ -884,10 +879,43 @@ static int hostapd_is_usable_chans(struct hostapd_iface *iface)
 }
 
 
+static void hostapd_determine_mode(struct hostapd_iface *iface)
+{
+	int i;
+	enum hostapd_hw_mode target_mode;
+
+	if (iface->current_mode ||
+	    iface->conf->hw_mode != HOSTAPD_MODE_IEEE80211ANY)
+		return;
+
+	if (iface->freq < 4000)
+		target_mode = HOSTAPD_MODE_IEEE80211G;
+	else if (iface->freq > 50000)
+		target_mode = HOSTAPD_MODE_IEEE80211AD;
+	else
+		target_mode = HOSTAPD_MODE_IEEE80211A;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		struct hostapd_hw_modes *mode;
+
+		mode = &iface->hw_features[i];
+		if (mode->mode == target_mode) {
+			iface->current_mode = mode;
+			iface->conf->hw_mode = mode->mode;
+			break;
+		}
+	}
+
+	if (!iface->current_mode)
+		wpa_printf(MSG_ERROR, "ACS: Cannot decide mode");
+}
+
+
 static enum hostapd_chan_status
 hostapd_check_chans(struct hostapd_iface *iface)
 {
 	if (iface->freq) {
+		hostapd_determine_mode(iface);
 		if (hostapd_is_usable_chans(iface))
 			return HOSTAPD_CHAN_VALID;
 		else
@@ -1013,9 +1041,15 @@ int hostapd_select_hw_mode(struct hostapd_iface *iface)
 	}
 
 	if (iface->current_mode == NULL) {
-		if (!(iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) ||
-		    !(iface->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_HW_MODE_ANY))
-		{
+		if ((iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) &&
+		    (iface->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_HW_MODE_ANY)) {
+			wpa_printf(MSG_DEBUG,
+				   "Using offloaded hw_mode=any ACS");
+		} else if (!(iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) &&
+			   iface->conf->hw_mode == HOSTAPD_MODE_IEEE80211ANY) {
+			wpa_printf(MSG_DEBUG,
+				   "Using internal ACS for hw_mode=any");
+		} else {
 			wpa_printf(MSG_ERROR,
 				   "Hardware does not support configured mode");
 			hostapd_logger(iface->bss[0], NULL,
@@ -1087,6 +1121,23 @@ int hostapd_hw_get_channel(struct hostapd_data *hapd, int freq)
 				      hapd->iface->num_hw_features);
 		if (channel)
 			return channel;
+	}
+	return 0;
+}
+
+
+int hostapd_hw_skip_mode(struct hostapd_iface *iface,
+			 struct hostapd_hw_modes *mode)
+{
+	int i;
+
+	if (iface->current_mode)
+		return mode != iface->current_mode;
+	if (mode->mode != HOSTAPD_MODE_IEEE80211B)
+		return 0;
+	for (i = 0; i < iface->num_hw_features; i++) {
+		if (iface->hw_features[i].mode == HOSTAPD_MODE_IEEE80211G)
+			return 1;
 	}
 	return 0;
 }

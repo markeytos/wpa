@@ -576,17 +576,13 @@ bsd_set_freq(void *priv, struct hostapd_freq_params *freq)
 
 	if (channel < 14) {
 		mode =
-#ifdef CONFIG_IEEE80211N
 			freq->ht_enabled ? IFM_IEEE80211_11NG :
-#endif /* CONFIG_IEEE80211N */
-		        IFM_IEEE80211_11G;
+			IFM_IEEE80211_11G;
 	} else if (channel == 14) {
 		mode = IFM_IEEE80211_11B;
 	} else {
 		mode =
-#ifdef CONFIG_IEEE80211N
 			freq->ht_enabled ? IFM_IEEE80211_11NA :
-#endif /* CONFIG_IEEE80211N */
 			IFM_IEEE80211_11A;
 	}
 	if (bsd_set_mediaopt(drv, IFM_MMASK, mode) < 0) {
@@ -1455,6 +1451,7 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 #define	GETPARAM(drv, param, v) \
 	(((v) = get80211param(drv, param)) != -1)
 	struct bsd_driver_data *drv;
+	int i;
 
 	drv = os_zalloc(sizeof(*drv));
 	if (drv == NULL)
@@ -1489,6 +1486,10 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 
 	if (wpa_driver_bsd_capa(drv))
 		goto fail;
+
+	/* Update per interface supported AKMs */
+	for (i = 0; i < WPA_IF_MAX; i++)
+		drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
 
 	/* Down interface during setup. */
 	if (bsd_get_iface_flags(drv) < 0)

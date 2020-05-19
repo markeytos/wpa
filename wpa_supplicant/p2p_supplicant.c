@@ -2691,7 +2691,7 @@ static int wpas_send_probe_resp(void *ctx, const struct wpabuf *buf,
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	return wpa_drv_send_mlme(wpa_s, wpabuf_head(buf), wpabuf_len(buf), 1,
-				 freq);
+				 freq, 0);
 }
 
 
@@ -3182,8 +3182,12 @@ static void wpas_invitation_received(void *ctx, const u8 *sa, const u8 *bssid,
 					       MAC2STR(sa), s->id);
 			}
 			wpas_p2p_group_add_persistent(
-				wpa_s, s, go, 0, op_freq, 0, 0, 0, 0, 0,
-				0, NULL,
+				wpa_s, s, go, 0, op_freq, 0,
+				wpa_s->conf->p2p_go_ht40,
+				wpa_s->conf->p2p_go_vht,
+				0,
+				wpa_s->conf->p2p_go_he,
+				wpa_s->conf->p2p_go_edmg, NULL,
 				go ? P2P_MAX_INITIAL_CONN_WAIT_GO_REINVOKE : 0,
 				1);
 		} else if (bssid) {

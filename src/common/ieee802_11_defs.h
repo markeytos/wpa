@@ -458,7 +458,7 @@
 #define WLAN_EID_EXT_FILS_HLP_CONTAINER 5
 #define WLAN_EID_EXT_FILS_IP_ADDR_ASSIGN 6
 #define WLAN_EID_EXT_KEY_DELIVERY 7
-#define WLAN_EID_EXT_FILS_WRAPPED_DATA 8
+#define WLAN_EID_EXT_WRAPPED_DATA 8
 #define WLAN_EID_EXT_FTM_SYNC_INFO 9
 #define WLAN_EID_EXT_EXTENDED_REQUEST 10
 #define WLAN_EID_EXT_ESTIMATED_SERVICE_PARAMS 11
@@ -473,6 +473,7 @@
 #define WLAN_EID_EXT_SPATIAL_REUSE 39
 #define WLAN_EID_EXT_OCV_OCI 54
 #define WLAN_EID_EXT_SHORT_SSID_LIST 58
+#define WLAN_EID_EXT_HE_6GHZ_BAND_CAP 59
 #define WLAN_EID_EXT_EDMG_CAPABILITIES 61
 #define WLAN_EID_EXT_EDMG_OPERATION 62
 #define WLAN_EID_EXT_REJECTED_GROUPS 92
@@ -1316,6 +1317,8 @@ struct ieee80211_ampe_ie {
 #define OWE_IE_VENDOR_TYPE 0x506f9a1c
 #define OWE_OUI_TYPE 28
 #define MULTI_AP_OUI_TYPE 0x1B
+#define DPP_CC_IE_VENDOR_TYPE 0x506f9a1e
+#define DPP_CC_OUI_TYPE 0x1e
 
 #define MULTI_AP_SUB_ELEM_TYPE 0x06
 #define MULTI_AP_TEAR_DOWN BIT(4)
@@ -1879,6 +1882,13 @@ enum wnm_sleep_mode_subelement_id {
 	WNM_SLEEP_SUBELEM_BIGTK = 2,
 };
 
+/* WNM notification type (IEEE P802.11-REVmd/D3.0, Table 9-430) */
+enum wnm_notification_Type {
+	WNM_NOTIF_TYPE_FIRMWARE_UPDATE = 0,
+	WNM_NOTIF_TYPE_BEACON_PROTECTION_FAILURE = 2,
+	WNM_NOTIF_TYPE_VENDOR_SPECIFIC = 221,
+};
+
 /* Channel Switch modes (802.11h) */
 #define CHAN_SWITCH_MODE_ALLOW_TX	0
 #define CHAN_SWITCH_MODE_BLOCK_TX	1
@@ -2092,7 +2102,7 @@ enum phy_type {
 	PHY_TYPE_VHT = 9,
 };
 
-/* IEEE P802.11-REVmc/D5.0, 9.4.2.37 - Neighbor Report element */
+/* IEEE P802.11-REVmd/D3.0, 9.4.2.36 - Neighbor Report element */
 /* BSSID Information Field */
 #define NEI_REP_BSSID_INFO_AP_NOT_REACH BIT(0)
 #define NEI_REP_BSSID_INFO_AP_UNKNOWN_REACH BIT(1)
@@ -2109,6 +2119,7 @@ enum phy_type {
 #define NEI_REP_BSSID_INFO_HT BIT(11)
 #define NEI_REP_BSSID_INFO_VHT BIT(12)
 #define NEI_REP_BSSID_INFO_FTM BIT(13)
+#define NEI_REP_BSSID_INFO_HE BIT(14)
 
 /*
  * IEEE P802.11-REVmc/D5.0 Table 9-152 - HT/VHT Operation Information
@@ -2135,11 +2146,45 @@ struct ieee80211_he_operation {
 	le32 he_oper_params; /* HE Operation Parameters[3] and
 			      * BSS Color Information[1] */
 	le16 he_mcs_nss_set;
-	u8 vht_op_info_chwidth;
-	u8 vht_op_info_chan_center_freq_seg0_idx;
-	u8 vht_op_info_chan_center_freq_seg1_idx;
-	/* Followed by conditional MaxBSSID Indicator subfield (u8) */
+	/* Followed by conditional VHT Operation Information (3 octets),
+	 * Max Co-Hosted BSSID Indicator subfield (1 octet), and/or 6 GHz
+	 * Operation Information subfield (5 octets). */
 } STRUCT_PACKED;
+
+/* IEEE P802.11ax/D6.0, Figure 9-787k - 6 GHz Operation Information field */
+struct ieee80211_he_6ghz_oper_info {
+	u8 primary_chan;
+	u8 control;
+	u8 chan_center_freq_seg0;
+	u8 chan_center_freq_seg1;
+	u8 min_rate;
+} STRUCT_PACKED;
+
+#define HE_6GHZ_OPER_INFO_CTRL_CHAN_WIDTH_MASK	(BIT(0) | BIT(1))
+#define HE_6GHZ_OPER_INFO_CTRL_DUP_BEACON	BIT(2)
+
+/* IEEE P802.11ax/D6.0, 9.4.2.261 HE 6 GHz Band Capabilities element */
+struct ieee80211_he_6ghz_band_cap {
+	 /* Minimum MPDU Start Spacing B0..B2
+	  * Maximum A-MPDU Length Exponent B3..B5
+	  * Maximum MPDU Length B6..B7 */
+	u8 a_mpdu_params; /* B0..B7 */
+	u8 info; /* B8..B15 */
+} STRUCT_PACKED;
+
+#define HE_6GHZ_BAND_CAP_MIN_MPDU_START_SPACE_MASK		0x7
+#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MASK	0x7
+#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_SHIFT	3
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_MASK			0x3
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_SHIFT			6
+
+#define HE_6GHZ_BAND_CAP_SMPS_MASK			  (BIT(1) | BIT(2))
+#define HE_6GHZ_BAND_CAP_SMPS_STATIC			  0
+#define HE_6GHZ_BAND_CAP_SMPS_DYNAMIC			  BIT(1)
+#define HE_6GHZ_BAND_CAP_SMPS_DISABLED			  (BIT(1) | BIT(2))
+#define HE_6GHZ_BAND_CAP_RD_RESPONDER			  BIT(3)
+#define HE_6GHZ_BAND_CAP_RX_ANTENNA_PATTERN		  BIT(4)
+#define HE_6GHZ_BAND_CAP_TX_ANTENNA_PATTERN		  BIT(5)
 
 /*
  * IEEE P802.11ax/D4.0, 9.4.2.246 Spatial Reuse Parameter Set element

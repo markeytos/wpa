@@ -874,6 +874,35 @@ u8 * hostapd_eid_owe_trans(struct hostapd_data *hapd, u8 *eid,
 }
 
 
+size_t hostapd_eid_dpp_cc_len(struct hostapd_data *hapd)
+{
+#ifdef CONFIG_DPP2
+	if (hapd->conf->dpp_configurator_connectivity)
+		return 6;
+#endif /* CONFIG_DPP2 */
+	return 0;
+}
+
+
+u8 * hostapd_eid_dpp_cc(struct hostapd_data *hapd, u8 *eid, size_t len)
+{
+	u8 *pos = eid;
+
+#ifdef CONFIG_DPP2
+	if (!hapd->conf->dpp_configurator_connectivity || len < 6)
+		return pos;
+
+	*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+	*pos++ = 4;
+	WPA_PUT_BE24(pos, OUI_WFA);
+	pos += 3;
+	*pos++ = DPP_CC_OUI_TYPE;
+#endif /* CONFIG_DPP2 */
+
+	return pos;
+}
+
+
 void ap_copy_sta_supp_op_classes(struct sta_info *sta,
 				 const u8 *supp_op_classes,
 				 size_t supp_op_classes_len)

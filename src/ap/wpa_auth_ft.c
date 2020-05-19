@@ -808,7 +808,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 		   const u8 *r0kh_id, size_t r0kh_id_len,
 		   const u8 *anonce, const u8 *snonce,
 		   u8 *buf, size_t len, const u8 *subelem,
-		   size_t subelem_len)
+		   size_t subelem_len, int rsnxe_used)
 {
 	u8 *pos = buf, *ielen;
 	size_t hdrlen = use_sha384 ? sizeof(struct rsn_ftie_sha384) :
@@ -826,7 +826,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 
 		os_memset(hdr, 0, sizeof(*hdr));
 		pos += sizeof(*hdr);
-		WPA_PUT_LE16(hdr->mic_control, 0);
+		WPA_PUT_LE16(hdr->mic_control, !!rsnxe_used);
 		if (anonce)
 			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
 		if (snonce)
@@ -836,7 +836,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 
 		os_memset(hdr, 0, sizeof(*hdr));
 		pos += sizeof(*hdr);
-		WPA_PUT_LE16(hdr->mic_control, 0);
+		WPA_PUT_LE16(hdr->mic_control, !!rsnxe_used);
 		if (anonce)
 			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
 		if (snonce)
@@ -2463,13 +2463,15 @@ static u8 * wpa_ft_process_ric(struct wpa_state_machine *sm, u8 *pos, u8 *end,
 
 u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				 size_t max_len, int auth_alg,
-				 const u8 *req_ies, size_t req_ies_len)
+				 const u8 *req_ies, size_t req_ies_len,
+				 int omit_rsnxe)
 {
 	u8 *end, *mdie, *ftie, *rsnie = NULL, *r0kh_id, *subelem = NULL;
 	u8 *fte_mic, *elem_count;
 	size_t mdie_len, ftie_len, rsnie_len = 0, r0kh_id_len, subelem_len = 0;
-	u8 rsnxe[10];
+	u8 rsnxe_buf[10], *rsnxe = rsnxe_buf;
 	size_t rsnxe_len;
+	int rsnxe_used;
 	int res;
 	struct wpa_auth_config *conf;
 	struct wpa_ft_ies parse;
@@ -2490,6 +2492,32 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 
 	end = pos + max_len;
 
+#ifdef CONFIG_TESTING_OPTIONS
+	if (auth_alg == WLAN_AUTH_FT &&
+	    sm->wpa_auth->conf.rsne_override_ft_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNE FT override for MIC calculation");
+		rsnie = sm->wpa_auth->conf.rsne_override_ft;
+		rsnie_len = sm->wpa_auth->conf.rsne_override_ft_len;
+		if (end - pos < (long int) rsnie_len)
+			return pos;
+		os_memcpy(pos, rsnie, rsnie_len);
+		rsnie = pos;
+		pos += rsnie_len;
+		if (rsnie_len > PMKID_LEN && sm->pmk_r1_name_valid) {
+			int idx;
+
+			/* Replace all 0xff PMKID with the valid PMKR1Name */
+			for (idx = 0; idx < PMKID_LEN; idx++) {
+				if (rsnie[rsnie_len - 1 - idx] != 0xff)
+					break;
+			}
+			if (idx == PMKID_LEN)
+				os_memcpy(&rsnie[rsnie_len - PMKID_LEN],
+					  sm->pmk_r1_name, WPA_PMK_NAME_LEN);
+		}
+	} else
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (auth_alg == WLAN_AUTH_FT ||
 	    ((auth_alg == WLAN_AUTH_FILS_SK ||
 	      auth_alg == WLAN_AUTH_FILS_SK_PFS ||
@@ -2617,9 +2645,18 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		anonce = NULL;
 		snonce = NULL;
 	}
+	rsnxe_used = (auth_alg == WLAN_AUTH_FT) &&
+		(conf->sae_pwe == 1 || conf->sae_pwe == 2);
+#ifdef CONFIG_TESTING_OPTIONS
+	if (sm->wpa_auth->conf.ft_rsnxe_used) {
+		rsnxe_used = sm->wpa_auth->conf.ft_rsnxe_used == 1;
+		wpa_printf(MSG_DEBUG, "TESTING: FT: Force RSNXE Used %d",
+			   rsnxe_used);
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	res = wpa_write_ftie(conf, use_sha384, r0kh_id, r0kh_id_len,
 			     anonce, snonce, pos, end - pos,
-			     subelem, subelem_len);
+			     subelem, subelem_len, rsnxe_used);
 	os_free(subelem);
 	if (res < 0)
 		return NULL;
@@ -2655,10 +2692,24 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	if (ric_start == pos)
 		ric_start = NULL;
 
-	res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe, sizeof(rsnxe));
-	if (res < 0)
-		return NULL;
-	rsnxe_len = res;
+	if (omit_rsnxe) {
+		rsnxe_len = 0;
+	} else {
+		res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe,
+				      sizeof(rsnxe_buf));
+		if (res < 0)
+			return NULL;
+		rsnxe_len = res;
+	}
+#ifdef CONFIG_TESTING_OPTIONS
+	if (auth_alg == WLAN_AUTH_FT &&
+	    sm->wpa_auth->conf.rsnxe_override_ft_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNXE FT override for MIC calculation");
+		rsnxe = sm->wpa_auth->conf.rsnxe_override_ft;
+		rsnxe_len = sm->wpa_auth->conf.rsnxe_override_ft_len;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (auth_alg == WLAN_AUTH_FT && rsnxe_len)
 		*elem_count += 1;
 
@@ -2703,7 +2754,16 @@ static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 }
 
 
-void wpa_ft_install_ptk(struct wpa_state_machine *sm)
+static inline int wpa_auth_add_sta_ft(struct wpa_authenticator *wpa_auth,
+				      const u8 *addr)
+{
+	if (!wpa_auth->cb->add_sta_ft)
+		return -1;
+	return wpa_auth->cb->add_sta_ft(wpa_auth->cb_ctx, addr);
+}
+
+
+void wpa_ft_install_ptk(struct wpa_state_machine *sm, int retry)
 {
 	enum wpa_alg alg;
 	int klen;
@@ -2725,19 +2785,22 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm)
 		return;
 	}
 
+	if (!retry)
+		wpa_auth_add_sta_ft(sm->wpa_auth, sm->addr);
+
 	/* FIX: add STA entry to kernel/driver here? The set_key will fail
 	 * most likely without this.. At the moment, STA entry is added only
 	 * after association has been completed. This function will be called
 	 * again after association to get the PTK configured, but that could be
 	 * optimized by adding the STA entry earlier.
 	 */
-	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
+	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, sm->keyidx_active,
 			     sm->PTK.tk, klen, KEY_FLAG_PAIRWISE_RX_TX))
 		return;
 
 	/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */
-	sm->pairwise_set = TRUE;
-	sm->tk_already_set = TRUE;
+	sm->pairwise_set = true;
+	sm->tk_already_set = true;
 }
 
 
@@ -3094,9 +3157,9 @@ pmk_r1_derived:
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
 	sm->pairwise = pairwise;
-	sm->PTK_valid = TRUE;
-	sm->tk_already_set = FALSE;
-	wpa_ft_install_ptk(sm);
+	sm->PTK_valid = true;
+	sm->tk_already_set = false;
+	wpa_ft_install_ptk(sm, 0);
 
 	if (wpa_ft_set_vlan(sm->wpa_auth, sm->addr, &vlan) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to configure VLAN");
@@ -3131,7 +3194,8 @@ pmk_r1_derived:
 	pos += ret;
 
 	ret = wpa_write_ftie(conf, use_sha384, parse.r0kh_id, parse.r0kh_id_len,
-			     sm->ANonce, sm->SNonce, pos, end - pos, NULL, 0);
+			     sm->ANonce, sm->SNonce, pos, end - pos, NULL, 0,
+			     0);
 	if (ret < 0)
 		goto fail;
 	pos += ret;
@@ -3190,7 +3254,7 @@ void wpa_ft_process_auth(struct wpa_state_machine *sm, const u8 *bssid,
 }
 
 
-u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
+int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    size_t ies_len)
 {
 	struct wpa_ft_ies parse;
@@ -3203,10 +3267,13 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 	int use_sha384;
 	const u8 *anonce, *snonce, *fte_mic;
 	u8 fte_elem_count;
+	int rsnxe_used;
+	struct wpa_auth_config *conf;
 
 	if (sm == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
+	conf = &sm->wpa_auth->conf;
 	use_sha384 = wpa_key_mgmt_sha384(sm->wpa_key_mgmt);
 
 	wpa_hexdump(MSG_DEBUG, "FT: Reassoc Req IEs", ies, ies_len);
@@ -3235,8 +3302,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 	mdie = (struct rsn_mdie *) parse.mdie;
 	if (mdie == NULL || parse.mdie_len < sizeof(*mdie) ||
-	    os_memcmp(mdie->mobility_domain,
-		      sm->wpa_auth->conf.mobility_domain,
+	    os_memcmp(mdie->mobility_domain, conf->mobility_domain,
 		      MOBILITY_DOMAIN_ID_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: Invalid MDIE");
 		return WLAN_STATUS_INVALID_MDIE;
@@ -3253,6 +3319,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	} else {
@@ -3266,6 +3333,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	}
@@ -3311,14 +3379,14 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 		return WLAN_STATUS_INVALID_FTIE;
 	}
 
-	if (os_memcmp_const(parse.r1kh_id, sm->wpa_auth->conf.r1_key_holder,
+	if (os_memcmp_const(parse.r1kh_id, conf->r1_key_holder,
 			    FT_R1KH_ID_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: Unknown R1KH-ID used in "
 			   "ReassocReq");
 		wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID in FTIE",
 			    parse.r1kh_id, FT_R1KH_ID_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: Expected R1KH-ID",
-			    sm->wpa_auth->conf.r1_key_holder, FT_R1KH_ID_LEN);
+			    conf->r1_key_holder, FT_R1KH_ID_LEN);
 		return WLAN_STATUS_INVALID_FTIE;
 	}
 
@@ -3378,6 +3446,13 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    parse.rsnxe ? parse.rsnxe - 2 : NULL,
 			    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
 		return WLAN_STATUS_INVALID_FTIE;
+	}
+
+	if (rsnxe_used && (conf->sae_pwe == 1 || conf->sae_pwe == 2) &&
+	    !parse.rsnxe) {
+		wpa_printf(MSG_INFO,
+			   "FT: FTE indicated that STA uses RSNXE, but RSNXE was not included");
+		return -1; /* discard request */
 	}
 
 #ifdef CONFIG_OCV
@@ -4504,7 +4579,6 @@ int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 			return -1;
 		}
 		status_code = WPA_GET_LE16(pos);
-		pos += 2;
 
 		wpa_printf(MSG_DEBUG, "FT: FT Packet Type - Response "
 			   "(status_code=%d)", status_code);
@@ -4515,11 +4589,6 @@ int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 		wpa_printf(MSG_DEBUG, "FT: RRB discarded frame with unknown "
 			   "packet_type %d", frame->packet_type);
 		return -1;
-	}
-
-	if (end > pos) {
-		wpa_hexdump(MSG_DEBUG, "FT: Ignore extra data in end",
-			    pos, end - pos);
 	}
 
 	return 0;

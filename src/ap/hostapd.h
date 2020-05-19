@@ -38,6 +38,10 @@ union wps_event_data;
 struct mesh_conf;
 #endif /* CONFIG_MESH */
 
+#ifdef CONFIG_CTRL_IFACE_UDP
+#define CTRL_IFACE_COOKIE_LEN 8
+#endif /* CONFIG_CTRL_IFACE_UDP */
+
 struct hostapd_iface;
 
 struct hapd_interfaces {
@@ -72,6 +76,11 @@ struct hapd_interfaces {
 #ifdef CONFIG_DPP
 	struct dpp_global *dpp;
 #endif /* CONFIG_DPP */
+
+#ifdef CONFIG_CTRL_IFACE_UDP
+       unsigned char ctrl_iface_cookie[CTRL_IFACE_COOKIE_LEN];
+#endif /* CONFIG_CTRL_IFACE_UDP */
+
 };
 
 enum hostapd_chan_status {
@@ -340,6 +349,11 @@ struct hostapd_data {
 	int last_igtk_key_idx;
 	u8 last_igtk[WPA_IGTK_MAX_LEN];
 	size_t last_igtk_len;
+
+	enum wpa_alg last_bigtk_alg;
+	int last_bigtk_key_idx;
+	u8 last_bigtk[WPA_BIGTK_MAX_LEN];
+	size_t last_bigtk_len;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_MBO
@@ -377,6 +391,16 @@ struct hostapd_data {
 	unsigned int dpp_resp_wait_time;
 	unsigned int dpp_resp_max_tries;
 	unsigned int dpp_resp_retry_time;
+#ifdef CONFIG_DPP2
+	struct wpabuf *dpp_presence_announcement;
+	struct dpp_bootstrap_info *dpp_chirp_bi;
+	int dpp_chirp_freq;
+	int *dpp_chirp_freqs;
+	int dpp_chirp_iter;
+	int dpp_chirp_round;
+	int dpp_chirp_scan_done;
+	int dpp_chirp_listen;
+#endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	char *dpp_config_obj_override;
 	char *dpp_discovery_override;
@@ -395,6 +419,10 @@ struct hostapd_data {
 #ifdef CONFIG_SQLITE
 	sqlite3 *rad_attr_db;
 #endif /* CONFIG_SQLITE */
+
+#ifdef CONFIG_CTRL_IFACE_UDP
+       unsigned char ctrl_iface_cookie[CTRL_IFACE_COOKIE_LEN];
+#endif /* CONFIG_CTRL_IFACE_UDP */
 };
 
 
@@ -462,6 +490,7 @@ struct hostapd_iface {
 	struct ap_info *ap_hash[STA_HASH_SIZE];
 
 	u64 drv_flags;
+	u64 drv_flags2;
 
 	/*
 	 * A bitmap of supported protocols for probe response offload. See

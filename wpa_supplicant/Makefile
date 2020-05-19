@@ -198,6 +198,10 @@ ifdef CONFIG_VHT_OVERRIDES
 CFLAGS += -DCONFIG_VHT_OVERRIDES
 endif
 
+ifdef CONFIG_HE_OVERRIDES
+CFLAGS += -DCONFIG_HE_OVERRIDES
+endif
+
 ifndef CONFIG_BACKEND
 CONFIG_BACKEND=file
 endif
@@ -265,6 +269,7 @@ CFLAGS += -DCONFIG_SAE
 OBJS += ../src/common/sae.o
 NEED_ECC=y
 NEED_DH_GROUPS=y
+NEED_HMAC_SHA256_KDF=y
 NEED_DRAGONFLY=y
 ifdef CONFIG_TESTING_OPTIONS
 NEED_DH_GROUPS_ALL=y
@@ -274,6 +279,12 @@ endif
 ifdef CONFIG_DPP
 CFLAGS += -DCONFIG_DPP
 OBJS += ../src/common/dpp.o
+OBJS += ../src/common/dpp_auth.o
+OBJS += ../src/common/dpp_backup.o
+OBJS += ../src/common/dpp_crypto.o
+OBJS += ../src/common/dpp_pkex.o
+OBJS += ../src/common/dpp_reconfig.o
+OBJS += ../src/common/dpp_tcp.o
 OBJS += dpp_supplicant.o
 NEED_AES_SIV=y
 NEED_HMAC_SHA256_KDF=y
@@ -904,14 +915,12 @@ OBJS += ../src/ap/bss_load.o
 OBJS += ../src/ap/eap_user_db.o
 OBJS += ../src/ap/neighbor_db.o
 OBJS += ../src/ap/rrm.o
-ifdef CONFIG_IEEE80211N
 OBJS += ../src/ap/ieee802_11_ht.o
 ifdef CONFIG_IEEE80211AC
 OBJS += ../src/ap/ieee802_11_vht.o
 endif
 ifdef CONFIG_IEEE80211AX
 OBJS += ../src/ap/ieee802_11_he.o
-endif
 endif
 ifdef CONFIG_WNM_AP
 CFLAGS += -DCONFIG_WNM_AP
@@ -932,14 +941,11 @@ OBJS += ../src/eap_server/eap_server.o
 OBJS += ../src/eap_server/eap_server_identity.o
 OBJS += ../src/eap_server/eap_server_methods.o
 
-ifdef CONFIG_IEEE80211N
-CFLAGS += -DCONFIG_IEEE80211N
 ifdef CONFIG_IEEE80211AC
 CFLAGS += -DCONFIG_IEEE80211AC
 endif
 ifdef CONFIG_IEEE80211AX
 CFLAGS += -DCONFIG_IEEE80211AX
-endif
 endif
 
 ifdef NEED_AP_MLME
@@ -1071,7 +1077,7 @@ endif
 
 ifeq ($(CONFIG_TLS), wolfssl)
 ifdef TLS_FUNCS
-CFLAGS += -DWOLFSSL_DER_LOAD -I/usr/local/include/wolfssl
+CFLAGS += -DWOLFSSL_DER_LOAD
 OBJS += ../src/crypto/tls_wolfssl.o
 endif
 OBJS += ../src/crypto/crypto_wolfssl.o
@@ -1846,6 +1852,14 @@ OBJS += $(FST_OBJS)
 OBJS_t += $(FST_OBJS)
 OBJS_t2 += $(FST_OBJS)
 OBJS_nfc += $(FST_OBJS)
+endif
+
+ifdef CONFIG_WEP
+CFLAGS += -DCONFIG_WEP
+endif
+
+ifdef CONFIG_NO_TKIP
+CFLAGS += -DCONFIG_NO_TKIP
 endif
 
 ifndef LDO

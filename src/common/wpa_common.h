@@ -22,6 +22,15 @@
 
 #define OWE_DH_GROUP 19
 
+#ifdef CONFIG_NO_TKIP
+#define WPA_ALLOWED_PAIRWISE_CIPHERS \
+(WPA_CIPHER_CCMP | WPA_CIPHER_GCMP | WPA_CIPHER_NONE | \
+WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256)
+#define WPA_ALLOWED_GROUP_CIPHERS \
+(WPA_CIPHER_CCMP | WPA_CIPHER_GCMP | \
+WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256 | \
+WPA_CIPHER_GTK_NOT_USED)
+#else /* CONFIG_NO_TKIP */
 #define WPA_ALLOWED_PAIRWISE_CIPHERS \
 (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP | WPA_CIPHER_TKIP | WPA_CIPHER_NONE | \
 WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256)
@@ -29,6 +38,7 @@ WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256)
 (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP | WPA_CIPHER_TKIP | \
 WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256 | \
 WPA_CIPHER_GTK_NOT_USED)
+#endif /* CONFIG_NO_TKIP */
 #define WPA_ALLOWED_GROUP_MGMT_CIPHERS \
 (WPA_CIPHER_AES_128_CMAC | WPA_CIPHER_BIP_GMAC_128 | WPA_CIPHER_BIP_GMAC_256 | \
 WPA_CIPHER_BIP_CMAC_256)
@@ -113,6 +123,8 @@ WPA_CIPHER_BIP_CMAC_256)
 
 #define WFA_KEY_DATA_IP_ADDR_REQ RSN_SELECTOR(0x50, 0x6f, 0x9a, 4)
 #define WFA_KEY_DATA_IP_ADDR_ALLOC RSN_SELECTOR(0x50, 0x6f, 0x9a, 5)
+#define WFA_KEY_DATA_TRANSITION_DISABLE RSN_SELECTOR(0x50, 0x6f, 0x9a, 0x20)
+#define WFA_KEY_DATA_DPP RSN_SELECTOR(0x50, 0x6f, 0x9a, 0x21)
 
 #define WPA_OUI_TYPE RSN_SELECTOR(0x00, 0x50, 0xf2, 1)
 
@@ -344,6 +356,16 @@ struct rsn_rdie {
 	le16 status_code;
 } STRUCT_PACKED;
 
+/* WFA Transition Disable KDE (using OUI_WFA) */
+/* Transition Disable Bitmap bits */
+#define TRANSITION_DISABLE_WPA3_PERSONAL BIT(0)
+#define TRANSITION_DISABLE_SAE_PK BIT(1)
+#define TRANSITION_DISABLE_WPA3_ENTERPRISE BIT(2)
+#define TRANSITION_DISABLE_ENHANCED_OPEN BIT(3)
+
+/* DPP KDE Flags */
+#define DPP_KDE_PFS_ALLOWED BIT(0)
+#define DPP_KDE_PFS_REQUIRED BIT(1)
 
 #ifdef _MSC_VER
 #pragma pack(pop)
@@ -494,6 +516,7 @@ struct wpa_eapol_ie_parse {
 	const u8 *rsn_ie;
 	size_t rsn_ie_len;
 	const u8 *pmkid;
+	const u8 *key_id;
 	const u8 *gtk;
 	size_t gtk_len;
 	const u8 *mac_addr;
@@ -508,6 +531,10 @@ struct wpa_eapol_ie_parse {
 	size_t ftie_len;
 	const u8 *ip_addr_req;
 	const u8 *ip_addr_alloc;
+	const u8 *transition_disable;
+	size_t transition_disable_len;
+	const u8 *dpp_kde;
+	size_t dpp_kde_len;
 	const u8 *oci;
 	size_t oci_len;
 	const u8 *osen;

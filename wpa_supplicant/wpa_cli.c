@@ -502,6 +502,7 @@ static char ** wpa_cli_complete_set(const char *str, int pos)
 		"ignore_auth_resp",
 #endif /* CONFIG_TESTING_OPTIONS */
 		"relative_rssi", "relative_band_adjust",
+		"extended_key_id",
 	};
 	int i, num_fields = ARRAY_SIZE(fields);
 
@@ -593,7 +594,7 @@ static char ** wpa_cli_complete_get(const char *str, int pos)
 		"tdls_external_control", "osu_dir", "wowlan_triggers",
 		"p2p_search_delay", "mac_addr", "rand_addr_lifetime",
 		"preassoc_mac_addr", "key_mgmt_offload", "passive_scan",
-		"reassoc_same_bss_optim"
+		"reassoc_same_bss_optim", "extended_key_id"
 	};
 	int i, num_fields = ARRAY_SIZE(fields);
 
@@ -1441,6 +1442,7 @@ static const char *network_fields[] = {
 	"dot11MeshHoldingTimeout",
 #endif /* CONFIG_MESH */
 	"wpa_ptk_rekey", "bgscan", "ignore_broadcast_ssid",
+	"wpa_deny_ptk0_rekey",
 	"enable_edmg", "edmg_channel",
 #ifdef CONFIG_P2P
 	"go_p2p_dev_addr", "p2p_client_list", "psk_list",
@@ -1458,6 +1460,9 @@ static const char *network_fields[] = {
 	"vht_tx_mcs_nss_3", "vht_tx_mcs_nss_4", "vht_tx_mcs_nss_5",
 	"vht_tx_mcs_nss_6", "vht_tx_mcs_nss_7", "vht_tx_mcs_nss_8",
 #endif /* CONFIG_VHT_OVERRIDES */
+#ifdef CONFIG_HE_OVERRIDES
+	"disable_he",
+#endif /* CONFIG_HE_OVERRIDES */
 	"ap_max_inactivity", "dtim_period", "beacon_int",
 #ifdef CONFIG_MACSEC
 	"macsec_policy",
@@ -1701,15 +1706,25 @@ static char ** wpa_cli_complete_bss(const char *str, int pos)
 static int wpa_cli_cmd_get_capability(struct wpa_ctrl *ctrl, int argc,
 				      char *argv[])
 {
-	if (argc < 1 || argc > 2) {
-		printf("Invalid GET_CAPABILITY command: need either one or "
-		       "two arguments\n");
+	if (argc < 1 || argc > 3) {
+		printf("Invalid GET_CAPABILITY command: need at least one argument and max three arguments\n");
 		return -1;
 	}
 
-	if ((argc == 2) && os_strcmp(argv[1], "strict") != 0) {
-		printf("Invalid GET_CAPABILITY command: second argument, "
-		       "if any, must be 'strict'\n");
+	if (argc > 1 && os_strcmp(argv[0], "key_mgmt") != 0 &&
+	    os_strncmp(argv[1], "iftype=", 7) == 0) {
+		printf("Invalid GET_CAPABILITY command: 'iftype=' param is allowed only for 'key_mgmt'\n");
+		return -1;
+	}
+
+	if (argc == 2 && os_strcmp(argv[1], "strict") != 0 &&
+	    os_strncmp(argv[1], "iftype=", 7) != 0) {
+		printf("Invalid GET_CAPABILITY command: the second argument, if any, must be 'strict' OR 'iftype=<iftype_name>'\n");
+		return -1;
+	}
+
+	if (argc == 3 && os_strcmp(argv[2], "strict") != 0) {
+		printf("Invalid GET_CAPABILITY command: the third argument, if any, must be 'strict'\n");
 		return -1;
 	}
 
@@ -1736,7 +1751,13 @@ static char ** wpa_cli_complete_get_capability(const char *str, int pos)
 		"acs",
 #endif /* CONFIG_ACS */
 	};
+	const char *iftypes[] = {
+		"iftype=STATION", "iftype=AP", "iftype=P2P_CLIENT",
+		"iftype=P2P_GO", "iftype=AP_VLAN", "iftype=IBSS", "iftype=NAN",
+		"iftype=P2P_DEVICE", "iftype=MESH",
+	};
 	int i, num_fields = ARRAY_SIZE(fields);
+	int num_iftypes = ARRAY_SIZE(iftypes);
 	char **res = NULL;
 
 	if (arg == 1) {
@@ -1750,6 +1771,21 @@ static char ** wpa_cli_complete_get_capability(const char *str, int pos)
 		}
 	}
 	if (arg == 2) {
+		/* the second argument can be "iftype=<iftype_name>" OR
+		 * "strict" */
+		res = os_calloc(num_iftypes + 2, sizeof(char *));
+		if (!res)
+			return NULL;
+		res[0] = os_strdup("strict");
+		if (!res[0])
+			return res;
+		for (i = 0; i < num_iftypes; i++) {
+			res[i + 1] = os_strdup(iftypes[i]);
+			if (!res[i + 1])
+				return res;
+		}
+	}
+	if (arg == 3) {
 		res = os_calloc(1 + 1, sizeof(char *));
 		if (res == NULL)
 			return NULL;
@@ -1782,7 +1818,7 @@ static int wpa_cli_cmd_interface(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	}
 
 	if (wpa_cli_open_connection(ctrl_ifname, 1) == 0) {
-		printf("Connected to interface '%s.\n", ctrl_ifname);
+		printf("Connected to interface '%s'.\n", ctrl_ifname);
 	} else {
 		printf("Could not connect to interface '%s' - re-trying\n",
 		       ctrl_ifname);

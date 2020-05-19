@@ -1279,6 +1279,15 @@ enum qca_wlan_vendor_attr_p2p_listen_offload {
  * Note: If the driver supports the 6 GHz band, the event sent from the driver
  * includes this attribute along with
  * QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_ACS_EDMG_ENABLED: Flag attribute.
+ * Used with command to notify the driver of EDMG request for ACS
+ * operation.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_ACS_EDMG_CHANNEL: Optional (u8).
+ * Used with event to notify the EDMG channel number selected in ACS
+ * operation.
+ * EDMG primary channel is indicated by QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL
  */
 enum qca_wlan_vendor_attr_acs_offload {
 	QCA_WLAN_VENDOR_ATTR_ACS_CHANNEL_INVALID = 0,
@@ -1297,6 +1306,8 @@ enum qca_wlan_vendor_attr_acs_offload {
 	QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY = 13,
 	QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_FREQUENCY = 14,
 	QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_FREQUENCY = 15,
+	QCA_WLAN_VENDOR_ATTR_ACS_EDMG_ENABLED = 16,
+	QCA_WLAN_VENDOR_ATTR_ACS_EDMG_CHANNEL = 17,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_ACS_AFTER_LAST,
@@ -1716,6 +1727,9 @@ enum qca_vendor_element_id {
  *	randomisation
  * @QCA_WLAN_VENDOR_ATTR_SCAN_BSSID: 6-byte MAC address representing the
  *	specific BSSID to scan for.
+ * @QCA_WLAN_VENDOR_ATTR_SCAN_DWELL_TIME: Unsigned 64-bit dwell time in
+ *	microseconds. This is a common value which applies across all
+ *	frequencies specified by QCA_WLAN_VENDOR_ATTR_SCAN_FREQUENCIES.
  */
 enum qca_wlan_vendor_attr_scan {
 	QCA_WLAN_VENDOR_ATTR_SCAN_INVALID_PARAM = 0,
@@ -1730,6 +1744,7 @@ enum qca_wlan_vendor_attr_scan {
 	QCA_WLAN_VENDOR_ATTR_SCAN_MAC = 9,
 	QCA_WLAN_VENDOR_ATTR_SCAN_MAC_MASK = 10,
 	QCA_WLAN_VENDOR_ATTR_SCAN_BSSID = 11,
+	QCA_WLAN_VENDOR_ATTR_SCAN_DWELL_TIME = 12,
 	QCA_WLAN_VENDOR_ATTR_SCAN_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SCAN_MAX =
 	QCA_WLAN_VENDOR_ATTR_SCAN_AFTER_LAST - 1
@@ -2084,7 +2099,7 @@ enum qca_wlan_vendor_attr_config {
 	 * take the union of IEs from both of these interfaces and send in
 	 * further disassoc/deauth frames.
 	 */
-	QCA_WLAN_VENDOR_ATTR_DISCONNECT_IES = 58,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_DISCONNECT_IES = 58,
 
 	/* 8-bit unsigned value for ELNA bypass.
 	 * 1-Enable, 0-Disable
@@ -2096,13 +2111,28 @@ enum qca_wlan_vendor_attr_config {
 	 * scenarios where STA cannot honor the Beacon Report Request from AP.
 	 * 1-Enable, 0-Disable.
 	 */
-	QCA_WLAN_VENDOR_ATTR_BEACON_REPORT_FAIL = 60,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_REPORT_FAIL = 60,
+
+	/* 8-bit unsigned value. This attribute enables/disables the host driver
+	 * to send roam reason information in the Reassociation Request frame to
+	 * the target AP when roaming within the same ESS.
+	 * 1-Enable, 0-Disable.
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_ROAM_REASON = 61,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONFIG_MAX =
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST - 1,
 };
+
+/* Compatibility defines for previously used incorrect enum
+ * qca_wlan_vendor_attr_config names. These values should not be used in any
+ * new implementation. */
+#define QCA_WLAN_VENDOR_ATTR_DISCONNECT_IES \
+	QCA_WLAN_VENDOR_ATTR_CONFIG_DISCONNECT_IES
+#define QCA_WLAN_VENDOR_ATTR_BEACON_REPORT_FAIL \
+	QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_REPORT_FAIL
 
 /**
  * enum qca_wlan_vendor_attr_sap_config - Parameters for AP configuration
@@ -5437,8 +5467,12 @@ enum qca_wlan_vendor_attr_spectral_scan {
 	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_AGILE
 	 *    Center frequency (in MHz) of the span of interest or
 	 *    for convenience, center frequency (in MHz) of any channel
-	 *    in the span of interest. If agile spectral scan is initiated
-	 *    without setting a valid frequency it returns the error code
+	 *    in the span of interest. For 80+80 MHz agile spectral scan
+	 *    request it represents center frequency (in MHz) of the primary
+	 *    80 MHz span or for convenience, center frequency (in MHz) of any
+	 *    channel in the primary 80 MHz span. If agile spectral scan is
+	 *    initiated without setting a valid frequency it returns the
+	 *    error code
 	 *    (QCA_WLAN_VENDOR_SPECTRAL_SCAN_ERR_PARAM_NOT_INITIALIZED).
 	 * u32 attribute.
 	 */
@@ -5465,6 +5499,20 @@ enum qca_wlan_vendor_attr_spectral_scan {
 	 * 1-enable, 0-disable
 	 */
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_DMA_BUFFER_DEBUG = 28,
+	/* This specifies the frequency span over which spectral scan would be
+	 * carried out. Its value depends on the value of
+	 * QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_MODE and the relation is as
+	 * follows.
+	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_NORMAL
+	 *    Not applicable. Spectral scan would happen in the operating span.
+	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_AGILE
+	 *    This attribute is applicable only for agile spectral scan
+	 *    requests in 80+80 MHz mode. It represents center frequency (in
+	 *    MHz) of the secondary 80 MHz span or for convenience, center
+	 *    frequency (in MHz) of any channel in the secondary 80 MHz span.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_FREQUENCY_2 = 29,
 
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_MAX =
@@ -5555,6 +5603,26 @@ enum qca_wlan_vendor_attr_spectral_cap {
 	 * for 80+80 MHz mode.
 	 */
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_AGILE_SPECTRAL_80_80 = 13,
+	/* Number of spectral detectors used for scan in 20 MHz.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_NUM_DETECTORS_20_MHZ = 14,
+	/* Number of spectral detectors used for scan in 40 MHz.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_NUM_DETECTORS_40_MHZ = 15,
+	/* Number of spectral detectors used for scan in 80 MHz.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_NUM_DETECTORS_80_MHZ = 16,
+	/* Number of spectral detectors used for scan in 160 MHz.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_NUM_DETECTORS_160_MHZ = 17,
+	/* Number of spectral detectors used for scan in 80+80 MHz.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_NUM_DETECTORS_80P80_MHZ = 18,
 
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_MAX =
@@ -5704,6 +5772,39 @@ enum qca_wlan_vendor_hang_reason {
 	QCA_WLAN_HANG_DXE_FAILURE = 12,
 	/* WMI pending commands exceed the maximum count */
 	QCA_WLAN_HANG_WMI_EXCEED_MAX_PENDING_CMDS = 13,
+	/* Timeout for peer STA connection accept command's response from the
+	 * FW in AP mode. This command is triggered when a STA (peer) connects
+	 * to AP (DUT).
+	 */
+	QCA_WLAN_HANG_AP_STA_CONNECT_REQ_TIMEOUT = 14,
+	/* Timeout for the AP connection accept command's response from the FW
+	 * in STA mode. This command is triggered when the STA (DUT) connects
+	 * to an AP (peer).
+	 */
+	QCA_WLAN_HANG_STA_AP_CONNECT_REQ_TIMEOUT = 15,
+	/* Timeout waiting for the response to the MAC HW mode change command
+	 * sent to FW as a part of MAC mode switch among DBS (Dual Band
+	 * Simultaneous), SCC (Single Channel Concurrency), and MCC (Multi
+	 * Channel Concurrency) mode.
+	 */
+	QCA_WLAN_HANG_MAC_HW_MODE_CHANGE_TIMEOUT = 16,
+	/* Timeout waiting for the response from FW to configure the MAC HW's
+	 * mode. This operation is to configure the single/two MACs in either
+	 * SCC/MCC/DBS mode.
+	 */
+	QCA_WLAN_HANG_MAC_HW_MODE_CONFIG_TIMEOUT = 17,
+	/* Timeout waiting for response of VDEV start command from the FW */
+	QCA_WLAN_HANG_VDEV_START_RESPONSE_TIMED_OUT = 18,
+	/* Timeout waiting for response of VDEV restart command from the FW */
+	QCA_WLAN_HANG_VDEV_RESTART_RESPONSE_TIMED_OUT = 19,
+	/* Timeout waiting for response of VDEV stop command from the FW */
+	QCA_WLAN_HANG_VDEV_STOP_RESPONSE_TIMED_OUT = 20,
+	/* Timeout waiting for response of VDEV delete command from the FW */
+	QCA_WLAN_HANG_VDEV_DELETE_RESPONSE_TIMED_OUT = 21,
+	/* Timeout waiting for response of peer all delete request command to
+	 * the FW on a specific VDEV.
+	 */
+	QCA_WLAN_HANG_VDEV_PEER_DELETE_ALL_RESPONSE_TIMED_OUT = 22,
 };
 
 /**
@@ -5716,6 +5817,12 @@ enum qca_wlan_vendor_attr_hang {
 	 * qca_wlan_vendor_hang_reason.
 	 */
 	QCA_WLAN_VENDOR_ATTR_HANG_REASON = 1,
+	/* The binary blob data associated with the hang reason specified by
+	 * QCA_WLAN_VENDOR_ATTR_HANG_REASON. This binary data is expected to
+	 * contain the required dump to analyze the reason for the hang.
+	 * NLA_BINARY attribute, the max size is 1024 bytes.
+	 */
+	QCA_WLAN_VENDOR_ATTR_HANG_REASON_DATA = 2,
 
 	QCA_WLAN_VENDOR_ATTR_HANG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_HANG_MAX =
@@ -7353,10 +7460,42 @@ enum qca_wlan_vendor_attr_roam_scan {
  * enum qca_wlan_vendor_cfr_method - QCA vendor CFR methods used by
  * attribute QCA_WLAN_VENDOR_ATTR_PEER_CFR_METHOD as part of vendor
  * command QCA_NL80211_VENDOR_SUBCMD_PEER_CFR_CAPTURE_CFG.
+ * @QCA_WLAN_VENDOR_CFR_METHOD_QOS_NULL: CFR method using QoS Null frame
+ * @QCA_WLAN_VENDOR_CFR_QOS_NULL_WITH_PHASE: CFR method using QoS Null frame
+ * with phase
+ * @QCA_WLAN_VENDOR_CFR_PROBE_RESPONSE: CFR method using Probe Response frame
  */
 enum qca_wlan_vendor_cfr_method {
-	/* CFR method using QOS Null frame */
 	QCA_WLAN_VENDOR_CFR_METHOD_QOS_NULL = 0,
+	QCA_WLAN_VENDOR_CFR_QOS_NULL_WITH_PHASE = 1,
+	QCA_WLAN_VENDOR_CFR_PROBE_RESPONSE = 2,
+};
+
+/**
+ * enum qca_wlan_vendor_cfr_capture_type - QCA vendor CFR capture type used by
+ * attribute QCA_WLAN_VENDOR_ATTR_PEER_CFR_CAPTURE_TYPE.
+ * @QCA_WLAN_VENDOR_CFR_DIRECT_FTM: Filter directed FTM ACK frames.
+ * @QCA_WLAN_VENDOR_CFR_ALL_FTM_ACK: Filter all FTM ACK frames.
+ * @QCA_WLAN_VENDOR_CFR_DIRECT_NDPA_NDP: Filter NDPA NDP directed frames.
+ * @QCA_WLAN_VENDOR_CFR_TA_RA: Filter frames based on TA/RA/Subtype which
+ * is provided by one or more of below attributes:
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA_MASK
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA_MASK
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_MGMT_FILTER
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_CTRL_FILTER
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_DATA_FILTER
+ * @QCA_WLAN_CFR_ALL_PACKET: Filter all packets.
+ * @QCA_WLAN_VENDOR_CFR_NDPA_NDP_ALL: Filter all NDPA NDP frames.
+ */
+enum qca_wlan_vendor_cfr_capture_type {
+	QCA_WLAN_VENDOR_CFR_DIRECT_FTM = 0,
+	QCA_WLAN_VENDOR_CFR_ALL_FTM_ACK = 1,
+	QCA_WLAN_VENDOR_CFR_DIRECT_NDPA_NDP = 2,
+	QCA_WLAN_VENDOR_CFR_TA_RA = 3,
+	QCA_WLAN_VENDOR_CFR_ALL_PACKET = 4,
+	QCA_WLAN_VENDOR_CFR_NDPA_NDP_ALL = 5,
 };
 
 /**
@@ -7364,44 +7503,177 @@ enum qca_wlan_vendor_cfr_method {
  * QCA_NL80211_VENDOR_SUBCMD_PEER_CFR_CAPTURE_CFG to configure peer
  * Channel Frequency Response capture parameters and enable periodic CFR
  * capture.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CFR_PEER_MAC_ADDR: Optional (6-byte MAC address)
+ * MAC address of peer. This is for CFR version 1 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE: Required (flag)
+ * Enable peer CFR capture. This attribute is mandatory to enable peer CFR
+ * capture. If this attribute is not present, peer CFR capture is disabled.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_BANDWIDTH: Optional (u8)
+ * BW of measurement, attribute uses the values in enum nl80211_chan_width
+ * Supported values: 20, 40, 80, 80+80, 160.
+ * Note that all targets may not support all bandwidths.
+ * This attribute is mandatory for version 1 if attribute
+ * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_PERIODICITY: Optional (u32)
+ * Periodicity of CFR measurement in milliseconds.
+ * Periodicity should be a multiple of Base timer.
+ * Current Base timer value supported is 10 milliseconds (default).
+ * 0 for one shot capture.
+ * This attribute is mandatory for version 1 if attribute
+ * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_METHOD: Optional (u8)
+ * Method used to capture Channel Frequency Response.
+ * Attribute uses the values defined in enum qca_wlan_vendor_cfr_method.
+ * This attribute is mandatory for version 1 if attribute
+ * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PERIODIC_CFR_CAPTURE_ENABLE: Optional (flag)
+ * Enable periodic CFR capture.
+ * This attribute is mandatory for version 1 to enable Periodic CFR capture.
+ * If this attribute is not present, periodic CFR capture is disabled.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_VERSION: Optional (u8)
+ * Value is 1 or 2 since there are two versions of CFR capture. Two versions
+ * can't be enabled at same time. This attribute is mandatory if target
+ * support both versions and use one of them.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE_GROUP_BITMAP: Optional (u32)
+ * This attribute is mandatory for version 2 if
+ * QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_ENTRY is used.
+ * Bits 15:0 bitfield indicates which group is to be enabled.
+ * Bits 31:16 Reserved for future use.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_DURATION: Optional (u32)
+ * CFR capture duration in microsecond. This attribute is mandatory for
+ * version 2 if attribute QCA_WLAN_VENDOR_ATTR_PEER_CFR_INTERVAL is used.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_INTERVAL: Optional (u32)
+ * CFR capture interval in microsecond. This attribute is mandatory for
+ * version 2 if attribute QCA_WLAN_VENDOR_ATTR_PEER_CFR_DURATION is used.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_CAPTURE_TYPE: Optional (u32)
+ * CFR capture type is defined in enum qca_wlan_vendor_cfr_capture_type.
+ * This attribute is mandatory for version 2.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_UL_MU_MASK: Optional (u64)
+ * Bitfield indicating which user in the current UL MU transmissions are
+ * enabled for CFR capture. Bits 36 to 0 indicate user indexes for 37 users in
+ * a UL MU transmission. If bit 0 is set, the CFR capture will happen for user
+ * index 0 in the current UL MU transmission. If bits 0 and 2 are set, CFR
+ * capture for UL MU TX corresponds to user indices 0 and 2. Bits 63:37 are
+ * reserved for future use. This is for CFR version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_FREEZE_TLV_DELAY_COUNT: Optional (u32)
+ * Indicates the number of consecutive RX frames to be skipped before CFR
+ * capture is enabled again. This is for CFR version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TABLE: Nested attribute containing
+ * one or more %QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_ENTRY attributes.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_ENTRY: Nested attribute containing
+ * the following group attributes:
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NUMBER,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA_MASK,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA_MASK,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NSS,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_BW,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_MGMT_FILTER,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_CTRL_FILTER,
+ *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_DATA_FILTER
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NUMBER: Optional (u32)
+ * Target supports multiple groups for some configurations. The group number
+ * can be any value between 0 and 15. This is for CFR version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA: Optional (6-byte MAC address)
+ * Transmitter address which is used to filter frames. This MAC address takes
+ * effect with QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA_MASK. This is for CFR
+ * version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA: Optional (6-byte MAC address)
+ * Receiver address which is used to filter frames. This MAC address takes
+ * effect with QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA_MASK. This is for CFR
+ * version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA_MASK: Optional (6-byte MAC address)
+ * Mask of transmitter address which is used to filter frames. This is for CFR
+ * version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA_MASK: Optional (6-byte MAC address)
+ * Mask of receiver address which is used to filter frames. This is for CFR
+ * version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NSS: Optional (u32)
+ * Indicates frames with a specific NSS will be filtered for CFR capture.
+ * This is for CFR version 2 only. This is a bitmask. Bits 7:0 request CFR
+ * capture to be done for frames matching the NSS specified within this bitmask.
+ * Bits 31:8 are reserved for future use. Bits 7:0 map to NSS:
+ *     bit 0 : NSS 1
+ *     bit 1 : NSS 2
+ *     ...
+ *     bit 7 : NSS 8
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_BW: Optional (u32)
+ * Indicates frames with a specific bandwidth will be filtered for CFR capture.
+ * This is for CFR version 2 only. This is a bitmask. Bits 4:0 request CFR
+ * capture to be done for frames matching the bandwidths specified within this
+ * bitmask. Bits 31:5 are reserved for future use. Bits 4:0 map to bandwidth
+ * numerated in enum nl80211_band (although not all bands may be supported
+ * by a given device).
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_MGMT_FILTER: Optional (u32)
+ * Management frames matching the subtype filter categories will be filtered in
+ * by MAC for CFR capture. This is a bitmask in which each bit represents the
+ * corresponding Management frame subtype value per IEEE Std 802.11-2016,
+ * 9.2.4.1.3 Type and Subtype subfields. For example, Beacon frame control type
+ * is 8 and its value is 1 << 8 = 0x100. This is for CFR version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_CTRL_FILTER: Optional (u32)
+ * Control frames matching the subtype filter categories will be filtered in by
+ * MAC for CFR capture. This is a bitmask in which each bit represents the
+ * corresponding Control frame subtype value per IEEE Std 802.11-2016,
+ * 9.2.4.1.3 Type and Subtype subfields. This is for CFR version 2 only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_DATA_FILTER: Optional (u32)
+ * Data frames matching the subtype filter categories will be filtered in by
+ * MAC for CFR capture. This is a bitmask in which each bit represents the
+ * corresponding Data frame subtype value per IEEE Std 802.11-2016,
+ * 9.2.4.1.3 Type and Subtype subfields. This is for CFR version 2 only.
  */
 enum qca_wlan_vendor_peer_cfr_capture_attr {
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_CAPTURE_INVALID = 0,
-	/* 6-byte MAC address of the peer.
-	 * This attribute is mandatory.
-	 */
 	QCA_WLAN_VENDOR_ATTR_CFR_PEER_MAC_ADDR = 1,
-	/* Enable peer CFR Capture, flag attribute.
-	 * This attribute is mandatory to enable peer CFR capture.
-	 * If this attribute is not present, peer CFR capture is disabled.
-	 */
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE = 2,
-	/* BW of measurement, attribute uses the values in enum nl80211_chan_width
-	 * Supported values: 20, 40, 80, 80+80, 160.
-	 * Note that all targets may not support all bandwidths.
-	 * u8 attribute. This attribute is mandatory if attribute
-	 * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
-	 */
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_BANDWIDTH = 3,
-	/* Periodicity of CFR measurement in msec.
-	 * Periodicity should be a multiple of Base timer.
-	 * Current Base timer value supported is 10 msecs (default).
-	 * 0 for one shot capture. u32 attribute.
-	 * This attribute is mandatory if attribute
-	 * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
-	 */
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_PERIODICITY = 4,
-	/* Method used to capture Channel Frequency Response.
-	 * Attribute uses the values defined in enum qca_wlan_vendor_cfr_method.
-	 * u8 attribute. This attribute is mandatory if attribute
-	 * QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE is used.
-	 */
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_METHOD = 5,
-	/* Enable periodic CFR capture, flag attribute.
-	 * This attribute is mandatory to enable Periodic CFR capture.
-	 * If this attribute is not present, periodic CFR capture is disabled.
-	 */
 	QCA_WLAN_VENDOR_ATTR_PERIODIC_CFR_CAPTURE_ENABLE = 6,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_VERSION = 7,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_ENABLE_GROUP_BITMAP = 8,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_DURATION = 9,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_INTERVAL = 10,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_CAPTURE_TYPE = 11,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_UL_MU_MASK = 12,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_FREEZE_TLV_DELAY_COUNT = 13,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TABLE = 14,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_ENTRY = 15,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NUMBER = 16,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA = 17,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA = 18,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_TA_MASK = 19,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_RA_MASK = 20,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_NSS = 21,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_BW = 22,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_MGMT_FILTER = 23,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_CTRL_FILTER = 24,
+	QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_DATA_FILTER = 25,
 
 	/* Keep last */
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_AFTER_LAST,

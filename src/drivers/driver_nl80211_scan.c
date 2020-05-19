@@ -166,11 +166,8 @@ void wpa_driver_nl80211_scan_timeout(void *eloop_ctx, void *timeout_ctx)
 
 	wpa_printf(MSG_DEBUG, "nl80211: Failed to abort scan");
 
-	if (drv->ap_scan_as_station != NL80211_IFTYPE_UNSPECIFIED) {
-		wpa_driver_nl80211_set_mode(drv->first_bss,
-					    drv->ap_scan_as_station);
-		drv->ap_scan_as_station = NL80211_IFTYPE_UNSPECIFIED;
-	}
+	if (drv->ap_scan_as_station != NL80211_IFTYPE_UNSPECIFIED)
+		nl80211_restore_ap_mode(drv->first_bss);
 
 	wpa_printf(MSG_DEBUG, "nl80211: Try to get scan results");
 	wpa_supplicant_event(timeout_ctx, EVENT_SCAN_RESULTS, NULL);
@@ -235,6 +232,11 @@ nl80211_scan_common(struct i802_bss *bss, u8 cmd,
 	drv->filter_ssids = params->filter_ssids;
 	params->filter_ssids = NULL;
 	drv->num_filter_ssids = params->num_filter_ssids;
+
+	if (!drv->hostapd && is_ap_interface(drv->nlmode)) {
+		wpa_printf(MSG_DEBUG, "nl80211: Add NL80211_SCAN_FLAG_AP");
+		scan_flags |= NL80211_SCAN_FLAG_AP;
+	}
 
 	if (params->only_new_results) {
 		wpa_printf(MSG_DEBUG, "nl80211: Add NL80211_SCAN_FLAG_FLUSH");
@@ -867,7 +869,7 @@ static void clear_state_mismatch(struct wpa_driver_nl80211_data *drv,
 		wpa_driver_nl80211_mlme(drv, addr,
 					NL80211_CMD_DEAUTHENTICATE,
 					WLAN_REASON_PREV_AUTH_NOT_VALID, 1,
-					NULL);
+					get_connect_handle(drv->first_bss));
 	}
 }
 

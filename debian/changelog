@@ -1,3 +1,11 @@
+wpa (2:2.9.0-13) unstable; urgency=medium
+
+  * Apply upstream patches:
+    - Avoid sending invalid mgmt frames at startup
+    - Increase introspection buffer size for D-Bus
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 19 May 2020 14:29:29 +0200
+
 wpa (2:2.9.0-12) unstable; urgency=medium
 
   * Add an upstream patch to fix the MAC randomisation issue with some cards

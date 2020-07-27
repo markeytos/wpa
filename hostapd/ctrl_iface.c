@@ -1478,12 +1478,31 @@ static int hostapd_ctrl_iface_set(struct hostapd_data *hapd, char *cmd)
 			   os_strcmp(cmd, "sae_pwe") == 0) {
 			if (hapd->started)
 				hostapd_setup_sae_pt(hapd->conf);
+		} else if (os_strcasecmp(cmd, "transition_disable") == 0) {
+			wpa_auth_set_transition_disable(hapd->wpa_auth,
+							hapd->conf->transition_disable);
 		}
 
 #ifdef CONFIG_TESTING_OPTIONS
 		if (os_strcmp(cmd, "ft_rsnxe_used") == 0)
 			wpa_auth_set_ft_rsnxe_used(hapd->wpa_auth,
 						   hapd->conf->ft_rsnxe_used);
+		else if (os_strcmp(cmd, "oci_freq_override_eapol_m3") == 0)
+			wpa_auth_set_ocv_override_freq(
+				hapd->wpa_auth, WPA_AUTH_OCV_OVERRIDE_EAPOL_M3,
+				atoi(value));
+		else if (os_strcmp(cmd, "oci_freq_override_eapol_g1") == 0)
+			wpa_auth_set_ocv_override_freq(
+				hapd->wpa_auth, WPA_AUTH_OCV_OVERRIDE_EAPOL_G1,
+				atoi(value));
+		else if (os_strcmp(cmd, "oci_freq_override_ft_assoc") == 0)
+			wpa_auth_set_ocv_override_freq(
+				hapd->wpa_auth, WPA_AUTH_OCV_OVERRIDE_FT_ASSOC,
+				atoi(value));
+		else if (os_strcmp(cmd, "oci_freq_override_fils_assoc") == 0)
+			wpa_auth_set_ocv_override_freq(
+				hapd->wpa_auth,
+				WPA_AUTH_OCV_OVERRIDE_FILS_ASSOC, atoi(value));
 #endif /* CONFIG_TESTING_OPTIONS */
 	}
 

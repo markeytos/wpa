@@ -62,6 +62,12 @@ enum wpas_mode {
 	WPAS_MODE_MESH = 5,
 };
 
+enum sae_pk_mode {
+	SAE_PK_MODE_AUTOMATIC = 0,
+	SAE_PK_MODE_ONLY = 1,
+	SAE_PK_MODE_DISABLED = 2,
+};
+
 /**
  * struct wpa_ssid - Network configuration data
  *
@@ -1121,6 +1127,16 @@ struct wpa_ssid {
 	 *	OWE)
 	 */
 	u8 transition_disable;
+
+	/**
+	 * sae_pk - SAE-PK mode
+	 * 0 = automatic SAE/SAE-PK selection based on password; enable
+	 * transition mode (allow SAE authentication without SAE-PK)
+	 * 1 = SAE-PK only (disable transition mode; allow SAE authentication
+	 * only with SAE-PK)
+	 * 2 = disable SAE-PK (allow SAE authentication only without SAE-PK)
+	 */
+	enum sae_pk_mode sae_pk;
 };
 
 #endif /* CONFIG_SSID_H */

@@ -197,6 +197,7 @@ struct he_capabilities {
 	u8 mac_cap[HE_MAX_MAC_CAPAB_SIZE];
 	u8 mcs[HE_MAX_MCS_CAPAB_SIZE];
 	u8 ppet[HE_MAX_PPET_CAPAB_SIZE];
+	u16 he_6ghz_capa;
 };
 
 #define HOSTAPD_MODE_FLAG_HT_INFO_KNOWN BIT(0)
@@ -1747,6 +1748,13 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256 0x00004000
 #define WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384 0x00008000
 #define WPA_DRIVER_CAPA_KEY_MGMT_SAE 		0x00010000
+#define WPA_DRIVER_CAPA_KEY_MGMT_802_1X_SHA256	0x00020000
+#define WPA_DRIVER_CAPA_KEY_MGMT_PSK_SHA256	0x00040000
+#define WPA_DRIVER_CAPA_KEY_MGMT_TPK_HANDSHAKE	0x00080000
+#define WPA_DRIVER_CAPA_KEY_MGMT_FT_SAE		0x00100000
+#define WPA_DRIVER_CAPA_KEY_MGMT_FT_802_1X_SHA384	0x00200000
+#define WPA_DRIVER_CAPA_KEY_MGMT_CCKM		0x00400000
+#define WPA_DRIVER_CAPA_KEY_MGMT_OSEN		0x00800000
 	/** Bitfield of supported key management suites */
 	unsigned int key_mgmt;
 	unsigned int key_mgmt_iftype[WPA_IF_MAX];
@@ -1923,6 +1931,8 @@ struct wpa_driver_capa {
 
 /** Driver supports a separate control port RX for EAPOL frames */
 #define WPA_DRIVER_FLAGS2_CONTROL_PORT_RX	0x0000000000000001ULL
+/** Driver supports TX status reports for EAPOL frames through control port */
+#define WPA_DRIVER_FLAGS2_CONTROL_PORT_TX_STATUS 0x0000000000000002ULL
 	u64 flags2;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
@@ -4377,13 +4387,13 @@ struct wpa_driver_ops {
 	int (*ignore_assoc_disallow)(void *priv, int ignore_disallow);
 
 	/**
-	 * set_bssid_blacklist - Set blacklist of BSSIDs to the driver
+	 * set_bssid_tmp_disallow - Set disallowed BSSIDs to the driver
 	 * @priv: Private driver interface data
-	 * @num_bssid: Number of blacklist BSSIDs
-	 * @bssids: List of blacklisted BSSIDs
+	 * @num_bssid: Number of temporarily disallowed BSSIDs
+	 * @bssids: List of temporarily disallowed BSSIDs
 	 */
-	int (*set_bssid_blacklist)(void *priv, unsigned int num_bssid,
-				   const u8 *bssid);
+	int (*set_bssid_tmp_disallow)(void *priv, unsigned int num_bssid,
+				      const u8 *bssid);
 
 	/**
 	 * update_connect_params - Update the connection parameters

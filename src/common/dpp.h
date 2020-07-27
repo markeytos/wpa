@@ -120,6 +120,7 @@ enum dpp_connector_key {
 #define DPP_MAX_NONCE_LEN 32
 #define DPP_MAX_HASH_LEN 64
 #define DPP_MAX_SHARED_SECRET_LEN 66
+#define DPP_CP_LEN 64
 
 struct dpp_curve_params {
 	const char *name;
@@ -196,6 +197,7 @@ enum dpp_akm {
 	DPP_AKM_PSK_SAE,
 	DPP_AKM_SAE_DPP,
 	DPP_AKM_PSK_SAE_DPP,
+	DPP_AKM_DOT1X,
 };
 
 enum dpp_netrole {
@@ -221,6 +223,8 @@ struct dpp_configuration {
 	char *passphrase;
 	u8 psk[32];
 	int psk_set;
+
+	char *csrattrs;
 };
 
 struct dpp_asymmetric_key {
@@ -240,18 +244,21 @@ struct dpp_authentication {
 	struct dpp_bootstrap_info *peer_bi;
 	struct dpp_bootstrap_info *own_bi;
 	struct dpp_bootstrap_info *tmp_own_bi;
+	struct dpp_bootstrap_info *tmp_peer_bi;
 	u8 waiting_pubkey_hash[SHA256_MAC_LEN];
 	int response_pending;
 	int reconfig;
 	enum dpp_connector_key reconfig_connector_key;
 	enum dpp_status_error auth_resp_status;
 	enum dpp_status_error conf_resp_status;
+	enum dpp_status_error force_conf_resp_status;
 	u8 peer_mac_addr[ETH_ALEN];
 	u8 i_nonce[DPP_MAX_NONCE_LEN];
 	u8 r_nonce[DPP_MAX_NONCE_LEN];
 	u8 e_nonce[DPP_MAX_NONCE_LEN];
 	u8 i_capab;
 	u8 r_capab;
+	enum dpp_netrole e_netrole;
 	EVP_PKEY *own_protocol_key;
 	EVP_PKEY *peer_protocol_key;
 	EVP_PKEY *reconfig_old_protocol_key;
@@ -292,6 +299,7 @@ struct dpp_authentication {
 	bool reconfig_success;
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
+	struct wpabuf *conf_resp_tcp;
 	struct dpp_configuration *conf_ap;
 	struct dpp_configuration *conf2_ap;
 	struct dpp_configuration *conf_sta;
@@ -308,6 +316,10 @@ struct dpp_authentication {
 		int psk_set;
 		enum dpp_akm akm;
 		struct wpabuf *c_sign_key;
+		struct wpabuf *certbag;
+		struct wpabuf *certs;
+		struct wpabuf *cacert;
+		char *server_name;
 	} conf_obj[DPP_MAX_CONF_OBJ];
 	unsigned int num_conf_obj;
 	struct dpp_asymmetric_key *conf_key_pkg;
@@ -318,6 +330,16 @@ struct dpp_authentication {
 	int akm_use_selector;
 	int configurator_set;
 	u8 transaction_id;
+	u8 *csrattrs;
+	size_t csrattrs_len;
+	bool waiting_csr;
+	struct wpabuf *csr;
+	struct wpabuf *priv_key; /* DER-encoded private key used for csr */
+	bool waiting_cert;
+	char *trusted_eap_server_name;
+	struct wpabuf *cacert;
+	struct wpabuf *certbag;
+	void *cert_resp_ctx;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -516,6 +538,10 @@ void dpp_configuration_free(struct dpp_configuration *conf);
 int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd);
 void dpp_auth_deinit(struct dpp_authentication *auth);
 struct wpabuf *
+dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
+		    u16 e_nonce_len, enum dpp_netrole netrole,
+		    bool cert_req);
+struct wpabuf *
 dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		size_t attr_len);
 int dpp_conf_resp_rx(struct dpp_authentication *auth,
@@ -592,6 +618,11 @@ struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
 int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
 void dpp_pfs_free(struct dpp_pfs *pfs);
 
+struct wpabuf * dpp_build_csr(struct dpp_authentication *auth,
+			      const char *name);
+struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7);
+int dpp_validate_csr(struct dpp_authentication *auth, const struct wpabuf *csr);
+
 struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
 					    const char *uri);
 struct dpp_bootstrap_info * dpp_add_nfc_uri(struct dpp_global *dpp,
@@ -631,8 +662,11 @@ int dpp_relay_rx_gas_req(struct dpp_global *dpp, const u8 *src, const u8 *data,
 int dpp_controller_start(struct dpp_global *dpp,
 			 struct dpp_controller_config *config);
 void dpp_controller_stop(struct dpp_global *dpp);
+struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
+						    unsigned int id);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
-		 const struct hostapd_ip_addr *addr, int port);
+		 const struct hostapd_ip_addr *addr, int port,
+		 const char *name);
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
 
 struct dpp_global_config {

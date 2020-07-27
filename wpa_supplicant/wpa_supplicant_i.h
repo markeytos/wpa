@@ -1149,6 +1149,9 @@ struct wpa_supplicant {
 	struct wpabuf *rsnxe_override_assoc;
 	struct wpabuf *rsnxe_override_eapol;
 	struct dl_list drv_signal_override;
+	unsigned int oci_freq_override_eapol;
+	unsigned int oci_freq_override_saquery_req;
+	unsigned int oci_freq_override_saquery_resp;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	struct wmm_ac_assoc_data *wmm_ac_assoc_info;
@@ -1274,6 +1277,7 @@ struct wpa_supplicant {
 	unsigned int dpp_resp_retry_time;
 	u8 dpp_last_ssid[SSID_MAX_LEN];
 	size_t dpp_last_ssid_len;
+	bool dpp_conf_backup_received;
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
 	int dpp_pfs_fallback;
@@ -1520,6 +1524,9 @@ struct wpa_bss * wpa_supplicant_pick_network(struct wpa_supplicant *wpa_s,
 int wpas_temp_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);
 void wpa_supplicant_update_channel_list(struct wpa_supplicant *wpa_s,
 					struct channel_list_changed *info);
+int wpa_supplicant_need_to_roam_within_ess(struct wpa_supplicant *wpa_s,
+					   struct wpa_bss *current_bss,
+					   struct wpa_bss *seleceted);
 
 /* eap_register.c */
 int eap_register_methods(void);

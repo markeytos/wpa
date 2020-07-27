@@ -22,6 +22,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/ocv.h"
 #include "common/dpp.h"
+#include "common/wpa_ctrl.h"
 #include "eap_common/eap_defs.h"
 #include "eapol_supp/eapol_supp_sm.h"
 #include "drivers/driver.h"
@@ -756,6 +757,14 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 				   "Failed to get channel info for OCI element in EAPOL-Key 2/4");
 			goto failed;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_eapol) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency, sm->oci_freq_override_eapol);
+			ci.frequency = sm->oci_freq_override_eapol;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		if (ocv_insert_oci_kde(&ci, &pos) < 0)
 			goto failed;
@@ -1709,8 +1718,9 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "%s",
-				ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=eapol-key-m3 error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			return;
 		}
 	}
@@ -1856,8 +1866,9 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "%s",
-				ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=eapol-key-g1 error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			return -1;
 		}
 	}
@@ -3278,6 +3289,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_SAE_PWE:
 		sm->sae_pwe = value;
 		break;
+	case WPA_PARAM_SAE_PK:
+		sm->sae_pk = value;
+		break;
 	case WPA_PARAM_DENY_PTK0_REKEY:
 		sm->wpa_deny_ptk0_rekey = value;
 		break;
@@ -3290,6 +3304,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 #ifdef CONFIG_TESTING_OPTIONS
 	case WPA_PARAM_FT_RSNXE_USED:
 		sm->ft_rsnxe_used = value;
+		break;
+	case WPA_PARAM_OCI_FREQ_EAPOL:
+		sm->oci_freq_override_eapol = value;
 		break;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_DPP2
@@ -4430,10 +4447,6 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		return -1;
 	}
 	sm->pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
-	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0",
-			sm->pmk_r0, sm->pmk_r0_len);
-	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
-		    sm->pmk_r0_name, WPA_PMK_NAME_LEN);
 	wpa_printf(MSG_DEBUG, "FILS+FT: R1KH-ID: " MACSTR,
 		   MAC2STR(sm->r1kh_id));
 	pos = wpabuf_put(buf, WPA_PMK_NAME_LEN);
@@ -4442,8 +4455,6 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMKR1Name");
 		return -1;
 	}
-	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR1Name", sm->pmk_r1_name,
-		    WPA_PMK_NAME_LEN);
 	os_memcpy(pos, sm->pmk_r1_name, WPA_PMK_NAME_LEN);
 
 	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC) {
@@ -4759,7 +4770,9 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "FILS: %s", ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=fils-assoc error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			goto fail;
 		}
 	}

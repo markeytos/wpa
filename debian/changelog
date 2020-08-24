@@ -1,4 +1,4 @@
-wpa (2:2.9.0-14) UNRELEASED; urgency=medium
+wpa (2:2.9.0-14) unstable; urgency=medium
 
   [ Paul Menzel ]
   * Fix unknown key warnings NetworkManager configuration drop-in.
@@ -6,7 +6,12 @@ wpa (2:2.9.0-14) UNRELEASED; urgency=medium
   * Remove defaults from NetworkManager configuration drop-in.
     Closes: #951268, #966811.
 
- -- Andrej Shadura <andrewsh@debian.org>  Mon, 24 Aug 2020 12:41:02 +0200
+  [ Andrej Shadura ]
+  * Add fixes proposed upstream:
+    - Fix error message for radius_accept_attr config option
+    - Update WPS credentials on SIGHUP
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 24 Aug 2020 12:53:37 +0200
 
 wpa (2:2.9.0-13) unstable; urgency=medium
 

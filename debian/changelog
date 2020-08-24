@@ -1,3 +1,13 @@
+wpa (2:2.9.0-14) UNRELEASED; urgency=medium
+
+  [ Paul Menzel ]
+  * Fix unknown key warnings NetworkManager configuration drop-in.
+  * Update NetworkManager configuration drop-in.
+  * Remove defaults from NetworkManager configuration drop-in.
+    Closes: #951268, #966811.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 24 Aug 2020 12:41:02 +0200
+
 wpa (2:2.9.0-13) unstable; urgency=medium
 
   * Apply upstream patches:

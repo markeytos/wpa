@@ -151,7 +151,10 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_SAE_PK
 	if ((rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
 	    ssid->sae_pk != SAE_PK_MODE_DISABLED &&
-	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password)) {
+	    ((ssid->sae_password &&
+	      sae_pk_valid_password(ssid->sae_password)) ||
+	     (!ssid->sae_password && ssid->passphrase &&
+	      sae_pk_valid_password(ssid->passphrase)))) {
 		use_pt = 1;
 		use_pk = true;
 	}
@@ -297,7 +300,7 @@ static void sme_auth_handle_rrm(struct wpa_supplicant *wpa_s,
 	*pos++ = WLAN_EID_RRM_ENABLED_CAPABILITIES;
 	*pos++ = rrm_ie_len;
 
-	/* Set supported capabilites flags */
+	/* Set supported capabilities flags */
 	if (wpa_s->drv_rrm_flags & WPA_DRIVER_FLAGS_TX_POWER_INSERTION)
 		*pos |= WLAN_RRM_CAPS_LINK_MEASUREMENT;
 
@@ -1877,6 +1880,42 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 pfs_fail:
 #endif /* CONFIG_DPP2 */
 
+	wpa_s->mscs_setup_done = false;
+	if (wpa_s->current_bss && wpa_s->robust_av.valid_config) {
+		struct wpabuf *mscs_ie;
+		size_t mscs_ie_len, buf_len, *wpa_ie_len, max_ie_len;
+
+		if (!wpa_bss_ext_capab(wpa_s->current_bss, WLAN_EXT_CAPAB_MSCS))
+			goto mscs_fail;
+
+		buf_len = 3 +	/* MSCS descriptor IE header */
+			  1 +	/* Request type */
+			  2 +	/* User priority control */
+			  4 +	/* Stream timeout */
+			  3 +	/* TCLAS Mask IE header */
+			  wpa_s->robust_av.frame_classifier_len;
+		mscs_ie = wpabuf_alloc(buf_len);
+		if (!mscs_ie) {
+			wpa_printf(MSG_INFO,
+				   "MSCS: Failed to allocate MSCS IE");
+			goto mscs_fail;
+		}
+
+		wpa_ie_len = &wpa_s->sme.assoc_req_ie_len;
+		max_ie_len = sizeof(wpa_s->sme.assoc_req_ie);
+		wpas_populate_mscs_descriptor_ie(&wpa_s->robust_av, mscs_ie);
+		if ((*wpa_ie_len + wpabuf_len(mscs_ie)) <= max_ie_len) {
+			wpa_hexdump_buf(MSG_MSGDUMP, "MSCS IE", mscs_ie);
+			mscs_ie_len = wpabuf_len(mscs_ie);
+			os_memcpy(wpa_s->sme.assoc_req_ie + *wpa_ie_len,
+				  wpabuf_head(mscs_ie), mscs_ie_len);
+			*wpa_ie_len += mscs_ie_len;
+		}
+
+		wpabuf_free(mscs_ie);
+	}
+mscs_fail:
+
 	if (ssid && ssid->multi_ap_backhaul_sta) {
 		size_t multi_ap_ie_len;
 
@@ -2876,7 +2915,7 @@ void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(wpa_s, MSG_INFO, OCV_FAILURE "addr=" MACSTR
 				" frame=saquery%s error=%s",
 				MAC2STR(sa), data[0] == WLAN_SA_QUERY_REQUEST ?

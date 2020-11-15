@@ -19,6 +19,7 @@
 #include "utils/json.h"
 #include "common/ieee802_11_defs.h"
 #include "crypto/crypto.h"
+#include "crypto/random.h"
 #include "crypto/sha384.h"
 #include "crypto/sha512.h"
 #include "dpp.h"
@@ -124,6 +125,18 @@ const struct dpp_curve_params * dpp_get_curve_nid(int nid)
 	for (i = 0; dpp_curves[i].name; i++) {
 		tmp = OBJ_txt2nid(dpp_curves[i].name);
 		if (tmp == nid)
+			return &dpp_curves[i];
+	}
+	return NULL;
+}
+
+
+const struct dpp_curve_params * dpp_get_curve_ike_group(u16 group)
+{
+	int i;
+
+	for (i = 0; dpp_curves[i].name; i++) {
+		if (dpp_curves[i].ike_group == group)
 			return &dpp_curves[i];
 	}
 	return NULL;
@@ -2257,6 +2270,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 	u8 prk[DPP_MAX_HASH_LEN];
 	const struct dpp_curve_params *curve;
 	int res = -1;
+	u8 nonces[2 * DPP_MAX_NONCE_LEN];
 
 	own_key = dpp_set_keypair(&auth->curve, net_access_key,
 				  net_access_key_len);
@@ -2272,7 +2286,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 
 	if (auth->curve != curve) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   "DPP: Mismatching netAccessKey curves (own=%s != peer=%s)",
 			   auth->curve->name, curve->name);
 		goto fail;
 	}
@@ -2281,16 +2295,25 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 	if (!auth->own_protocol_key)
 		goto fail;
 
+	if (random_get_bytes(auth->e_nonce, auth->curve->nonce_len)) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to generate E-nonce");
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "DPP: E-nonce",
+			auth->e_nonce, auth->curve->nonce_len);
+
 	/* M = { cR + pR } * CI */
 	cR = EVP_PKEY_get0_EC_KEY(own_key);
 	pR = EVP_PKEY_get0_EC_KEY(auth->own_protocol_key);
+	if (!pR)
+		goto fail;
 	group = EC_KEY_get0_group(pR);
 	bnctx = BN_CTX_new();
 	sum = BN_new();
 	mx = BN_new();
 	q = BN_new();
 	m = EC_POINT_new(group);
-	if (!cR || !pR || !bnctx || !sum || !mx || !q || !m)
+	if (!cR || !bnctx || !sum || !mx || !q || !m)
 		goto fail;
 	cR_bn = EC_KEY_get0_private_key(cR);
 	pR_bn = EC_KEY_get0_private_key(pR);
@@ -2313,10 +2336,12 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
 
-	/* ke = HKDF(I-nonce, "dpp reconfig key", M.x) */
+	/* ke = HKDF(C-nonce | E-nonce, "dpp reconfig key", M.x) */
 
-	/* HKDF-Extract(I-nonce, M.x) */
-	if (dpp_hmac(curve->hash_len, auth->i_nonce, curve->nonce_len,
+	/* HKDF-Extract(C-nonce | E-nonce, M.x) */
+	os_memcpy(nonces, auth->c_nonce, curve->nonce_len);
+	os_memcpy(&nonces[curve->nonce_len], auth->e_nonce, curve->nonce_len);
+	if (dpp_hmac(curve->hash_len, nonces, 2 * curve->nonce_len,
 		     Mx, curve->prime_len, prk) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
@@ -2326,7 +2351,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG,
-			"DPP: ke = HKDF(I-nonce, \"dpp reconfig key\", M.x)",
+			"DPP: ke = HKDF(C-nonce | E-nonce, \"dpp reconfig key\", M.x)",
 			auth->ke, curve->hash_len);
 
 	res = 0;
@@ -2363,6 +2388,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 	u8 prk[DPP_MAX_HASH_LEN];
 	int res = -1;
 	const struct dpp_curve_params *curve;
+	u8 nonces[2 * DPP_MAX_NONCE_LEN];
 
 	pr = dpp_set_pubkey_point(auth->conf->connector_key,
 				  r_proto, r_proto_len);
@@ -2381,7 +2407,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 	dpp_debug_print_key("DPP: Received netAccessKey", peer_key);
 	if (auth->curve != curve) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   "DPP: Mismatching netAccessKey curves (own=%s != peer=%s)",
 			   auth->curve->name, curve->name);
 		goto fail;
 	}
@@ -2408,10 +2434,12 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
 
-	/* ke = HKDF(I-nonce, "dpp reconfig key", M.x) */
+	/* ke = HKDF(C-nonce | E-nonce, "dpp reconfig key", M.x) */
 
-	/* HKDF-Extract(I-nonce, M.x) */
-	if (dpp_hmac(curve->hash_len, auth->i_nonce, curve->nonce_len,
+	/* HKDF-Extract(C-nonce | E-nonce, M.x) */
+	os_memcpy(nonces, auth->c_nonce, curve->nonce_len);
+	os_memcpy(&nonces[curve->nonce_len], auth->e_nonce, curve->nonce_len);
+	if (dpp_hmac(curve->hash_len, nonces, 2 * curve->nonce_len,
 		     Mx, curve->prime_len, prk) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
@@ -2421,7 +2449,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG,
-			"DPP: ke = HKDF(I-nonce, \"dpp reconfig key\", M.x)",
+			"DPP: ke = HKDF(C-nonce | E-nonce, \"dpp reconfig key\", M.x)",
 			auth->ke, curve->hash_len);
 
 	res = 0;
@@ -2840,6 +2868,7 @@ struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7)
 	res = BIO_read(out, wpabuf_put(pem, 0), rlen);
 	if (res <= 0) {
 		wpabuf_free(pem);
+		pem = NULL;
 		goto fail;
 	}
 	wpabuf_put(pem, res);
@@ -2974,6 +3003,209 @@ fail:
 	os_free(cp);
 	X509_REQ_free(req);
 	return ret;
+}
+
+
+struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
+					     size_t csign_key_len,
+					     const u8 *pp_key,
+					     size_t pp_key_len)
+{
+	const unsigned char *p;
+	EVP_PKEY *csign = NULL, *ppkey = NULL;
+	struct dpp_reconfig_id *id = NULL;
+	BN_CTX *ctx = NULL;
+	BIGNUM *bn = NULL, *q = NULL;
+	const EC_KEY *eckey;
+	const EC_GROUP *group;
+	EC_POINT *e_id = NULL;
+
+	p = csign_key;
+	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
+	if (!csign)
+		goto fail;
+
+	if (!pp_key)
+		goto fail;
+	p = pp_key;
+	ppkey = d2i_PUBKEY(NULL, &p, pp_key_len);
+	if (!ppkey)
+		goto fail;
+
+	eckey = EVP_PKEY_get0_EC_KEY(csign);
+	if (!eckey)
+		goto fail;
+	group = EC_KEY_get0_group(eckey);
+	if (!group)
+		goto fail;
+
+	e_id = EC_POINT_new(group);
+	ctx = BN_CTX_new();
+	bn = BN_new();
+	q = BN_new();
+	if (!e_id || !ctx || !bn || !q ||
+	    !EC_GROUP_get_order(group, q, ctx) ||
+	    !BN_rand_range(bn, q) ||
+	    !EC_POINT_mul(group, e_id, bn, NULL, NULL, ctx))
+		goto fail;
+
+	dpp_debug_print_point("DPP: Generated random point E-id", group, e_id);
+
+	id = os_zalloc(sizeof(*id));
+	if (!id)
+		goto fail;
+	id->group = group;
+	id->e_id = e_id;
+	e_id = NULL;
+	id->csign = csign;
+	csign = NULL;
+	id->pp_key = ppkey;
+	ppkey = NULL;
+fail:
+	EC_POINT_free(e_id);
+	EVP_PKEY_free(csign);
+	EVP_PKEY_free(ppkey);
+	BN_clear_free(bn);
+	BN_CTX_free(ctx);
+	return id;
+}
+
+
+static EVP_PKEY * dpp_pkey_from_point(const EC_GROUP *group,
+				      const EC_POINT *point)
+{
+	EC_KEY *eckey;
+	EVP_PKEY *pkey = NULL;
+
+	eckey = EC_KEY_new();
+	if (!eckey ||
+	    EC_KEY_set_group(eckey, group) != 1 ||
+	    EC_KEY_set_public_key(eckey, point) != 1) {
+		wpa_printf(MSG_ERROR,
+			   "DPP: Failed to set EC_KEY: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
+
+	pkey = EVP_PKEY_new();
+	if (!pkey || EVP_PKEY_set1_EC_KEY(pkey, eckey) != 1) {
+		wpa_printf(MSG_ERROR, "DPP: Could not create EVP_PKEY");
+		EVP_PKEY_free(pkey);
+		pkey = NULL;
+		goto fail;
+	}
+
+fail:
+	EC_KEY_free(eckey);
+	return pkey;
+}
+
+
+int dpp_update_reconfig_id(struct dpp_reconfig_id *id)
+{
+	BN_CTX *ctx = NULL;
+	BIGNUM *bn = NULL, *q = NULL;
+	EC_POINT *e_prime_id = NULL, *a_nonce = NULL;
+	int ret = -1;
+	const EC_KEY *pp;
+	const EC_POINT *pp_point;
+
+	pp = EVP_PKEY_get0_EC_KEY(id->pp_key);
+	if (!pp)
+		goto fail;
+	pp_point = EC_KEY_get0_public_key(pp);
+	e_prime_id = EC_POINT_new(id->group);
+	a_nonce = EC_POINT_new(id->group);
+	ctx = BN_CTX_new();
+	bn = BN_new();
+	q = BN_new();
+	/* Generate random 0 <= a-nonce < q
+	 * A-NONCE = a-nonce * G
+	 * E'-id = E-id + a-nonce * P_pk */
+	if (!pp_point || !e_prime_id || !a_nonce || !ctx || !bn || !q ||
+	    !EC_GROUP_get_order(id->group, q, ctx) ||
+	    !BN_rand_range(bn, q) || /* bn = a-nonce */
+	    !EC_POINT_mul(id->group, a_nonce, bn, NULL, NULL, ctx) ||
+	    !EC_POINT_mul(id->group, e_prime_id, NULL, pp_point, bn, ctx) ||
+	    !EC_POINT_add(id->group, e_prime_id, id->e_id, e_prime_id, ctx))
+		goto fail;
+
+	dpp_debug_print_point("DPP: Generated A-NONCE", id->group, a_nonce);
+	dpp_debug_print_point("DPP: Encrypted E-id to E'-id",
+			      id->group, e_prime_id);
+
+	EVP_PKEY_free(id->a_nonce);
+	EVP_PKEY_free(id->e_prime_id);
+	id->a_nonce = dpp_pkey_from_point(id->group, a_nonce);
+	id->e_prime_id = dpp_pkey_from_point(id->group, e_prime_id);
+	if (!id->a_nonce || !id->e_prime_id)
+		goto fail;
+
+	ret = 0;
+
+fail:
+	EC_POINT_free(e_prime_id);
+	EC_POINT_free(a_nonce);
+	BN_clear_free(bn);
+	BN_CTX_free(ctx);
+	return ret;
+}
+
+
+void dpp_free_reconfig_id(struct dpp_reconfig_id *id)
+{
+	if (id) {
+		EC_POINT_clear_free(id->e_id);
+		EVP_PKEY_free(id->csign);
+		EVP_PKEY_free(id->a_nonce);
+		EVP_PKEY_free(id->e_prime_id);
+		EVP_PKEY_free(id->pp_key);
+		os_free(id);
+	}
+}
+
+
+EC_POINT * dpp_decrypt_e_id(EVP_PKEY *ppkey, EVP_PKEY *a_nonce,
+			    EVP_PKEY *e_prime_id)
+{
+	const EC_KEY *pp_ec, *a_nonce_ec, *e_prime_id_ec;
+	const BIGNUM *pp_bn;
+	const EC_GROUP *group;
+	EC_POINT *e_id = NULL;
+	const EC_POINT *a_nonce_point, *e_prime_id_point;
+	BN_CTX *ctx = NULL;
+
+	if (!ppkey)
+		return NULL;
+
+	/* E-id = E'-id - s_C * A-NONCE */
+	pp_ec = EVP_PKEY_get0_EC_KEY(ppkey);
+	a_nonce_ec = EVP_PKEY_get0_EC_KEY(a_nonce);
+	e_prime_id_ec = EVP_PKEY_get0_EC_KEY(e_prime_id);
+	if (!pp_ec || !a_nonce_ec || !e_prime_id_ec)
+		return NULL;
+	pp_bn = EC_KEY_get0_private_key(pp_ec);
+	group = EC_KEY_get0_group(pp_ec);
+	a_nonce_point = EC_KEY_get0_public_key(a_nonce_ec);
+	e_prime_id_point = EC_KEY_get0_public_key(e_prime_id_ec);
+	ctx = BN_CTX_new();
+	if (!pp_bn || !group || !a_nonce_point || !e_prime_id_point || !ctx)
+		goto fail;
+	e_id = EC_POINT_new(group);
+	if (!e_id ||
+	    !EC_POINT_mul(group, e_id, NULL, a_nonce_point, pp_bn, ctx) ||
+	    !EC_POINT_invert(group, e_id, ctx) ||
+	    !EC_POINT_add(group, e_id, e_prime_id_point, e_id, ctx)) {
+		EC_POINT_clear_free(e_id);
+		goto fail;
+	}
+
+	dpp_debug_print_point("DPP: Decrypted E-id", group, e_id);
+
+fail:
+	BN_CTX_free(ctx);
+	return e_id;
 }
 
 #endif /* CONFIG_DPP2 */

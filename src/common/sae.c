@@ -112,9 +112,6 @@ void sae_clear_temp_data(struct sae_data *sae)
 	wpabuf_free(tmp->own_rejected_groups);
 	wpabuf_free(tmp->peer_rejected_groups);
 	os_free(tmp->pw_id);
-#ifdef CONFIG_SAE_PK
-	bin_clear_free(tmp->pw, tmp->pw_len);
-#endif /* CONFIG_SAE_PK */
 	bin_clear_free(tmp, sizeof(*tmp));
 	sae->tmp = NULL;
 }
@@ -716,6 +713,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(m_is_zero, bin1, bin2, prime_len, bin);
 	x1 = crypto_bignum_init_set(bin, prime_len);
+	if (!x1)
+		goto fail;
 	debug_print_bignum("SSWU: x1 = CSEL(l, x1a, x1b)", x1, prime_len);
 
 	/* gx1 = x1^3 + a * x1 + b */
@@ -756,6 +755,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(is_qr, bin1, bin2, prime_len, bin);
 	v = crypto_bignum_init_set(bin, prime_len);
+	if (!v)
+		goto fail;
 	debug_print_bignum("SSWU: v = CSEL(l, gx1, gx2)", v, prime_len);
 
 	/* x = CSEL(l, x1, x2) */
@@ -1608,18 +1609,26 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	 * octets). */
 	crypto_bignum_to_bin(tmp, val, sizeof(val), sae->tmp->order_len);
 	wpa_hexdump(MSG_DEBUG, "SAE: PMKID", val, SAE_PMKID_LEN);
-	if (!sae->pk &&
-	    sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
+
+#ifdef CONFIG_SAE_PK
+	if (sae->pk) {
+		if (sae_kdf_hash(hash_len, keyseed, "SAE-PK keys",
+				 val, sae->tmp->order_len,
+				 keys, 2 * hash_len + SAE_PMK_LEN) < 0)
+			goto fail;
+	} else {
+		if (sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
+				 val, sae->tmp->order_len,
+				 keys, hash_len + SAE_PMK_LEN) < 0)
+			goto fail;
+	}
+#else /* CONFIG_SAE_PK */
+	if (sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
 			 val, sae->tmp->order_len,
 			 keys, hash_len + SAE_PMK_LEN) < 0)
 		goto fail;
-#ifdef CONFIG_SAE_PK
-	if (sae->pk &&
-	    sae_kdf_hash(hash_len, keyseed, "SAE-PK keys",
-			 val, sae->tmp->order_len,
-			 keys, 2 * hash_len + SAE_PMK_LEN) < 0)
-		goto fail;
-#endif /* CONFIG_SAE_PK */
+#endif /* !CONFIG_SAE_PK */
+
 	forced_memzero(keyseed, sizeof(keyseed));
 	os_memcpy(sae->tmp->kck, keys, hash_len);
 	sae->tmp->kck_len = hash_len;

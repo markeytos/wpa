@@ -376,6 +376,7 @@ struct wpa_cred {
 #define CFG_CHANGED_SCHED_SCAN_PLANS BIT(17)
 #define CFG_CHANGED_WOWLAN_TRIGGERS BIT(18)
 #define CFG_CHANGED_DISABLE_BTM BIT(19)
+#define CFG_CHANGED_BGSCAN BIT(20)
 
 /**
  * struct wpa_config - wpa_supplicant configuration data
@@ -649,7 +650,7 @@ struct wpa_config {
 	 * This variable control whether wpa_supplicant is allow to re-write
 	 * its configuration with wpa_config_write(). If this is zero,
 	 * configuration data is only changed in memory and the external data
-	 * is not overriden. If this is non-zero, wpa_supplicant will update
+	 * is not overridden. If this is non-zero, wpa_supplicant will update
 	 * the configuration data (e.g., a file) whenever configuration is
 	 * changed. This update may replace the old configuration which can
 	 * remove comments from it in case of a text file configuration.
@@ -778,6 +779,8 @@ struct wpa_config {
 	int p2p_add_cli_chan;
 	int p2p_ignore_shared_freq;
 	int p2p_optimize_listen_chan;
+
+	int p2p_6ghz_disable;
 
 	struct wpabuf *wps_vendor_ext_m1;
 
@@ -974,7 +977,7 @@ struct wpa_config {
 	int go_venue_type;
 
 	/**
-	 * hessid - Homogenous ESS identifier
+	 * hessid - Homogeneous ESS identifier
 	 *
 	 * If this is set (any octet is non-zero), scans will be used to
 	 * request response only from BSSes belonging to the specified

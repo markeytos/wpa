@@ -121,6 +121,18 @@ struct wpa_interface {
 	 * interface that is not a network interface.
 	 */
 	int p2p_mgmt;
+
+#ifdef CONFIG_MATCH_IFACE
+	/**
+	 * matched - Interface was matched rather than specified
+	 *
+	 */
+	enum {
+		WPA_IFACE_NOT_MATCHED,
+		WPA_IFACE_MATCHED_NULL,
+		WPA_IFACE_MATCHED
+	} matched;
+#endif /* CONFIG_MATCH_IFACE */
 };
 
 /**
@@ -491,6 +503,17 @@ struct driver_signal_override {
 	int scan_level;
 };
 
+struct robust_av_data {
+	u8 dialog_token;
+	enum scs_request_type request_type;
+	u8 up_bitmap;
+	u8 up_limit;
+	u32 stream_timeout;
+	u8 frame_classifier[48];
+	size_t frame_classifier_len;
+	bool valid_config;
+};
+
 /**
  * struct wpa_supplicant - Internal data for wpa_supplicant interface
  *
@@ -643,17 +666,8 @@ struct wpa_supplicant {
 
 	struct wpa_blacklist *blacklist;
 
-	/**
-	 * extra_blacklist_count - Sum of blacklist counts after last connection
-	 *
-	 * This variable is used to maintain a count of temporary blacklisting
-	 * failures (maximum number for any BSS) over blacklist clear
-	 * operations. This is needed for figuring out whether there has been
-	 * failures prior to the last blacklist clear operation which happens
-	 * whenever no other not-blacklisted BSS candidates are available. This
-	 * gets cleared whenever a connection has been established successfully.
-	 */
-	int extra_blacklist_count;
+	/* Number of connection failures since last successful connection */
+	unsigned int consecutive_conn_failures;
 
 	/**
 	 * scan_req - Type of the scan request
@@ -1152,6 +1166,10 @@ struct wpa_supplicant {
 	unsigned int oci_freq_override_eapol;
 	unsigned int oci_freq_override_saquery_req;
 	unsigned int oci_freq_override_saquery_resp;
+	unsigned int oci_freq_override_eapol_g2;
+	unsigned int oci_freq_override_ft_assoc;
+	unsigned int oci_freq_override_fils_assoc;
+	unsigned int oci_freq_override_wnm_sleep;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	struct wmm_ac_assoc_data *wmm_ac_assoc_info;
@@ -1281,7 +1299,6 @@ struct wpa_supplicant {
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
 	int dpp_pfs_fallback;
-	struct wpabuf *dpp_reconfig_announcement;
 	struct wpabuf *dpp_presence_announcement;
 	struct dpp_bootstrap_info *dpp_chirp_bi;
 	int dpp_chirp_freq;
@@ -1292,6 +1309,7 @@ struct wpa_supplicant {
 	int dpp_chirp_listen;
 	struct wpa_ssid *dpp_reconfig_ssid;
 	int dpp_reconfig_ssid_id;
+	struct dpp_reconfig_id *dpp_reconfig_id;
 #endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	char *dpp_config_obj_override;
@@ -1311,6 +1329,8 @@ struct wpa_supplicant {
 	unsigned int multi_ap_ie:1;
 	unsigned int multi_ap_backhaul:1;
 	unsigned int multi_ap_fronthaul:1;
+	struct robust_av_data robust_av;
+	bool mscs_setup_done;
 };
 
 
@@ -1334,6 +1354,8 @@ int wpa_supplicant_reload_configuration(struct wpa_supplicant *wpa_s);
 const char * wpa_supplicant_state_txt(enum wpa_states state);
 int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s);
 int wpa_supplicant_driver_init(struct wpa_supplicant *wpa_s);
+int wpa_supplicant_update_bridge_ifname(struct wpa_supplicant *wpa_s,
+					const char *bridge_ifname);
 int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 			      struct wpa_bss *bss, struct wpa_ssid *ssid,
 			      u8 *wpa_ie, size_t *wpa_ie_len);
@@ -1359,6 +1381,7 @@ void wpa_supplicant_reconnect(struct wpa_supplicant *wpa_s);
 
 struct wpa_ssid * wpa_supplicant_add_network(struct wpa_supplicant *wpa_s);
 int wpa_supplicant_remove_network(struct wpa_supplicant *wpa_s, int id);
+int wpa_supplicant_remove_all_networks(struct wpa_supplicant *wpa_s);
 void wpa_supplicant_enable_network(struct wpa_supplicant *wpa_s,
 				   struct wpa_ssid *ssid);
 void wpa_supplicant_disable_network(struct wpa_supplicant *wpa_s,
@@ -1446,6 +1469,7 @@ int wpas_beacon_rep_scan_process(struct wpa_supplicant *wpa_s,
 void wpas_clear_beacon_rep_data(struct wpa_supplicant *wpa_s);
 void wpas_flush_fils_hlp_req(struct wpa_supplicant *wpa_s);
 void wpas_clear_disabled_interface(void *eloop_ctx, void *timeout_ctx);
+void wpa_supplicant_reset_bgscan(struct wpa_supplicant *wpa_s);
 
 
 /* MBO functions */
@@ -1618,5 +1642,14 @@ int wpa_is_fils_supported(struct wpa_supplicant *wpa_s);
 int wpa_is_fils_sk_pfs_supported(struct wpa_supplicant *wpa_s);
 
 void wpas_clear_driver_signal_override(struct wpa_supplicant *wpa_s);
+
+int wpas_send_mscs_req(struct wpa_supplicant *wpa_s);
+void wpas_populate_mscs_descriptor_ie(struct robust_av_data *robust_av,
+				      struct wpabuf *buf);
+void wpas_handle_robust_av_recv_action(struct wpa_supplicant *wpa_s,
+				       const u8 *src, const u8 *buf,
+				       size_t len);
+void wpas_handle_assoc_resp_mscs(struct wpa_supplicant *wpa_s, const u8 *bssid,
+				 const u8 *ies, size_t ies_len);
 
 #endif /* WPA_SUPPLICANT_I_H */

@@ -1,3 +1,9 @@
+wpa (2:2.9.0+git20201110+c2c4686-1) UNRELEASED; urgency=medium
+
+  * New upstream snapshot.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 15 Nov 2020 15:03:59 +0100
+
 wpa (2:2.9.0+git20200517+dd2daf0-1) experimental; urgency=medium
 
   * New upstream snapshot.

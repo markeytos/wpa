@@ -102,7 +102,7 @@ Description: Client support for WPA and WPA2 (IEEE 802.11i)
  This is a udeb of wpasupplicant for use by the debian-installer.
 
 Package: eapoltest
-Architecture: any
+Architecture: linux-any kfreebsd-any
 Depends: ${shlibs:Depends},
  ${misc:Depends}
 Description: EAPoL testing utility

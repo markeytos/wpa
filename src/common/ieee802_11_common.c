@@ -1030,15 +1030,28 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 	}
 
 	if (freq > 5950 && freq <= 7115) {
-		int bw;
-		u8 idx = (freq - 5950) / 5;
-
-		bw = center_idx_to_bw_6ghz(idx);
-		if (bw < 0)
+		if ((freq - 5950) % 5)
 			return NUM_HOSTAPD_MODES;
 
-		*channel = idx;
-		*op_class = 131 + bw;
+		switch (chanwidth) {
+		case CHANWIDTH_80MHZ:
+			*op_class = 133;
+			break;
+		case CHANWIDTH_160MHZ:
+			*op_class = 134;
+			break;
+		case CHANWIDTH_80P80MHZ:
+			*op_class = 135;
+			break;
+		default:
+			if (sec_channel)
+				*op_class = 132;
+			else
+				*op_class = 131;
+			break;
+		}
+
+		*channel = (freq - 5950) / 5;
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
@@ -1872,8 +1885,12 @@ const struct oper_class_map global_op_class[] = {
 	 */
 	{ HOSTAPD_MODE_IEEE80211A, 128, 36, 161, 4, BW80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 129, 50, 114, 16, BW160, P2P_SUPP },
-	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 131, 1, 233, 4, BW20, P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 132, 1, 233, 8, BW40, NO_P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 133, 1, 233, 16, BW80, NO_P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 134, 1, 233, 32, BW160, NO_P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 135, 1, 233, 16, BW80P80, NO_P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 136, 2, 2, 4, BW20, NO_P2P_SUPP },
 
 	/*
 	 * IEEE Std 802.11ad-2012 and P802.ay/D5.0 60 GHz operating classes.
@@ -1884,6 +1901,12 @@ const struct oper_class_map global_op_class[] = {
 	{ HOSTAPD_MODE_IEEE80211AD, 181, 9, 13, 1, BW4320, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211AD, 182, 17, 20, 1, BW6480, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211AD, 183, 25, 27, 1, BW8640, P2P_SUPP },
+
+	/* Keep the operating class 130 as the last entry as a workaround for
+	 * the OneHundredAndThirty Delimiter value used in the Supported
+	 * Operating Classes element to indicate the end of the Operating
+	 * Classes field. */
+	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
 	{ -1, 0, 0, 0, 0, BW20, NO_P2P_SUPP }
 };
 
@@ -2181,6 +2204,7 @@ int oper_class_bw_to_int(const struct oper_class_map *map)
 	switch (map->bw) {
 	case BW20:
 		return 20;
+	case BW40:
 	case BW40PLUS:
 	case BW40MINUS:
 		return 40;

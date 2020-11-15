@@ -351,9 +351,31 @@ static int wpa_bss_is_wps_candidate(struct wpa_supplicant *wpa_s,
 }
 
 
+static bool is_p2p_pending_bss(struct wpa_supplicant *wpa_s,
+			       struct wpa_bss *bss)
+{
+#ifdef CONFIG_P2P
+	u8 addr[ETH_ALEN];
+
+	if (os_memcmp(bss->bssid, wpa_s->pending_join_iface_addr,
+		      ETH_ALEN) == 0)
+		return true;
+	if (!is_zero_ether_addr(wpa_s->pending_join_dev_addr) &&
+	    p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+			       addr) == 0 &&
+	    os_memcmp(addr, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0)
+		return true;
+#endif /* CONFIG_P2P */
+	return false;
+}
+
+
 static int wpa_bss_known(struct wpa_supplicant *wpa_s, struct wpa_bss *bss)
 {
 	struct wpa_ssid *ssid;
+
+	if (is_p2p_pending_bss(wpa_s, bss))
+		return 1;
 
 	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
 		if (ssid->ssid == NULL || ssid->ssid_len == 0)
@@ -1132,18 +1154,15 @@ const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
  */
 const u8 * wpa_bss_get_vendor_ie(const struct wpa_bss *bss, u32 vendor_type)
 {
-	const u8 *end, *pos;
+	const u8 *ies;
+	const struct element *elem;
 
-	pos = (const u8 *) (bss + 1);
-	end = pos + bss->ie_len;
+	ies = (const u8 *) (bss + 1);
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, bss->ie_len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
@@ -1165,22 +1184,20 @@ const u8 * wpa_bss_get_vendor_ie(const struct wpa_bss *bss, u32 vendor_type)
 const u8 * wpa_bss_get_vendor_ie_beacon(const struct wpa_bss *bss,
 					u32 vendor_type)
 {
-	const u8 *end, *pos;
+	const u8 *ies;
+	const struct element *elem;
 
 	if (bss->beacon_ie_len == 0)
 		return NULL;
 
-	pos = (const u8 *) (bss + 1);
-	pos += bss->ie_len;
-	end = pos + bss->beacon_ie_len;
+	ies = (const u8 *) (bss + 1);
+	ies += bss->ie_len;
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies,
+			    bss->beacon_ie_len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
@@ -1211,12 +1228,17 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi(const struct wpa_bss *bss,
 	end = pos + bss->ie_len;
 
 	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
+		u8 ie, len;
+
+		ie = pos[0];
+		len = pos[1];
+		if (len > end - pos - 2)
 			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			wpabuf_put_data(buf, pos + 2 + 4, pos[1] - 4);
-		pos += 2 + pos[1];
+		pos += 2;
+		if (ie == WLAN_EID_VENDOR_SPECIFIC && len >= 4 &&
+		    vendor_type == WPA_GET_BE32(pos))
+			wpabuf_put_data(buf, pos + 4, len - 4);
+		pos += len;
 	}
 
 	if (wpabuf_len(buf) == 0) {

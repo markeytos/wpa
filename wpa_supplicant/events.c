@@ -1085,7 +1085,7 @@ static int disabled_freq(struct wpa_supplicant *wpa_s, int freq)
 
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
-			    struct wpa_bss *bss, struct wpa_blacklist *e,
+			    struct wpa_bss *bss, int blacklist_count,
 			    bool debug_print);
 
 
@@ -1099,7 +1099,7 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 	struct wpa_bss *bss;
 
 	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
-		struct wpa_blacklist *e;
+		int count;
 		const u8 *ie;
 		u8 rsnxe_capa = 0;
 
@@ -1117,9 +1117,9 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 		if (bss->est_throughput < 2000)
 			return false;
 
-		e = wpa_blacklist_get(wpa_s, bss->bssid);
+		count = wpa_blacklist_is_blacklisted(wpa_s, bss->bssid);
 		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
-				    bss, e, 0))
+				    bss, count, 0))
 			return true;
 	}
 
@@ -1130,7 +1130,7 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
-			    struct wpa_bss *bss, struct wpa_blacklist *e,
+			    struct wpa_bss *bss, int blacklist_count,
 			    bool debug_print)
 {
 	int res;
@@ -1178,7 +1178,7 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 	}
 
 #ifdef CONFIG_WPS
-	if ((ssid->key_mgmt & WPA_KEY_MGMT_WPS) && e && e->count > 0) {
+	if ((ssid->key_mgmt & WPA_KEY_MGMT_WPS) && blacklist_count) {
 		if (debug_print)
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"   skip - blacklisted (WPS)");
@@ -1440,7 +1440,10 @@ skip_assoc_disallow:
 #ifdef CONFIG_SAE_PK
 	if (ssid->sae_pk == SAE_PK_MODE_AUTOMATIC &&
 	    wpa_key_mgmt_sae(ssid->key_mgmt) &&
-	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password) &&
+	    ((ssid->sae_password &&
+	      sae_pk_valid_password(ssid->sae_password)) ||
+	     (!ssid->sae_password && ssid->passphrase &&
+	      sae_pk_valid_password(ssid->passphrase))) &&
 	    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
 	    sae_pk_acceptable_bss_with_pk(wpa_s, bss, ssid, match_ssid,
 					  match_ssid_len)) {
@@ -1469,12 +1472,12 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 				     int only_first_ssid, int debug_print)
 {
 	u8 wpa_ie_len, rsn_ie_len;
-	struct wpa_blacklist *e;
 	const u8 *ie;
 	struct wpa_ssid *ssid;
 	int osen;
 	const u8 *match_ssid;
 	size_t match_ssid_len;
+	int blacklist_count;
 
 	ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 	wpa_ie_len = ie ? ie[1] : 0;
@@ -1500,8 +1503,8 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			osen ? " osen=1" : "");
 	}
 
-	e = wpa_blacklist_get(wpa_s, bss->bssid);
-	if (e) {
+	blacklist_count = wpa_blacklist_is_blacklisted(wpa_s, bss->bssid);
+	if (blacklist_count) {
 		int limit = 1;
 		if (wpa_supplicant_enabled_networks(wpa_s) == 1) {
 			/*
@@ -1514,11 +1517,11 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			 */
 			limit = 0;
 		}
-		if (e->count > limit) {
+		if (blacklist_count > limit) {
 			if (debug_print) {
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip - blacklisted (count=%d limit=%d)",
-					e->count, limit);
+					blacklist_count, limit);
 			}
 			return NULL;
 		}
@@ -1554,7 +1557,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 
 	for (ssid = group; ssid; ssid = only_first_ssid ? NULL : ssid->pnext) {
 		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
-				    bss, e, debug_print))
+				    bss, blacklist_count, debug_print))
 			return ssid;
 	}
 
@@ -2675,11 +2678,11 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 {
 	int l, len, found = 0, found_x = 0, wpa_found, rsn_found;
 	const u8 *p;
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_OWE)
 	u8 bssid[ETH_ALEN];
-#endif /* CONFIG_IEEE80211R || CONFIG_OWE */
+	bool bssid_known;
 
 	wpa_dbg(wpa_s, MSG_DEBUG, "Association info event");
+	bssid_known = wpa_drv_get_bssid(wpa_s, bssid) == 0;
 	if (data->assoc_info.req_ies)
 		wpa_hexdump(MSG_DEBUG, "req_ies", data->assoc_info.req_ies,
 			    data->assoc_info.req_ies_len);
@@ -2796,7 +2799,7 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_OWE
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_OWE &&
-	    (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+	    (!bssid_known ||
 	     owe_process_assoc_resp(wpa_s->wpa, bssid,
 				    data->assoc_info.resp_ies,
 				    data->assoc_info.resp_ies_len) < 0)) {
@@ -2831,7 +2834,7 @@ no_pfs:
 #ifdef CONFIG_IEEE80211R
 #ifdef CONFIG_SME
 	if (wpa_s->sme.auth_alg == WPA_AUTH_ALG_FT) {
-		if (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+		if (!bssid_known ||
 		    wpa_ft_validate_reassoc_resp(wpa_s->wpa,
 						 data->assoc_info.resp_ies,
 						 data->assoc_info.resp_ies_len,
@@ -2891,7 +2894,7 @@ no_pfs:
 	/* Process FT when SME is in the driver */
 	if (!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
 	    wpa_ft_is_completed(wpa_s->wpa)) {
-		if (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+		if (!bssid_known ||
 		    wpa_ft_validate_reassoc_resp(wpa_s->wpa,
 						 data->assoc_info.resp_ies,
 						 data->assoc_info.resp_ies_len,
@@ -2908,6 +2911,11 @@ no_pfs:
 	wpa_sm_set_ft_params(wpa_s->wpa, data->assoc_info.resp_ies,
 			     data->assoc_info.resp_ies_len);
 #endif /* CONFIG_IEEE80211R */
+
+	if (bssid_known)
+		wpas_handle_assoc_resp_mscs(wpa_s, bssid,
+					    data->assoc_info.resp_ies,
+					    data->assoc_info.resp_ies_len);
 
 	/* WPA/RSN IE from Beacon/ProbeResp */
 	p = data->assoc_info.beacon_ies;
@@ -4242,6 +4250,13 @@ static void wpas_event_rx_mgmt_action(struct wpa_supplicant *wpa_s,
 	}
 #endif /* CONFIG_DPP */
 
+	if (category == WLAN_ACTION_ROBUST_AV_STREAMING &&
+	    payload[0] == ROBUST_AV_MSCS_RESP) {
+		wpas_handle_robust_av_recv_action(wpa_s, mgmt->sa,
+						  payload + 1, plen - 1);
+		return;
+	}
+
 	wpas_p2p_rx_action(wpa_s, mgmt->da, mgmt->sa, mgmt->bssid,
 			   category, payload, plen, freq);
 	if (wpa_s->ifmsh)
@@ -4479,7 +4494,9 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 	 * WLAN_STATUS_AKMP_NOT_VALID is addressed in the same manner as an
 	 * interoperability workaround with older hostapd implementation. */
 	if (DPP_VERSION > 1 && wpa_s->current_ssid &&
-	    wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP &&
+	    (wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP ||
+	     ((wpa_s->current_ssid->key_mgmt & WPA_KEY_MGMT_DPP) &&
+	      wpa_s->key_mgmt == WPA_KEY_MGMT_DPP)) &&
 	    wpa_s->current_ssid->dpp_pfs == 0 &&
 	    (data->assoc_reject.status_code ==
 	     WLAN_STATUS_ASSOC_DENIED_UNSPEC ||
@@ -4942,7 +4959,9 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		}
 #endif /* CONFIG_AP */
 
-		sme_event_ch_switch(wpa_s);
+		if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME)
+			sme_event_ch_switch(wpa_s);
+
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
 		wnm_clear_coloc_intf_reporting(wpa_s);
 		break;
@@ -5453,8 +5472,6 @@ void wpa_supplicant_event_global(void *ctx, enum wpa_event_type event,
 			return;
 		wpa_s = wpa_supplicant_add_iface(ctx, wpa_i, NULL);
 		os_free(wpa_i);
-		if (wpa_s)
-			wpa_s->matched = 1;
 	}
 #endif /* CONFIG_MATCH_IFACE */
 

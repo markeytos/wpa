@@ -105,6 +105,32 @@ void hostapd_notify_assoc_fils_finish(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 
 
+static bool check_sa_query_need(struct hostapd_data *hapd, struct sta_info *sta)
+{
+	if ((sta->flags &
+	     (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) !=
+	    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED))
+		return false;
+
+	if (!sta->sa_query_timed_out && sta->sa_query_count > 0)
+		ap_check_sa_query_timeout(hapd, sta);
+
+	if (!sta->sa_query_timed_out && (sta->auth_alg != WLAN_AUTH_FT)) {
+		/*
+		 * STA has already been associated with MFP and SA Query timeout
+		 * has not been reached. Reject the association attempt
+		 * temporarily and start SA Query, if one is not pending.
+		 */
+		if (sta->sa_query_count == 0)
+			ap_sta_start_sa_query(hapd, sta);
+
+		return true;
+	}
+
+	return false;
+}
+
+
 int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			const u8 *req_ies, size_t req_ies_len, int reassoc)
 {
@@ -293,6 +319,17 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		    os_memcmp(ie + 2, "\x00\x50\xf2\x04", 4) == 0) {
 			struct wpabuf *wps;
 
+			if (check_sa_query_need(hapd, sta)) {
+				status = WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
+
+				p = hostapd_eid_assoc_comeback_time(hapd, sta,
+								    p);
+
+				hostapd_sta_assoc(hapd, addr, reassoc, status,
+						  buf, p - buf);
+				return 0;
+			}
+
 			sta->flags |= WLAN_STA_WPS;
 			wps = ieee802_11_vendor_ie_concat(ie, ielen,
 							  WPS_IE_VENDOR_TYPE);
@@ -388,25 +425,7 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			goto fail;
 		}
 
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
-		    !sta->sa_query_timed_out &&
-		    sta->sa_query_count > 0)
-			ap_check_sa_query_timeout(hapd, sta);
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
-		    !sta->sa_query_timed_out &&
-		    (sta->auth_alg != WLAN_AUTH_FT)) {
-			/*
-			 * STA has already been associated with MFP and SA
-			 * Query timeout has not been reached. Reject the
-			 * association attempt temporarily and start SA Query,
-			 * if one is not pending.
-			 */
-
-			if (sta->sa_query_count == 0)
-				ap_sta_start_sa_query(hapd, sta);
-
+		if (check_sa_query_need(hapd, sta)) {
 			status = WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
 
 			p = hostapd_eid_assoc_comeback_time(hapd, sta, p);
@@ -893,9 +912,18 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	switch (hapd->iface->current_mode->mode) {
 	case HOSTAPD_MODE_IEEE80211A:
-		if (cf1 > 5000)
+		if (cf1 == 5935)
+			seg0_idx = (cf1 - 5925) / 5;
+		else if (cf1 > 5950)
+			seg0_idx = (cf1 - 5950) / 5;
+		else if (cf1 > 5000)
 			seg0_idx = (cf1 - 5000) / 5;
-		if (cf2 > 5000)
+
+		if (cf2 == 5935)
+			seg1_idx = (cf2 - 5925) / 5;
+		else if (cf2 > 5950)
+			seg1_idx = (cf2 - 5950) / 5;
+		else if (cf2 > 5000)
 			seg1_idx = (cf2 - 5000) / 5;
 		break;
 	default:

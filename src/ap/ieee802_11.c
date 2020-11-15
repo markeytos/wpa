@@ -1149,6 +1149,7 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 {
 	int sae_pwe = hapd->conf->sae_pwe;
 	int id_in_use;
+	bool sae_pk = false;
 
 	id_in_use = hostapd_sae_pw_id_in_use(hapd->conf);
 	if (id_in_use == 2 && sae_pwe != 3)
@@ -1156,7 +1157,8 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 	else if (id_in_use == 1 && sae_pwe == 0)
 		sae_pwe = 2;
 #ifdef CONFIG_SAE_PK
-	if (sae_pwe == 0 && hostapd_sae_pk_in_use(hapd->conf))
+	sae_pk = hostapd_sae_pk_in_use(hapd->conf);
+	if (sae_pwe == 0 && sae_pk)
 		sae_pwe = 2;
 #endif /* CONFIG_SAE_PK */
 
@@ -1164,11 +1166,11 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 		status_code == WLAN_STATUS_SUCCESS) ||
 		(sae_pwe == 1 &&
 		 (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
-		  status_code == WLAN_STATUS_SAE_PK)) ||
+		  (sae_pk && status_code == WLAN_STATUS_SAE_PK))) ||
 		(sae_pwe == 2 &&
 		 (status_code == WLAN_STATUS_SUCCESS ||
 		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
-		  status_code == WLAN_STATUS_SAE_PK));
+		  (sae_pk && status_code == WLAN_STATUS_SAE_PK)));
 }
 
 
@@ -1241,6 +1243,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		wpa_printf(MSG_DEBUG, "SAE: TESTING - reflection attack");
 		pos = mgmt->u.auth.variable;
 		end = ((const u8 *) mgmt) + len;
+		resp = status_code;
 		send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp, pos, end - pos,
 				"auth-sae-reflection-attack");
@@ -3152,6 +3155,34 @@ end:
 #endif /* CONFIG_OWE */
 
 
+static bool check_sa_query(struct hostapd_data *hapd, struct sta_info *sta,
+			   int reassoc)
+{
+	if ((sta->flags &
+	     (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) !=
+	    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED))
+		return false;
+
+	if (!sta->sa_query_timed_out && sta->sa_query_count > 0)
+		ap_check_sa_query_timeout(hapd, sta);
+
+	if (!sta->sa_query_timed_out &&
+	    (!reassoc || sta->auth_alg != WLAN_AUTH_FT)) {
+		/*
+		 * STA has already been associated with MFP and SA Query timeout
+		 * has not been reached. Reject the association attempt
+		 * temporarily and start SA Query, if one is not pending.
+		 */
+		if (sta->sa_query_count == 0)
+			ap_sta_start_sa_query(hapd, sta);
+
+		return true;
+	}
+
+	return false;
+}
+
+
 static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *ies, size_t ies_len, int reassoc)
 {
@@ -3275,6 +3306,8 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 	if (hapd->conf->wps_state && elems.wps_ie) {
 		wpa_printf(MSG_DEBUG, "STA included WPS IE in (Re)Association "
 			   "Request - assume WPS is used");
+		if (check_sa_query(hapd, sta, reassoc))
+			return WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
 		sta->flags |= WLAN_STA_WPS;
 		wpabuf_free(sta->wps_ie);
 		sta->wps_ie = ieee802_11_vendor_ie_concat(ies, ies_len,
@@ -3328,27 +3361,9 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		resp = wpa_res_to_status_code(res);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
-		    !sta->sa_query_timed_out &&
-		    sta->sa_query_count > 0)
-			ap_check_sa_query_timeout(hapd, sta);
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
-		    !sta->sa_query_timed_out &&
-		    (!reassoc || sta->auth_alg != WLAN_AUTH_FT)) {
-			/*
-			 * STA has already been associated with MFP and SA
-			 * Query timeout has not been reached. Reject the
-			 * association attempt temporarily and start SA Query,
-			 * if one is not pending.
-			 */
 
-			if (sta->sa_query_count == 0)
-				ap_sta_start_sa_query(hapd, sta);
-
+		if (check_sa_query(hapd, sta, reassoc))
 			return WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY;
-		}
 
 		if (wpa_auth_uses_mfp(sta->wpa_sm))
 			sta->flags |= WLAN_STA_MFP;
@@ -3549,6 +3564,7 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		struct wpa_channel_info ci;
 		int tx_chanwidth;
 		int tx_seg1_idx;
+		enum oci_verify_result res;
 
 		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
 			wpa_printf(MSG_WARNING,
@@ -3562,8 +3578,15 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 					  &tx_seg1_idx) < 0)
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
-		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
-					 tx_chanwidth, tx_seg1_idx) != 0) {
+		res = ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					   tx_chanwidth, tx_seg1_idx);
+		if (wpa_auth_uses_ocv(sta->wpa_sm) == 2 &&
+		    res == OCI_NOT_FOUND) {
+			/* Work around misbehaving STAs */
+			wpa_printf(MSG_INFO,
+				   "FILS: Disable OCV with a STA that does not send OCI");
+			wpa_auth_set_ocv(sta->wpa_sm, 0);
+		} else if (res != OCI_SUCCESS) {
 			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
 				   ocv_errorstr);
 			wpa_msg(hapd->msg_ctx, MSG_INFO, OCV_FAILURE "addr="
@@ -3890,7 +3913,8 @@ rsnxe_done:
 #ifdef CONFIG_OWE
 	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE) &&
 	    sta && sta->owe_ecdh && status_code == WLAN_STATUS_SUCCESS &&
-	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE) {
+	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE &&
+	    !wpa_auth_sta_get_pmksa(sta->wpa_sm)) {
 		struct wpabuf *pub;
 
 		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
@@ -4144,7 +4168,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 {
 	u16 capab_info, listen_interval, seq_ctrl, fc;
 	int resp = WLAN_STATUS_SUCCESS;
-	u16 reply_res;
+	u16 reply_res = WLAN_STATUS_UNSPECIFIED_FAILURE;
 	const u8 *pos;
 	int left, i;
 	struct sta_info *sta;
@@ -4524,7 +4548,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 	os_free(tmp);
 
 	/*
-	 * Remove the station in case tranmission of a success response fails
+	 * Remove the station in case transmission of a success response fails
 	 * (the STA was added associated to the driver) or if the station was
 	 * previously added unassociated.
 	 */

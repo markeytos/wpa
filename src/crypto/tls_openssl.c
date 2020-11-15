@@ -2995,16 +2995,12 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 
 		/* Explicit request to enable TLS versions even if needing to
 		 * override systemwide policies. */
-		if (flags & TLS_CONN_ENABLE_TLSv1_0) {
+		if (flags & TLS_CONN_ENABLE_TLSv1_0)
 			version = TLS1_VERSION;
-		} else if (flags & TLS_CONN_ENABLE_TLSv1_1) {
-			if (!(flags & TLS_CONN_DISABLE_TLSv1_0))
-				version = TLS1_1_VERSION;
-		} else if (flags & TLS_CONN_ENABLE_TLSv1_2) {
-			if (!(flags & (TLS_CONN_DISABLE_TLSv1_0 |
-				       TLS_CONN_DISABLE_TLSv1_1)))
-				version = TLS1_2_VERSION;
-		}
+		else if (flags & TLS_CONN_ENABLE_TLSv1_1)
+			version = TLS1_1_VERSION;
+		else if (flags & TLS_CONN_ENABLE_TLSv1_2)
+			version = TLS1_2_VERSION;
 		if (!version) {
 			wpa_printf(MSG_DEBUG,
 				   "OpenSSL: Invalid TLS version configuration");
@@ -3018,6 +3014,18 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 		}
 	}
 #endif /* >= 1.1.0 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+	!defined(LIBRESSL_VERSION_NUMBER) && \
+	!defined(OPENSSL_IS_BORINGSSL)
+	if ((flags & (TLS_CONN_ENABLE_TLSv1_0 | TLS_CONN_ENABLE_TLSv1_1)) &&
+	    SSL_get_security_level(ssl) >= 2) {
+		/*
+		 * Need to drop to security level 1 to allow TLS versions older
+		 * than 1.2 to be used when explicitly enabled in configuration.
+		 */
+		SSL_set_security_level(conn->ssl, 1);
+	}
+#endif
 
 #ifdef CONFIG_SUITEB
 #ifdef OPENSSL_IS_BORINGSSL
@@ -3252,6 +3260,10 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 			   "OK");
 		return 0;
 	} else if (client_cert_blob) {
+#if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20901000L
+		tls_show_errors(MSG_DEBUG, __func__,
+				"SSL_use_certificate_ASN1 failed");
+#else
 		BIO *bio;
 		X509 *x509;
 
@@ -3277,6 +3289,7 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		}
 		BIO_free(bio);
 		return 0;
+#endif
 	}
 
 	if (client_cert == NULL)
@@ -5309,6 +5322,9 @@ static void openssl_debug_dump_certificate(int i, X509 *cert)
 	EVP_PKEY *pkey;
 	ASN1_INTEGER *ser;
 	char serial_num[128];
+
+	if (!cert)
+		return;
 
 	X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
 

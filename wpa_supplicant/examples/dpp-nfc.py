@@ -7,6 +7,8 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import binascii
+import errno
 import os
 import struct
 import sys
@@ -29,23 +31,18 @@ init_on_touch = False
 in_raw_mode = False
 prev_tcgetattr = 0
 no_input = False
-srv = None
 continue_loop = True
 terminate_now = False
 summary_file = None
 success_file = None
-my_crn_ready = False
-my_crn = None
-peer_crn = None
-hs_sent = False
 netrole = None
 operation_success = False
 mutex = threading.Lock()
-no_alt_proposal = False
 
 C_NORMAL = '\033[0m'
 C_RED = '\033[91m'
 C_GREEN = '\033[92m'
+C_YELLOW = '\033[93m'
 C_BLUE = '\033[94m'
 C_MAGENTA = '\033[95m'
 C_CYAN = '\033[96m'
@@ -80,15 +77,18 @@ def wpas_connect():
         return None
 
     for ctrl in ifaces:
-        if ifname:
-            if ifname not in ctrl:
-                continue
+        if ifname and ifname not in ctrl:
+            continue
+        if os.path.basename(ctrl).startswith("p2p-dev-"):
+            # skip P2P management interface
+            continue
         try:
             summary("Trying to use control interface " + ctrl)
             wpas = wpaspy.Ctrl(ctrl)
             return wpas
         except Exception as e:
             pass
+    summary("Could not connect to wpa_supplicant")
     return None
 
 def dpp_nfc_uri_process(uri):
@@ -192,6 +192,31 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
         raise Exception("Failed to generate bootstrapping info")
     return int(res)
 
+def dpp_start_listen(wpas, freq):
+    if get_status_field(wpas, "bssid[0]"):
+        summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
+        if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
+            summary("Enable beaconing to have radio ready for RX")
+            wpas.request("DISABLE")
+            wpas.request("SET start_disabled 0")
+            wpas.request("ENABLE")
+    cmd = "DPP_LISTEN %d" % freq
+    global enrollee_only
+    global configurator_only
+    if enrollee_only:
+        cmd += " role=enrollee"
+    elif configurator_only:
+        cmd += " role=configurator"
+    global netrole
+    if netrole:
+        cmd += " netrole=" + netrole
+    summary(cmd)
+    res = wpas.request(cmd)
+    if "OK" not in res:
+        summary("Failed to start DPP listen", color=C_RED)
+        return False
+    return True
+
 def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
     listen_freq = 2412
     wpas = wpas_connect()
@@ -202,6 +227,8 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
         chan = chan_override
     else:
         chan = chanlist
+    if chan and chan.startswith("81/"):
+        listen_freq = int(chan[3:].split(',')[0]) * 5 + 2407
     if chan is None and get_status_field(wpas, "bssid[0]"):
         freq = get_status_field(wpas, "freq")
         if freq:
@@ -219,13 +246,8 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
     if "FAIL" in res:
         return None
     if start_listen:
-        cmd = "DPP_LISTEN %d" % listen_freq
-        global netrole
-        if netrole:
-            cmd += " netrole=" + netrole
-        res2 = wpas.request(cmd)
-        if "OK" not in res2:
-            raise Exception("Failed to start listen operation (%s)" % cmd)
+        if not dpp_start_listen(wpas, listen_freq):
+            raise Exception("Failed to start listen operation on %d MHz" % listen_freq)
     return res
 
 def wpas_report_handover_req(uri):
@@ -244,13 +266,71 @@ def wpas_report_handover_sel(uri):
     cmd = "DPP_NFC_HANDOVER_SEL own=%d uri=%s" % (own_id, uri)
     return wpas.request(cmd)
 
-def dpp_handover_client(llc, alt=False):
-    chan_override = None
-    global alt_proposal_used
+def dpp_handover_client(handover, alt=False):
+    summary("About to start run_dpp_handover_client (alt=%s)" % str(alt))
     if alt:
-        global altchanlist
-        chan_override = altchanlist
-        alt_proposal_used = True
+        handover.i_m_selector = False
+    run_dpp_handover_client(handover, alt)
+    summary("Done run_dpp_handover_client (alt=%s)" % str(alt))
+
+def run_client_alt(handover, alt):
+    if handover.start_client_alt and not alt:
+        handover.start_client_alt = False
+        summary("Try to send alternative handover request")
+        dpp_handover_client(handover, alt=True)
+
+class HandoverClient(nfc.handover.HandoverClient):
+    def __init__(self, handover, llc):
+        super(HandoverClient, self).__init__(llc)
+        self.handover = handover
+
+    def recv_records(self, timeout=None):
+        msg = self.recv_octets(timeout)
+        if msg is None:
+            return None
+        records = list(ndef.message_decoder(msg, 'relax'))
+        if records and records[0].type == 'urn:nfc:wkt:Hs':
+            summary("Handover client received message '{0}'".format(records[0].type))
+            return list(ndef.message_decoder(msg, 'relax'))
+        summary("Handover client received invalid message: %s" + binascii.hexlify(msg))
+        return None
+
+    def recv_octets(self, timeout=None):
+        start = time.time()
+        msg = bytearray()
+        while True:
+            poll_timeout = 0.1 if timeout is None or timeout > 0.1 else timeout
+            if not self.socket.poll('recv', poll_timeout):
+                if timeout:
+                    timeout -= time.time() - start
+                    if timeout <= 0:
+                        return None
+                    start = time.time()
+                continue
+            try:
+                r = self.socket.recv()
+                if r is None:
+                    return None
+                msg += r
+            except TypeError:
+                return b''
+            try:
+                list(ndef.message_decoder(msg, 'strict', {}))
+                return bytes(msg)
+            except ndef.DecodeError:
+                if timeout:
+                    timeout -= time.time() - start
+                    if timeout <= 0:
+                        return None
+                    start = time.time()
+                continue
+        return None
+
+def run_dpp_handover_client(handover, alt=False):
+    chan_override = None
+    if alt:
+        chan_override = handover.altchanlist
+        handover.alt_proposal_used = True
     global test_uri, test_alt_uri
     if test_uri:
         summary("TEST MODE: Using specified URI (alt=%s)" % str(alt))
@@ -261,6 +341,7 @@ def dpp_handover_client(llc, alt=False):
         summary("Cannot start handover client - no bootstrap URI available",
                 color=C_RED)
         return
+    handover.my_uri = uri
     uri = ndef.UriRecord(uri)
     summary("NFC URI record for DPP: " + str(uri))
     carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
@@ -277,74 +358,85 @@ def dpp_handover_client(llc, alt=False):
     message = [hr, carrier]
     summary("NFC Handover Request message for DPP: " + str(message))
 
-    global peer_crn
-    if peer_crn is not None and not alt:
+    if handover.peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
         return
-    client = nfc.handover.HandoverClient(llc)
-    try:
-        summary("Trying to initiate NFC connection handover")
-        client.connect()
-        summary("Connected for handover")
-    except nfc.llcp.ConnectRefused:
-        summary("Handover connection refused")
-        client.close()
-        return
-    except Exception as e:
-        summary("Other exception: " + str(e))
-        client.close()
-        return
+    if handover.client:
+        summary("Use already started handover client")
+        client = handover.client
+    else:
+        summary("Start handover client")
+        client = HandoverClient(handover, handover.llc)
+        try:
+            summary("Trying to initiate NFC connection handover")
+            client.connect()
+            summary("Connected for handover")
+        except nfc.llcp.ConnectRefused:
+            summary("Handover connection refused")
+            client.close()
+            return
+        except Exception as e:
+            summary("Other exception: " + str(e))
+            client.close()
+            return
+        handover.client = client
 
-    if peer_crn is not None and not alt:
+    if handover.peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
-        client.close()
         return
 
     summary("Sending handover request")
 
-    global my_crn, my_crn_ready, hs_sent
-    my_crn_ready = True
+    handover.my_crn_ready = True
 
     if not client.send_records(message):
-        my_crn_ready = False
+        handover.my_crn_ready = False
         summary("Failed to send handover request", color=C_RED)
-        client.close()
+        run_client_alt(handover, alt)
         return
 
-    my_crn, = struct.unpack('>H', crn)
+    handover.my_crn, = struct.unpack('>H', crn)
 
     summary("Receiving handover response")
     try:
+        start = time.time()
         message = client.recv_records(timeout=3.0)
+        end = time.time()
+        summary("Received {} record(s) in {} seconds".format(len(message) if message is not None else -1, end - start))
     except Exception as e:
         # This is fine if we are the handover selector
-        if hs_sent:
+        if handover.hs_sent:
             summary("Client receive failed as expected since I'm the handover server: %s" % str(e))
-        elif alt_proposal_used and not alt:
+        elif handover.alt_proposal_used and not alt:
             summary("Client received failed for initial proposal as expected since alternative proposal was also used: %s" % str(e))
         else:
             summary("Client receive failed: %s" % str(e), color=C_RED)
         message = None
     if message is None:
-        if hs_sent:
+        if handover.hs_sent:
             summary("No response received as expected since I'm the handover server")
-        elif alt_proposal_used and not alt:
+        elif handover.alt_proposal_used and not alt:
             summary("No response received for initial proposal as expected since alternative proposal was also used")
+        elif handover.try_own and not alt:
+            summary("No response received for initial proposal as expected since alternative proposal will also be sent")
         else:
             summary("No response received", color=C_RED)
-        client.close()
+        run_client_alt(handover, alt)
         return
     summary("Received message: " + str(message))
     if len(message) < 1 or \
        not isinstance(message[0], ndef.HandoverSelectRecord):
         summary("Response was not Hs - received: " + message.type)
-        client.close()
         return
 
     summary("Received handover select message")
     summary("alternative carriers: " + str(message[0].alternative_carriers))
+    if handover.i_m_selector:
+        summary("Ignore the received select since I'm the handover selector")
+        run_client_alt(handover, alt)
+        return
 
-    if alt_proposal_used and not alt:
+    if handover.alt_proposal_used and not alt:
         summary("Ignore received handover select for the initial proposal since alternative proposal was sent")
         client.close()
         return
@@ -362,6 +454,7 @@ def dpp_handover_client(llc, alt=False):
             dpp_found = True
             uri = carrier.data[1:].decode("utf-8")
             summary("DPP URI: " + uri)
+            handover.peer_uri = uri
             if test_uri:
                 summary("TEST MODE: Fake processing")
                 break
@@ -400,21 +493,20 @@ def dpp_handover_client(llc, alt=False):
                 summary("Failed to initiate DPP authentication", color=C_RED)
             break
 
-    global no_alt_proposal
-    if not dpp_found and no_alt_proposal:
+    if not dpp_found and handover.no_alt_proposal:
         summary("DPP carrier not seen in response - do not allow alternative proposal anymore")
     elif not dpp_found:
         summary("DPP carrier not seen in response - allow peer to initiate a new handover with different parameters")
-        my_crn_ready = False
-        my_crn = None
-        peer_crn = None
-        hs_sent = False
-        client.close()
+        handover.alt_proposal = True
+        handover.my_crn_ready = False
+        handover.my_crn = None
+        handover.peer_crn = None
+        handover.hs_sent = False
         summary("Returning from dpp_handover_client")
         return
 
     summary("Remove peer")
-    client.close()
+    handover.close()
     summary("Done with handover")
     global only_one
     if only_one:
@@ -423,23 +515,67 @@ def dpp_handover_client(llc, alt=False):
         continue_loop = False
 
     global no_wait
-    if no_wait:
-        print("Trying to exit..")
+    if no_wait or only_one:
+        summary("Trying to exit..")
         global terminate_now
         terminate_now = True
 
     summary("Returning from dpp_handover_client")
 
 class HandoverServer(nfc.handover.HandoverServer):
-    def __init__(self, llc):
+    def __init__(self, handover, llc):
         super(HandoverServer, self).__init__(llc)
         self.sent_carrier = None
         self.ho_server_processing = False
         self.success = False
-        self.try_own = False
         self.llc = llc
+        self.handover = handover
+
+    def serve(self, socket):
+        peer_sap = socket.getpeername()
+        summary("Serving handover client on remote sap {0}".format(peer_sap))
+        send_miu = socket.getsockopt(nfc.llcp.SO_SNDMIU)
+        try:
+            while socket.poll("recv"):
+                req = bytearray()
+                while socket.poll("recv"):
+                    r = socket.recv()
+                    if r is None:
+                        return None
+                    summary("Received %d octets" % len(r))
+                    req += r
+                    if len(req) == 0:
+                        continue
+                    try:
+                        list(ndef.message_decoder(req, 'strict', {}))
+                    except ndef.DecodeError:
+                        continue
+                    summary("Full message received")
+                    resp = self._process_request_data(req)
+                    if resp is None or len(resp) == 0:
+                        summary("No handover select to send out - wait for a possible alternative handover request")
+                        handover.alt_proposal = True
+                        req = bytearray()
+                        continue
+
+                    for offset in range(0, len(resp), send_miu):
+                        if not socket.send(resp[offset:offset + send_miu]):
+                            summary("Failed to send handover select - connection closed")
+                            return
+                    summary("Sent out full handover select")
+                    if handover.terminate_on_hs_send_completion:
+                        handover.delayed_exit()
+
+        except nfc.llcp.Error as e:
+            global terminate_now
+            summary("HandoverServer exception: %s" % e,
+                    color=None if e.errno == errno.EPIPE or terminate_now else C_RED)
+        finally:
+            socket.close()
+            summary("Handover serve thread exiting")
 
     def process_handover_request_message(self, records):
+        handover = self.handover
         self.ho_server_processing = True
         global in_raw_mode
         was_in_raw_mode = in_raw_mode
@@ -448,33 +584,33 @@ class HandoverServer(nfc.handover.HandoverServer):
             print("\n")
         summary("HandoverServer - request received: " + str(records))
 
-        global my_crn, peer_crn, my_crn_ready
-
         for carrier in records:
             if not isinstance(carrier, ndef.HandoverRequestRecord):
                 continue
             if carrier.collision_resolution_number:
-                peer_crn = carrier.collision_resolution_number
-                summary("peer_crn: %d" % peer_crn)
+                handover.peer_crn = carrier.collision_resolution_number
+                summary("peer_crn: %d" % handover.peer_crn)
 
-        if my_crn is None and my_crn_ready:
+        if handover.my_crn is None and handover.my_crn_ready:
             summary("Still trying to send own handover request - wait a moment to see if that succeeds before checking crn values")
             for i in range(10):
-                if my_crn is not None:
+                if handover.my_crn is not None:
                     break
                 time.sleep(0.01)
-        if my_crn is not None:
-            summary("my_crn: %d" % my_crn)
+        if handover.my_crn is not None:
+            summary("my_crn: %d" % handover.my_crn)
 
-        if my_crn is not None and peer_crn is not None:
-            if my_crn == peer_crn:
+        if handover.my_crn is not None and handover.peer_crn is not None:
+            if handover.my_crn == handover.peer_crn:
                 summary("Same crn used - automatic collision resolution failed")
                 # TODO: Should generate a new Handover Request message
                 return ''
-            if ((my_crn & 1) == (peer_crn & 1) and my_crn > peer_crn) or \
-               ((my_crn & 1) != (peer_crn & 1) and my_crn < peer_crn):
+            if ((handover.my_crn & 1) == (handover.peer_crn & 1) and \
+                handover.my_crn > handover.peer_crn) or \
+               ((handover.my_crn & 1) != (handover.peer_crn & 1) and \
+                handover.my_crn < handover.peer_crn):
                 summary("I'm the Handover Selector Device")
-                pass
+                handover.i_m_selector = True
             else:
                 summary("Peer is the Handover Selector device")
                 summary("Ignore the received request.")
@@ -501,6 +637,11 @@ class HandoverServer(nfc.handover.HandoverServer):
                 if test_uri:
                     summary("TEST MODE: Using specified URI")
                     data = test_sel_uri if test_sel_uri else test_uri
+                elif handover.alt_proposal and handover.altchanlist:
+                    summary("Use alternative channel list while processing alternative proposal from peer")
+                    data = wpas_get_nfc_uri(start_listen=False,
+                                            chan_override=handover.altchanlist,
+                                            pick_channel=True)
                 else:
                     data = wpas_get_nfc_uri(start_listen=False,
                                             pick_channel=True)
@@ -509,15 +650,15 @@ class HandoverServer(nfc.handover.HandoverServer):
                 if test_uri:
                     summary("TEST MODE: Fake processing")
                     res = "OK"
+                    data += " [%s]" % uri
                 else:
                     res = wpas_report_handover_req(uri)
                 if res is None or "FAIL" in res:
                     summary("DPP handover request processing failed",
                             color=C_RED)
-                    global altchanlist
-                    if altchanlist:
+                    if handover.altchanlist:
                         data = wpas_get_nfc_uri(start_listen=False,
-                                                chan_override=altchanlist)
+                                                chan_override=handover.altchanlist)
                         summary("Own URI (try another channel list): %s" % data)
                     continue
 
@@ -536,6 +677,8 @@ class HandoverServer(nfc.handover.HandoverServer):
                     if "FAIL" in data:
                         continue
                 summary("Own URI (post-processing): %s" % data)
+                handover.my_uri = data
+                handover.peer_uri = uri
                 uri = ndef.UriRecord(data)
                 summary("Own bootstrapping NFC URI record: " + str(uri))
 
@@ -550,24 +693,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                         freq = 2437
                     else:
                         summary("Negotiated channel: %d MHz" % freq)
-                    if get_status_field(wpas, "bssid[0]"):
-                        summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
-                        if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
-                            summary("Enable beaconing to have radio ready for RX")
-                            wpas.request("DISABLE")
-                            wpas.request("SET start_disabled 0")
-                            wpas.request("ENABLE")
-                    cmd = "DPP_LISTEN %d" % freq
-                    global enrollee_only
-                    global configurator_only
-                    if enrollee_only:
-                        cmd += " role=enrollee"
-                    elif configurator_only:
-                        cmd += " role=configurator"
-                    summary(cmd)
-                    res = wpas.request(cmd)
-                    if "OK" not in res:
-                        summary("Failed to start DPP listen", color=C_RED)
+                    if not dpp_start_listen(wpas, freq):
                         break
 
                 carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
@@ -576,22 +702,28 @@ class HandoverServer(nfc.handover.HandoverServer):
                 sel = [hs, carrier]
                 break
 
-        global hs_sent, no_alt_proposal
         summary("Sending handover select: " + str(sel))
         if found:
             summary("Handover completed successfully")
+            handover.terminate_on_hs_send_completion = True
             self.success = True
-            hs_sent = True
-        elif no_alt_proposal:
+            handover.hs_sent = True
+            handover.i_m_selector = True
+        elif handover.no_alt_proposal:
             summary("Do not try alternative proposal anymore - handover failed",
                     color=C_RED)
-            hs_sent = True
+            handover.hs_sent = True
         else:
             summary("Try to initiate with alternative parameters")
-            self.try_own = True
-            hs_sent = False
-            no_alt_proposal = True
-            threading.Thread(target=llcp_worker, args=(self.llc, True)).start()
+            handover.try_own = True
+            handover.hs_sent = False
+            handover.no_alt_proposal = True
+            if handover.client_thread:
+                handover.start_client_alt = True
+            else:
+                handover.client_thread = threading.Thread(target=llcp_worker,
+                                                          args=(self.llc, True))
+                handover.client_thread.start()
         return sel
 
 def clear_raw_mode():
@@ -733,16 +865,17 @@ def rdwr_connected(tag):
     return not no_wait
 
 def llcp_worker(llc, try_alt):
+    global handover
     print("Start of llcp_worker()")
     if try_alt:
         summary("Starting handover client (try_alt)")
-        dpp_handover_client(llc, alt=True)
+        dpp_handover_client(handover, alt=True)
         summary("Exiting llcp_worker thread (try_alt)")
         return
     global init_on_touch
     if init_on_touch:
         summary("Starting handover client (init_on_touch)")
-        dpp_handover_client(llc)
+        dpp_handover_client(handover)
         summary("Exiting llcp_worker thread (init_on_touch)")
         return
 
@@ -751,21 +884,18 @@ def llcp_worker(llc, try_alt):
         summary("Wait for handover to complete")
     else:
         print("Wait for handover to complete - press 'i' to initiate")
-    global srv
-    global wait_connection
-    while not wait_connection and srv.sent_carrier is None:
-        if srv.try_own:
-            srv.try_own = False
+    while not handover.wait_connection and handover.srv.sent_carrier is None:
+        if handover.try_own:
+            handover.try_own = False
             summary("Try to initiate another handover with own parameters")
-            global peer_crn, my_crn, my_crn_ready, hs_sent
-            my_crn_ready = False
-            my_crn = None
-            peer_crn = None
-            hs_sent = False
-            dpp_handover_client(llc, alt=True)
+            handover.my_crn_ready = False
+            handover.my_crn = None
+            handover.peer_crn = None
+            handover.hs_sent = False
+            dpp_handover_client(handover, alt=True)
             summary("Exiting llcp_worker thread (retry with own parameters)")
             return
-        if srv.ho_server_processing:
+        if handover.srv.ho_server_processing:
             time.sleep(0.025)
         elif no_input:
             time.sleep(0.5)
@@ -775,7 +905,7 @@ def llcp_worker(llc, try_alt):
                 continue
             clear_raw_mode()
             summary("Starting handover client")
-            dpp_handover_client(llc)
+            dpp_handover_client(handover)
             summary("Exiting llcp_worker thread (manual init)")
             return
 
@@ -786,31 +916,73 @@ def llcp_worker(llc, try_alt):
         print("\r")
     summary("Exiting llcp_worker thread")
 
+class ConnectionHandover():
+    def __init__(self):
+        self.client = None
+        self.client_thread = None
+        self.reset()
+        self.exit_thread = None
+
+    def reset(self):
+        self.wait_connection = False
+        self.my_crn_ready = False
+        self.my_crn = None
+        self.peer_crn = None
+        self.hs_sent = False
+        self.no_alt_proposal = False
+        self.alt_proposal_used = False
+        self.i_m_selector = False
+        self.start_client_alt = False
+        self.terminate_on_hs_send_completion = False
+        self.try_own = False
+        self.my_uri = None
+        self.peer_uri = None
+        self.connected = False
+        self.alt_proposal = False
+
+    def start_handover_server(self, llc):
+        summary("Start handover server")
+        self.llc = llc
+        self.srv = HandoverServer(self, llc)
+
+    def close(self):
+        if self.client:
+            self.client.close()
+            self.client = None
+
+    def run_delayed_exit(self):
+        summary("Trying to exit (delayed)..")
+        time.sleep(0.25)
+        summary("Trying to exit (after wait)..")
+        global terminate_now
+        terminate_now = True
+
+    def delayed_exit(self):
+        global only_one
+        if only_one:
+            self.exit_thread = threading.Thread(target=self.run_delayed_exit)
+            self.exit_thread.start()
+
 def llcp_startup(llc):
-    summary("Start LLCP server")
-    global srv
-    srv = HandoverServer(llc)
+    global handover
+    handover.start_handover_server(llc)
     return llc
 
 def llcp_connected(llc):
     summary("P2P LLCP connected")
-    global wait_connection, my_crn, peer_crn, my_crn_ready, hs_sent
-    global no_alt_proposal, alt_proposal_used
-    wait_connection = False
-    my_crn_ready = False
-    my_crn = None
-    peer_crn = None
-    hs_sent = False
-    no_alt_proposal = False
-    alt_proposal_used = False
-    global srv
-    srv.start()
+    global handover
+    handover.connected = True
+    handover.srv.start()
     if init_on_touch or not no_input:
-        threading.Thread(target=llcp_worker, args=(llc, False)).start()
+        handover.client_thread = threading.Thread(target=llcp_worker,
+                                                  args=(llc, False))
+        handover.client_thread.start()
     return True
 
 def llcp_release(llc):
     summary("LLCP release")
+    global handover
+    handover.close()
     return True
 
 def terminate_loop():
@@ -870,16 +1042,19 @@ def main():
     args = parser.parse_args()
     summary(args)
 
+    global handover
+    handover = ConnectionHandover()
+
     global only_one
     only_one = args.only_one
 
     global no_wait
     no_wait = args.no_wait
 
-    global chanlist, altchanlist, netrole, test_uri, test_alt_uri, test_sel_uri
+    global chanlist, netrole, test_uri, test_alt_uri, test_sel_uri
     global test_crn
     chanlist = args.chan
-    altchanlist = args.altchan
+    handover.altchanlist = args.altchan
     netrole = args.netrole
     test_uri = args.test_uri
     test_alt_uri = args.test_alt_uri
@@ -890,6 +1065,14 @@ def main():
         test_crn = None
 
     logging.basicConfig(level=args.loglevel)
+    for l in ['nfc.clf.rcs380',
+              'nfc.clf.transport',
+              'nfc.clf.device',
+              'nfc.clf.__init__',
+              'nfc.llcp',
+              'nfc.handover']:
+        log = logging.getLogger(l)
+        log.setLevel(args.loglevel)
 
     global init_on_touch
     init_on_touch = args.init_on_touch
@@ -925,7 +1108,6 @@ def main():
         no_input = True
 
     clf = nfc.ContactlessFrontend()
-    global wait_connection
 
     try:
         if not clf.open(args.device):
@@ -958,7 +1140,7 @@ def main():
             else:
                 summary("Waiting for a tag or peer to be touched",
                         color=C_GREEN)
-            wait_connection = True
+            handover.wait_connection = True
             try:
                 if args.tag_read_only:
                     if not clf.connect(rdwr={'on-connect': rdwr_connected}):
@@ -980,9 +1162,18 @@ def main():
                 summary("clf.connect failed: " + str(e))
                 break
 
-            global srv
-            if only_one and srv and srv.success:
-                raise SystemExit
+            if only_one and handover.connected:
+                role = "selector" if handover.i_m_selector else "requestor"
+                summary("Connection handover result: I'm the %s" % role,
+                        color=C_YELLOW)
+                if handover.peer_uri:
+                    summary("Peer URI: " + handover.peer_uri, color=C_YELLOW)
+                if handover.my_uri:
+                    summary("My URI: " + handover.my_uri, color=C_YELLOW)
+                if not (handover.peer_uri and handover.my_uri):
+                    summary("Negotiated connection handover failed",
+                            color=C_YELLOW)
+                break
 
     except KeyboardInterrupt:
         raise SystemExit

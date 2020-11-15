@@ -21,6 +21,7 @@ struct crypto_ecdh;
 struct hostapd_ip_addr;
 struct dpp_global;
 struct json_token;
+struct dpp_reconfig_id;
 
 #ifdef CONFIG_TESTING_OPTIONS
 #define DPP_VERSION (dpp_version_override)
@@ -34,7 +35,7 @@ extern int dpp_version_override;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #define DPP_HDR_LEN (4 + 2) /* OUI, OUI Type, Crypto Suite, DPP frame type */
-#define DPP_TCP_PORT 7871
+#define DPP_TCP_PORT 8908
 
 enum dpp_public_action_frame_type {
 	DPP_PA_AUTHENTICATION_REQ = 0,
@@ -87,6 +88,9 @@ enum dpp_attribute_id {
 	DPP_ATTR_RECONFIG_FLAGS = 0x101D,
 	DPP_ATTR_C_SIGN_KEY_HASH = 0x101E,
 	DPP_ATTR_CSR_ATTR_REQ = 0x101F,
+	DPP_ATTR_A_NONCE = 0x1020,
+	DPP_ATTR_E_PRIME_ID = 0x1021,
+	DPP_ATTR_CONFIGURATOR_NONCE = 0x1022,
 };
 
 enum dpp_status_error {
@@ -150,6 +154,7 @@ struct dpp_bootstrap_info {
 	char *pk;
 	unsigned int freq[DPP_BOOTSTRAP_MAX_FREQ];
 	unsigned int num_freq;
+	bool channels_listed;
 	u8 version;
 	int own;
 	EVP_PKEY *pubkey;
@@ -230,6 +235,7 @@ struct dpp_configuration {
 struct dpp_asymmetric_key {
 	struct dpp_asymmetric_key *next;
 	EVP_PKEY *csign;
+	EVP_PKEY *pp_key;
 	char *config_template;
 	char *connector_template;
 };
@@ -256,6 +262,7 @@ struct dpp_authentication {
 	u8 i_nonce[DPP_MAX_NONCE_LEN];
 	u8 r_nonce[DPP_MAX_NONCE_LEN];
 	u8 e_nonce[DPP_MAX_NONCE_LEN];
+	u8 c_nonce[DPP_MAX_NONCE_LEN];
 	u8 i_capab;
 	u8 r_capab;
 	enum dpp_netrole e_netrole;
@@ -320,6 +327,7 @@ struct dpp_authentication {
 		struct wpabuf *certs;
 		struct wpabuf *cacert;
 		char *server_name;
+		struct wpabuf *pp_key;
 	} conf_obj[DPP_MAX_CONF_OBJ];
 	unsigned int num_conf_obj;
 	struct dpp_asymmetric_key *conf_key_pkg;
@@ -358,6 +366,7 @@ struct dpp_configurator {
 	const struct dpp_curve_params *curve;
 	char *connector; /* own Connector for reconfiguration */
 	EVP_PKEY *connector_key;
+	EVP_PKEY *pp_key;
 };
 
 struct dpp_introduction {
@@ -370,6 +379,7 @@ struct dpp_relay_config {
 	const struct hostapd_ip_addr *ipaddr;
 	const u8 *pkhash;
 
+	void *msg_ctx;
 	void *cb_ctx;
 	void (*tx)(void *ctx, const u8 *addr, unsigned int freq, const u8 *msg,
 		   size_t len);
@@ -381,6 +391,11 @@ struct dpp_controller_config {
 	const char *configurator_params;
 	int tcp_port;
 	u8 allowed_roles;
+	int qr_mutual;
+	enum dpp_netrole netrole;
+	void *msg_ctx;
+	void *cb_ctx;
+	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
 };
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -571,9 +586,6 @@ const char * dpp_akm_selector_str(enum dpp_akm akm);
 int dpp_configurator_get_key(const struct dpp_configurator *conf, char *buf,
 			     size_t buflen);
 void dpp_configurator_free(struct dpp_configurator *conf);
-struct dpp_configurator *
-dpp_keygen_configurator(const char *curve, const u8 *privkey,
-			size_t privkey_len);
 int dpp_configurator_own_config(struct dpp_authentication *auth,
 				const char *curve, int ap);
 enum dpp_status_error
@@ -664,15 +676,21 @@ int dpp_controller_start(struct dpp_global *dpp,
 void dpp_controller_stop(struct dpp_global *dpp);
 struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
 						    unsigned int id);
+void dpp_controller_new_qr_code(struct dpp_global *dpp,
+				struct dpp_bootstrap_info *bi);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port,
-		 const char *name);
+		 const char *name, enum dpp_netrole netrole, void *msg_ctx,
+		 void *cb_ctx,
+		 int (*process_conf_obj)(void *ctx,
+					 struct dpp_authentication *auth));
+
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
+void dpp_notify_chirp_received(void *msg_ctx, int id, const u8 *src,
+				unsigned int freq, const u8 *hash);
 
 struct dpp_global_config {
-	void *msg_ctx;
 	void *cb_ctx;
-	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
 	void (*remove_bi)(void *ctx, struct dpp_bootstrap_info *bi);
 };
 
@@ -683,10 +701,15 @@ void dpp_global_deinit(struct dpp_global *dpp);
 /* dpp_reconfig.c */
 
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
-						size_t csign_key_len);
+						size_t csign_key_len,
+						const u8 *net_access_key,
+						size_t net_access_key_len,
+						struct dpp_reconfig_id *id);
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
-		  struct dpp_configurator *conf, unsigned int freq);
+		  struct dpp_configurator *conf, unsigned int freq, u16 group,
+		  const u8 *a_nonce_attr, size_t a_nonce_len,
+		  const u8 *e_id_attr, size_t e_id_len);
 struct dpp_authentication *
 dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 			 const char *own_connector,
@@ -699,6 +722,13 @@ dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 			  const u8 *attr_start, size_t attr_len);
 int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      const u8 *attr_start, size_t attr_len);
+
+struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
+					     size_t csign_key_len,
+					     const u8 *pp_key,
+					     size_t pp_key_len);
+int dpp_update_reconfig_id(struct dpp_reconfig_id *id);
+void dpp_free_reconfig_id(struct dpp_reconfig_id *id);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

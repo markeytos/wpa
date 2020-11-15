@@ -1024,6 +1024,16 @@ struct wpa_ssid {
 	size_t dpp_csign_len;
 
 	/**
+	 * dpp_pp_key - ppKey (Configurator privacy protection public key)
+	 */
+	u8 *dpp_pp_key;
+
+	/**
+	 * dpp_pp_key_len - ppKey length in octets
+	 */
+	size_t dpp_pp_key_len;
+
+	/**
 	 * dpp_pfs - DPP PFS
 	 * 0: allow PFS to be used or not used
 	 * 1: require PFS to be used (note: not compatible with DPP R1)
@@ -1137,6 +1147,15 @@ struct wpa_ssid {
 	 * 2 = disable SAE-PK (allow SAE authentication only without SAE-PK)
 	 */
 	enum sae_pk_mode sae_pk;
+
+	/**
+	 * was_recently_reconfigured - Whether this SSID config has been changed
+	 * recently
+	 *
+	 * This is an internally used variable, i.e., not used in external
+	 * configuration.
+	 */
+	bool was_recently_reconfigured;
 };
 
 #endif /* CONFIG_SSID_H */

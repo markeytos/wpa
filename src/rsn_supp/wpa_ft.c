@@ -353,6 +353,14 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 			os_free(buf);
 			return NULL;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_ft_assoc) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency, sm->oci_freq_override_ft_assoc);
+			ci.frequency = sm->oci_freq_override_ft_assoc;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		*pos++ = FTIE_SUBELEM_OCI;
 		*pos++ = OCV_OCI_LEN;
@@ -1159,7 +1167,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 
 		if (ocv_verify_tx_params(parse.oci, parse.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
 				"addr=" MACSTR " frame=ft-assoc error=%s",
 				MAC2STR(sm->bssid), ocv_errorstr);

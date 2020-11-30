@@ -1,4 +1,3 @@
-From 4294d221d31d6ee162326757861200126d929ffc Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 16 May 2020 21:46:24 +0300
 Subject: D-Bus: Increase introspection buffer size
@@ -13,7 +12,7 @@ Signed-off-by: Jouni Malinen <j@w1.fi>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/wpa_supplicant/dbus/dbus_new_introspect.c b/wpa_supplicant/dbus/dbus_new_introspect.c
-index aee105b4b..6c721bf55 100644
+index aee105b..6c721bf 100644
 --- a/wpa_supplicant/dbus/dbus_new_introspect.c
 +++ b/wpa_supplicant/dbus/dbus_new_introspect.c
 @@ -257,7 +257,7 @@ DBusMessage * wpa_dbus_introspect(DBusMessage *message,
@@ -25,6 +24,3 @@ index aee105b4b..6c721bf55 100644
  	if (xml == NULL)
  		return NULL;
  
--- 
-2.25.1
-

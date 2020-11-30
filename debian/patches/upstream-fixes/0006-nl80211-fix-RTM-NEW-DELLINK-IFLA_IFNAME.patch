@@ -1,4 +1,3 @@
-From 7546c489a95a033c78331915fcdfa0e6fd74d563 Mon Sep 17 00:00:00 2001
 From: Ouden <Ouden.Biz@gmail.com>
 Date: Wed, 18 Mar 2020 17:58:37 +0800
 Subject: nl80211: Fix RTM NEW/DELLINK IFLA_IFNAME copy for maximum ifname
@@ -19,10 +18,10 @@ Signed-off-by: Ouden <Ouden.Biz@gmail.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/drivers/driver_nl80211.c b/src/drivers/driver_nl80211.c
-index efcd69a..c071cc0 100644
+index 0a356ee..47df47f 100644
 --- a/src/drivers/driver_nl80211.c
 +++ b/src/drivers/driver_nl80211.c
-@@ -1047,7 +1047,7 @@ static void wpa_driver_nl80211_event_rtm_newlink(void *ctx,
+@@ -1065,7 +1065,7 @@ static void wpa_driver_nl80211_event_rtm_newlink(void *ctx,
  	while (RTA_OK(attr, attrlen)) {
  		switch (attr->rta_type) {
  		case IFLA_IFNAME:
@@ -31,7 +30,7 @@ index efcd69a..c071cc0 100644
  				break;
  			os_memcpy(ifname, RTA_DATA(attr), RTA_PAYLOAD(attr));
  			ifname[RTA_PAYLOAD(attr)] = '\0';
-@@ -1222,7 +1222,7 @@ static void wpa_driver_nl80211_event_rtm_dellink(void *ctx,
+@@ -1240,7 +1240,7 @@ static void wpa_driver_nl80211_event_rtm_dellink(void *ctx,
  	while (RTA_OK(attr, attrlen)) {
  		switch (attr->rta_type) {
  		case IFLA_IFNAME:
@@ -40,6 +39,3 @@ index efcd69a..c071cc0 100644
  				break;
  			os_memcpy(ifname, RTA_DATA(attr), RTA_PAYLOAD(attr));
  			ifname[RTA_PAYLOAD(attr)] = '\0';
--- 
-cgit v0.12
-

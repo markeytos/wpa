@@ -1,4 +1,3 @@
-From c82535edd6bea8a34b711d1f1015ea750b5db9da Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 16 May 2020 11:38:09 +0300
 Subject: Move deauthentication at AP start to be after beacon configuration

@@ -1,4 +1,3 @@
-From 5a04a76aa20d32417484e40b878596e5933c645e Mon Sep 17 00:00:00 2001
 From: Jouni Malinen <j@w1.fi>
 Date: Sat, 16 May 2020 12:16:34 +0300
 Subject: Ignore Management frames while AP interface is not fully enabled

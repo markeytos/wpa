@@ -1,7 +1,6 @@
-From 84877f253d3dfff2ba70e8226b622ba2d088b054 Mon Sep 17 00:00:00 2001
 From: Alexander Wetzel <alexander@wetzel-home.de>
 Date: Fri, 20 Dec 2019 20:21:26 +0100
-Subject: [PATCH] wpa_supplicant: Do not try to detect PSK mismatch during PTK
+Subject: wpa_supplicant: Do not try to detect PSK mismatch during PTK
  rekeying
 
 When a PTK rekey fails it can't be caused by a PSK mismatch. Report a
@@ -13,6 +12,8 @@ Signed-off-by: Alexander Wetzel <alexander@wetzel-home.de>
  wpa_supplicant/events.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/wpa_supplicant/events.c b/wpa_supplicant/events.c
+index 87dad08..fb6231c 100644
 --- a/wpa_supplicant/events.c
 +++ b/wpa_supplicant/events.c
 @@ -2999,8 +2999,9 @@ static int could_be_psk_mismatch(struct wpa_supplicant *wpa_s, u16 reason_code,

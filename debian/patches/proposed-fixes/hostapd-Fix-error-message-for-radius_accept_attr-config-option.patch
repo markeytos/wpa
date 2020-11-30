@@ -12,7 +12,7 @@ Origin: https://patchwork.ozlabs.org/project/hostap/patch/20200622110558.12068-1
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hostapd/config_file.c b/hostapd/config_file.c
-index 1861b5203..06925de89 100644
+index e09e6e1..92fd1f0 100644
 --- a/hostapd/config_file.c
 +++ b/hostapd/config_file.c
 @@ -340,7 +340,7 @@ static int hostapd_config_read_eap_user(const char *fname,

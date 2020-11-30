@@ -1,10 +1,8 @@
 From: Johannes Berg <johannes@sipsolutions.net>
 To: hostap@lists.infradead.org
-Subject: [PATCH] trace: handle binutils bfd.h breakage
+Subject: trace: handle binutils bfd.h breakage
 Date: Wed, 15 Jan 2020 10:10:03 +0100
 Message-Id: <1579079403-Ieb75a110fccf593e92e6e0d83bf02ba2e0c86d96@changeid>
-
-From: Johannes Berg <johannes.berg@intel.com>
 
 Some things in bfd.h that we use were renamed, and in the
 case of bfd_get_section_vma() a parameter was dropped.
@@ -16,7 +14,7 @@ Signed-off-by: Johannes Berg <johannes.berg@intel.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/src/utils/trace.c b/src/utils/trace.c
-index 40843432050e..8f12da87bb1b 100644
+index 4084343..8f12da8 100644
 --- a/src/utils/trace.c
 +++ b/src/utils/trace.c
 @@ -146,6 +146,17 @@ struct bfd_data {
@@ -37,5 +35,3 @@ index 40843432050e..8f12da87bb1b 100644
  
  static void find_addr_sect(bfd *abfd, asection *section, void *obj)
  {
--- 
-2.24.1

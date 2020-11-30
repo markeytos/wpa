@@ -1,3 +1,21 @@
+wpa (2:2.9.0-16) unstable; urgency=high
+
+  * Restrict eapoltest to linux-any kfreebsd-any.
+  * Add an upstream patch to fix a crash with a long P2P interface name
+    (Closes: #976091).
+  * Security fix: CVE-2020-12695.
+    A vulnerability in the UPnP SUBSCRIBE command can trigger the AP to
+    initiate a HTTP (TCP/IP) connection to an arbitrary URL or to trigger
+    misbehavior in hostapd and cause the process to either get terminated
+    or to start using more CPU resources.
+    The issue can also be mitigated by building hostapd without UPnP support
+    (CONFIG_WPS_UPNP=n) or disabling it at runtime by removing the upnp_iface
+    parameter.
+    (Closes: #976106)
+  * Refresh patches.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 30 Nov 2020 10:02:04 +0100
+
 wpa (2:2.9.0-15) unstable; urgency=medium
 
   * Don’t fail the build on -Warray-bounds.

@@ -22,3 +22,4 @@ upstream-fixes/0009-D-Bus-Increase-introspection-buffer-size.patch
 upstream-fixes/0010-P2P-Limit-P2P_DEVICE-name-to-appropriate-ifname-size.patch
 proposed-fixes/hostapd-does-not-update-WPS-credentials-on-SIGHUP.patch
 proposed-fixes/hostapd-Fix-error-message-for-radius_accept_attr-config-option.patch
+2020-2/0001-P2P-Fix-copying-of-secondary-device-types-for-P2P-gr.patch

@@ -17,7 +17,7 @@ Build-Depends: debhelper-compat (= 12),
  libpcap-dev [kfreebsd-any],
  libbsd-dev [kfreebsd-any],
  libreadline-dev,
- pkg-config,
+ pkgconf | pkg-config,
  docbook-to-man,
  docbook-utils
 Standards-Version: 4.4.1

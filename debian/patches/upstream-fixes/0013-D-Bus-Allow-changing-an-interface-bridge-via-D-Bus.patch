@@ -1,7 +1,7 @@
 From 1c58317f56e312576b6872440f125f794e45f991 Mon Sep 17 00:00:00 2001
 From: Beniamino Galvani <bgalvani@redhat.com>
 Date: Wed, 30 Sep 2020 18:34:36 +0200
-Subject: [PATCH] D-Bus: Allow changing an interface bridge via D-Bus
+Subject: D-Bus: Allow changing an interface bridge via D-Bus
 
 D-Bus clients can call CreateInterface() once and use the resulting
 Interface object to connect multiple times to different networks.

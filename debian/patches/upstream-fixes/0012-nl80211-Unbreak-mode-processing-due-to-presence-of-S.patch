@@ -1,7 +1,7 @@
 From 52a1b28345123c374fd0127cbce623c41a760730 Mon Sep 17 00:00:00 2001
 From: Thomas Pedersen <thomas@adapt-ip.com>
 Date: Thu, 27 Aug 2020 15:59:40 -0700
-Subject: [PATCH] nl80211: Unbreak mode processing due to presence of S1G band
+Subject: nl80211: Unbreak mode processing due to presence of S1G band
 
 If kernel advertises a band with channels < 2.4 GHz
 hostapd/wpa_supplicant gets confused and assumes this is an IEEE

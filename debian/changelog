@@ -1,3 +1,14 @@
+wpa (2:2.9.0-19) unstable; urgency=medium
+
+  * Replace proposed fixes with actual changes accepted upstream:
+    - WPS: Reconfigure credentials on hostapd config reload
+    - hostapd: Fix error message for radius_accept_attr config option
+  * Drop old lintian overrides.
+  * Move libwpa-client-dev to section libdevel.
+  * Drop old entries from debian/copyright.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 12:01:09 +0100
+
 wpa (2:2.9.0-18) unstable; urgency=medium
 
   * Apply upstream patches from Ubuntu (LP: #1879087, #1912609, #1893563):

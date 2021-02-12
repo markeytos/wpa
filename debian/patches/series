@@ -24,8 +24,8 @@ upstream-fixes/0010-P2P-Limit-P2P_DEVICE-name-to-appropriate-ifname-size.patch
 upstream-fixes/0011-dbus-Move-roam-metrics-to-the-correct-interface.patch
 upstream-fixes/0012-nl80211-Unbreak-mode-processing-due-to-presence-of-S.patch
 upstream-fixes/0013-D-Bus-Allow-changing-an-interface-bridge-via-D-Bus.patch
-
-proposed-fixes/hostapd-does-not-update-WPS-credentials-on-SIGHUP.patch
-proposed-fixes/hostapd-Fix-error-message-for-radius_accept_attr-config-option.patch
+upstream-fixes/0014-WPS-Use-helper-variables-to-clean-up-code.patch
+upstream-fixes/0015-WPS-Reconfigure-credentials-on-hostapd-config-reload.patch
+upstream-fixes/0016-hostapd-Fix-error-message-for-radius_accept_attr-config-option.patch
 
 2020-2/0001-P2P-Fix-copying-of-secondary-device-types-for-P2P-gr.patch

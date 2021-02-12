@@ -1,18 +1,17 @@
+From 58c18bcf86db8053719fd19ec43c1ad754d76d5e Mon Sep 17 00:00:00 2001
 From: Pali Rohár <pali@kernel.org>
-To: hostap@lists.infradead.org
+Date: Sat, 10 Oct 2020 19:45:29 +0200
 Subject: hostapd: Fix error message for radius_accept_attr config option
-Date: Mon, 22 Jun 2020 13:05:58 +0200
-Message-Id: <20200622110558.12068-1-pali@kernel.org>
 
 Error message contained wrong config option.
 
-Origin: https://patchwork.ozlabs.org/project/hostap/patch/20200622110558.12068-1-pali@kernel.org/
+Signed-off-by: Pali Rohár <pali@kernel.org>
 ---
  hostapd/config_file.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hostapd/config_file.c b/hostapd/config_file.c
-index e09e6e1..92fd1f0 100644
+index 542c8cd0d..ce32f3c04 100644
 --- a/hostapd/config_file.c
 +++ b/hostapd/config_file.c
 @@ -340,7 +340,7 @@ static int hostapd_config_read_eap_user(const char *fname,
@@ -24,3 +23,6 @@ index e09e6e1..92fd1f0 100644
  					   buf + 19);
  				user = NULL; /* already in the BSS list */
  				goto failed;
+-- 
+2.29.2
+

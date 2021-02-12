@@ -1,3 +1,20 @@
+wpa (2:2.9.0-20) unstable; urgency=medium
+
+  * Add IgnoreOnIsolate=yes to keep wpa-supplicant running while
+    systemctl isolate (LP: #1576024)
+  * Disable -Werror for eapol_test.
+  * Update descriptions of the packages.
+  * Prefer pkgconf to pkg-config.
+  * Set Rules-Requires-Root: no.
+  * Remove the unused system-sleep hook.
+  * Remove get-orig-source/uscan-hook.
+  * Use execute_before/execute_after instead of overrides in a few places.
+  * Update descriptions in init scripts and service files.
+  * Update wpasupplicant.README.Debian.
+  * Actually delete an old patch not accepted upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 16:09:13 +0100
+
 wpa (2:2.9.0-19) unstable; urgency=medium
 
   * Replace proposed fixes with actual changes accepted upstream:

@@ -112,6 +112,7 @@ Description: EAPoL testing utility
  required for standard 802.1X authentication.
 
 Package: libwpa-client-dev
+Section: libdevel
 Architecture: linux-any kfreebsd-any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}

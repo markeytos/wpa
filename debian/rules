@@ -111,8 +111,4 @@ override_dh_installexamples:
 	sed -e 's="includes.h"=<stddef.h>=' -e 's="common/wpa_ctrl.h"=<wpa_ctrl.h>=' -i debian/*/usr/share/doc/*/examples/*.c
 
 %:
-	dh ${@}
-
-get-orig-source:
-	chmod +x $(CURDIR)/debian/get-orig-source
-	$(CURDIR)/debian/get-orig-source $(CURDIR)
+	dh $@

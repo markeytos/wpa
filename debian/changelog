@@ -1,3 +1,13 @@
+wpa (2:2.9.0-18) unstable; urgency=medium
+
+  * Apply upstream patches from Ubuntu (LP: #1879087, #1912609, #1893563):
+    - D-Bus: Move roam metrics to the correct interface
+    - nl80211: Unbreak mode processing due to presence of S1G band
+    - D-Bus: Allow changing an interface bridge via D-Bus
+  * Enable support for WPA-EAP-SUITE-B(-192) (Closes: #982548).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 11:31:57 +0100
+
 wpa (2:2.9.0-17) unstable; urgency=medium
 
   [ Salvatore Bonaccorso ]

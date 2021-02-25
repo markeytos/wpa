@@ -33,3 +33,4 @@ upstream-fixes/0015-WPS-Reconfigure-credentials-on-hostapd-config-reload.patch
 upstream-fixes/0016-hostapd-Fix-error-message-for-radius_accept_attr-config-option.patch
 
 2020-2/0001-P2P-Fix-copying-of-secondary-device-types-for-P2P-gr.patch
+2021-1/0001-P2P-Fix-a-corner-case-in-peer-addition-based-on-PD-R.patch

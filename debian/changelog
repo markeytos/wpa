@@ -1,3 +1,12 @@
+wpa (2:2.9.0-21) unstable; urgency=high
+
+  * Fix typos in the package descriptions.
+    Thanks to Beatrice Torracca (Closes: #982673).
+  * SECURITY ISSUE:
+    - P2P: Fix a corner case in peer addition based on PD Request.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 25 Feb 2021 22:19:14 +0100
+
 wpa (2:2.9.0-20) unstable; urgency=medium
 
   * Add IgnoreOnIsolate=yes to keep wpa-supplicant running while

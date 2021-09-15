@@ -1,3 +1,12 @@
+wpa (2:2.9.0-22) unstable; urgency=medium
+
+  * Test systemctl is available before using it.
+  * hostapd.service: Do not repeat repeat yourself — remove the second
+    -B (Closes: #977703)
+  * Enable IPv6 support in eapol_test (Closes: #985912)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 15 Sep 2021 16:27:12 +0100
+
 wpa (2:2.9.0-21) unstable; urgency=high
 
   * Fix typos in the package descriptions.

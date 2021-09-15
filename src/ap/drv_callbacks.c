@@ -459,8 +459,8 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		if (hapd->conf->sae_pwe == 2 &&
 		    sta->auth_alg == WLAN_AUTH_SAE &&
 		    sta->sae && !sta->sae->h2e &&
-		    elems.rsnxe && elems.rsnxe_len >= 1 &&
-		    (elems.rsnxe[0] & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
+		    ieee802_11_rsnx_capab_len(elems.rsnxe, elems.rsnxe_len,
+					      WLAN_RSNX_CAPAB_SAE_H2E)) {
 			wpa_printf(MSG_INFO, "SAE: " MACSTR
 				   " indicates support for SAE H2E, but did not use it",
 				   MAC2STR(sta->addr));
@@ -870,9 +870,10 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
 		       HOSTAPD_LEVEL_INFO,
-		       "driver %s channel switch: freq=%d, ht=%d, vht_ch=0x%x, offset=%d, width=%d (%s), cf1=%d, cf2=%d",
+		       "driver %s channel switch: freq=%d, ht=%d, vht_ch=0x%x, he_ch=0x%x, offset=%d, width=%d (%s), cf1=%d, cf2=%d",
 		       finished ? "had" : "starting",
-		       freq, ht, hapd->iconf->ch_switch_vht_config, offset,
+		       freq, ht, hapd->iconf->ch_switch_vht_config,
+		       hapd->iconf->ch_switch_he_config, offset,
 		       width, channel_width_to_string(width), cf1, cf2);
 
 	if (!hapd->iface->current_mode) {
@@ -944,13 +945,31 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 		else if (hapd->iconf->ch_switch_vht_config &
 			 CH_SWITCH_VHT_DISABLED)
 			hapd->iconf->ieee80211ac = 0;
+	} else if (hapd->iconf->ch_switch_he_config) {
+		/* CHAN_SWITCH HE config */
+		if (hapd->iconf->ch_switch_he_config &
+		    CH_SWITCH_HE_ENABLED)
+			hapd->iconf->ieee80211ax = 1;
+		else if (hapd->iconf->ch_switch_he_config &
+			 CH_SWITCH_HE_DISABLED)
+			hapd->iconf->ieee80211ax = 0;
 	}
 	hapd->iconf->ch_switch_vht_config = 0;
+	hapd->iconf->ch_switch_he_config = 0;
 
 	hapd->iconf->secondary_channel = offset;
 	hostapd_set_oper_chwidth(hapd->iconf, chwidth);
 	hostapd_set_oper_centr_freq_seg0_idx(hapd->iconf, seg0_idx);
 	hostapd_set_oper_centr_freq_seg1_idx(hapd->iconf, seg1_idx);
+	if (hapd->iconf->ieee80211ac) {
+		hapd->iconf->vht_capab &= ~VHT_CAP_SUPP_CHAN_WIDTH_MASK;
+		if (chwidth == CHANWIDTH_160MHZ)
+			hapd->iconf->vht_capab |=
+				VHT_CAP_SUPP_CHAN_WIDTH_160MHZ;
+		else if (chwidth == CHANWIDTH_80P80MHZ)
+			hapd->iconf->vht_capab |=
+				VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ;
+	}
 
 	is_dfs = ieee80211_is_dfs(freq, hapd->iface->hw_features,
 				  hapd->iface->num_hw_features);

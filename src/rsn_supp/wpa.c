@@ -451,6 +451,10 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 		buf = wpa_sm_alloc_eapol(sm, IEEE802_1X_TYPE_EAPOL_START,
 					 NULL, 0, &buflen, NULL);
 		if (buf) {
+			/* Set and reset eapFail to allow EAP state machine to
+			 * proceed with new authentication. */
+			eapol_sm_notify_eap_fail(sm->eapol, true);
+			eapol_sm_notify_eap_fail(sm->eapol, false);
 			wpa_sm_ether_send(sm, sm->bssid, ETH_P_EAPOL,
 					  buf, buflen);
 			os_free(buf);
@@ -579,7 +583,7 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 			  const struct wpa_eapol_key *key, struct wpa_ptk *ptk)
 {
 	const u8 *z = NULL;
-	size_t z_len = 0;
+	size_t z_len = 0, kdk_len;
 	int akmp;
 
 #ifdef CONFIG_IEEE80211R
@@ -603,10 +607,19 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 		akmp |= WPA_KEY_MGMT_PSK_SHA256;
 	}
 #endif /* CONFIG_OWE */
+
+	if (sm->force_kdk_derivation ||
+	    (sm->secure_ltf &&
+	     ieee802_11_rsnx_capab(sm->ap_rsnxe, WLAN_RSNX_CAPAB_SECURE_LTF)))
+		kdk_len = WPA_KDK_MAX_LEN;
+	else
+		kdk_len = 0;
+
 	return wpa_pmk_to_ptk(sm->pmk, sm->pmk_len, "Pairwise key expansion",
 			      sm->own_addr, sm->bssid, sm->snonce,
 			      key->key_nonce, ptk, akmp,
-			      sm->pairwise_cipher, z, z_len);
+			      sm->pairwise_cipher, z, z_len,
+			      kdk_len);
 }
 
 
@@ -947,6 +960,9 @@ static int wpa_supplicant_install_ptk(struct wpa_sm *sm,
 			sm->keyidx_active, key_flag);
 		return -1;
 	}
+
+	wpa_sm_store_ptk(sm, sm->bssid, sm->pairwise_cipher,
+			 sm->dot11RSNAConfigPMKLifetime, &sm->ptk);
 
 	/* TK is not needed anymore in supplicant */
 	os_memset(sm->ptk.tk, 0, WPA_TK_MAX_LEN);
@@ -1306,7 +1322,8 @@ static int ieee80211w_set_keys(struct wpa_sm *sm,
 {
 	size_t len;
 
-	if (!wpa_cipher_valid_mgmt_group(sm->mgmt_group_cipher))
+	if (!wpa_cipher_valid_mgmt_group(sm->mgmt_group_cipher) ||
+	    sm->mgmt_group_cipher == WPA_CIPHER_GTK_NOT_USED)
 		return 0;
 
 	if (ie->igtk) {
@@ -1559,11 +1576,12 @@ static int wpa_supplicant_validate_ie(struct wpa_sm *sm,
 		return -1;
 	}
 
-	if ((sm->ap_rsnxe && !ie->rsnxe) ||
-	    (!sm->ap_rsnxe && ie->rsnxe) ||
-	    (sm->ap_rsnxe && ie->rsnxe &&
-	     (sm->ap_rsnxe_len != ie->rsnxe_len ||
-	      os_memcmp(sm->ap_rsnxe, ie->rsnxe, sm->ap_rsnxe_len) != 0))) {
+	if (sm->proto == WPA_PROTO_RSN &&
+	    ((sm->ap_rsnxe && !ie->rsnxe) ||
+	     (!sm->ap_rsnxe && ie->rsnxe) ||
+	     (sm->ap_rsnxe && ie->rsnxe &&
+	      (sm->ap_rsnxe_len != ie->rsnxe_len ||
+	       os_memcmp(sm->ap_rsnxe, ie->rsnxe, sm->ap_rsnxe_len) != 0)))) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
 			"WPA: RSNXE mismatch between Beacon/ProbeResp and EAPOL-Key msg 3/4");
 		wpa_hexdump(MSG_INFO, "RSNXE in Beacon/ProbeResp",
@@ -1665,6 +1683,7 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	}
 
 	if (ie.igtk &&
+	    sm->mgmt_group_cipher != WPA_CIPHER_GTK_NOT_USED &&
 	    wpa_cipher_valid_mgmt_group(sm->mgmt_group_cipher) &&
 	    ie.igtk_len != WPA_IGTK_KDE_PREFIX_LEN +
 	    (unsigned int) wpa_cipher_key_len(sm->mgmt_group_cipher)) {
@@ -2321,6 +2340,16 @@ void wpa_sm_aborted_cached(struct wpa_sm *sm)
 	if (sm && sm->cur_pmksa) {
 		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
 			"RSN: Cancelling PMKSA caching attempt");
+		sm->cur_pmksa = NULL;
+	}
+}
+
+
+void wpa_sm_aborted_external_cached(struct wpa_sm *sm)
+{
+	if (sm && sm->cur_pmksa && sm->cur_pmksa->external) {
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"RSN: Cancelling external PMKSA caching attempt");
 		sm->cur_pmksa = NULL;
 	}
 }
@@ -3182,6 +3211,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		sm->p2p = config->p2p;
 		sm->wpa_rsc_relaxation = config->wpa_rsc_relaxation;
 		sm->owe_ptk_workaround = config->owe_ptk_workaround;
+		sm->force_kdk_derivation = config->force_kdk_derivation;
 #ifdef CONFIG_FILS
 		if (config->fils_cache_id) {
 			sm->fils_cache_id_set = 1;
@@ -3204,6 +3234,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		sm->wpa_rsc_relaxation = 0;
 		sm->owe_ptk_workaround = 0;
 		sm->beacon_prot = 0;
+		sm->force_kdk_derivation = false;
 	}
 }
 
@@ -3781,6 +3812,16 @@ int wpa_sm_pmksa_exists(struct wpa_sm *sm, const u8 *bssid,
 }
 
 
+struct rsn_pmksa_cache_entry * wpa_sm_pmksa_cache_get(struct wpa_sm *sm,
+						      const u8 *aa,
+						      const u8 *pmkid,
+						      const void *network_ctx,
+						      int akmp)
+{
+	return pmksa_cache_get(sm->pmksa, aa, pmkid, network_ctx, akmp);
+}
+
+
 void wpa_sm_drop_sa(struct wpa_sm *sm)
 {
 	wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG, "WPA: Clear old PMK and PTK");
@@ -3801,6 +3842,11 @@ void wpa_sm_drop_sa(struct wpa_sm *sm)
 	sm->pmk_r0_len = 0;
 	os_memset(sm->pmk_r1, 0, sizeof(sm->pmk_r1));
 	sm->pmk_r1_len = 0;
+#ifdef CONFIG_PASN
+	os_free(sm->pasn_r1kh);
+	sm->pasn_r1kh = NULL;
+	sm->n_pasn_r1kh = 0;
+#endif /* CONFIG_PASN */
 #endif /* CONFIG_IEEE80211R */
 }
 
@@ -3829,7 +3875,13 @@ void wpa_sm_update_replay_ctr(struct wpa_sm *sm, const u8 *replay_ctr)
 
 void wpa_sm_pmksa_cache_flush(struct wpa_sm *sm, void *network_ctx)
 {
-	pmksa_cache_flush(sm->pmksa, network_ctx, NULL, 0);
+	pmksa_cache_flush(sm->pmksa, network_ctx, NULL, 0, false);
+}
+
+
+void wpa_sm_external_pmksa_cache_flush(struct wpa_sm *sm, void *network_ctx)
+{
+	pmksa_cache_flush(sm->pmksa, network_ctx, NULL, 0, true);
 }
 
 
@@ -4111,7 +4163,7 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 	const u8 *g_sta = NULL;
 	size_t g_sta_len = 0;
 	const u8 *g_ap = NULL;
-	size_t g_ap_len = 0;
+	size_t g_ap_len = 0, kdk_len;
 	struct wpabuf *pub = NULL;
 
 	os_memcpy(sm->bssid, bssid, ETH_ALEN);
@@ -4339,13 +4391,21 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 		goto fail;
 	}
 
+	if (sm->force_kdk_derivation ||
+	    (sm->secure_ltf &&
+	     ieee802_11_rsnx_capab(sm->ap_rsnxe, WLAN_RSNX_CAPAB_SECURE_LTF)))
+		kdk_len = WPA_KDK_MAX_LEN;
+	else
+		kdk_len = 0;
+
 	if (fils_pmk_to_ptk(sm->pmk, sm->pmk_len, sm->own_addr, sm->bssid,
 			    sm->fils_nonce, sm->fils_anonce,
 			    dh_ss ? wpabuf_head(dh_ss) : NULL,
 			    dh_ss ? wpabuf_len(dh_ss) : 0,
 			    &sm->ptk, ick, &ick_len,
 			    sm->key_mgmt, sm->pairwise_cipher,
-			    sm->fils_ft, &sm->fils_ft_len) < 0) {
+			    sm->fils_ft, &sm->fils_ft_len,
+			    kdk_len) < 0) {
 		wpa_printf(MSG_DEBUG, "FILS: Failed to derive PTK");
 		goto fail;
 	}
@@ -4900,6 +4960,9 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 		goto fail;
 	}
 
+	wpa_sm_store_ptk(sm, sm->bssid, sm->pairwise_cipher,
+			 sm->dot11RSNAConfigPMKLifetime, &sm->ptk);
+
 	/* TODO: TK could be cleared after auth frame exchange now that driver
 	 * takes care of association frame encryption/decryption. */
 	/* TK is not needed anymore in supplicant */
@@ -5172,3 +5235,14 @@ void wpa_sm_set_dpp_z(struct wpa_sm *sm, const struct wpabuf *z)
 	}
 }
 #endif /* CONFIG_DPP2 */
+
+
+#ifdef CONFIG_PASN
+void wpa_pasn_pmksa_cache_add(struct wpa_sm *sm, const u8 *pmk, size_t pmk_len,
+			      const u8 *pmkid, const u8 *bssid, int key_mgmt)
+{
+	sm->cur_pmksa = pmksa_cache_add(sm->pmksa, pmk, pmk_len, pmkid, NULL, 0,
+					bssid, sm->own_addr, NULL,
+					key_mgmt, 0);
+}
+#endif /* CONFIG_PASN */

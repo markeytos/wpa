@@ -1320,13 +1320,9 @@ static int wps_set_ie(struct wps_registrar *reg)
 	}
 
 	beacon = wpabuf_alloc(400 + vendor_len);
-	if (beacon == NULL)
-		return -1;
 	probe = wpabuf_alloc(500 + vendor_len);
-	if (probe == NULL) {
-		wpabuf_free(beacon);
-		return -1;
-	}
+	if (!beacon || !probe)
+		goto fail;
 
 	auth_macs = wps_authorized_macs(reg, &count);
 
@@ -1342,19 +1338,13 @@ static int wps_set_ie(struct wps_registrar *reg)
 	    (reg->dualband && wps_build_rf_bands(&reg->wps->dev, beacon, 0)) ||
 	    wps_build_wfa_ext(beacon, 0, auth_macs, count, 0) ||
 	    wps_build_vendor_ext(&reg->wps->dev, beacon) ||
-	    wps_build_application_ext(&reg->wps->dev, beacon)) {
-		wpabuf_free(beacon);
-		wpabuf_free(probe);
-		return -1;
-	}
+	    wps_build_application_ext(&reg->wps->dev, beacon))
+		goto fail;
 
 #ifdef CONFIG_P2P
 	if (wps_build_dev_name(&reg->wps->dev, beacon) ||
-	    wps_build_primary_dev_type(&reg->wps->dev, beacon)) {
-		wpabuf_free(beacon);
-		wpabuf_free(probe);
-		return -1;
-	}
+	    wps_build_primary_dev_type(&reg->wps->dev, beacon))
+		goto fail;
 #endif /* CONFIG_P2P */
 
 	wpa_printf(MSG_DEBUG, "WPS: Build Probe Response IEs");
@@ -1373,22 +1363,20 @@ static int wps_set_ie(struct wps_registrar *reg)
 	    (reg->dualband && wps_build_rf_bands(&reg->wps->dev, probe, 0)) ||
 	    wps_build_wfa_ext(probe, 0, auth_macs, count, 0) ||
 	    wps_build_vendor_ext(&reg->wps->dev, probe) ||
-	    wps_build_application_ext(&reg->wps->dev, probe)) {
-		wpabuf_free(beacon);
-		wpabuf_free(probe);
-		return -1;
-	}
+	    wps_build_application_ext(&reg->wps->dev, probe))
+		goto fail;
 
 	beacon = wps_ie_encapsulate(beacon);
 	probe = wps_ie_encapsulate(probe);
 
-	if (!beacon || !probe) {
-		wpabuf_free(beacon);
-		wpabuf_free(probe);
-		return -1;
-	}
+	if (!beacon || !probe)
+		goto fail;
 
 	return wps_cb_set_ie(reg, beacon, probe);
+fail:
+	wpabuf_free(beacon);
+	wpabuf_free(probe);
+	return -1;
 }
 
 
@@ -1765,8 +1753,10 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		wpa_snprintf_hex(hex, sizeof(hex), wps->wps->psk, PMK_LEN);
 		os_memcpy(wps->cred.key, hex, PMK_LEN * 2);
 		wps->cred.key_len = PMK_LEN * 2;
-	} else if (!wps->wps->registrar->force_per_enrollee_psk &&
-		   wps->wps->network_key) {
+	} else if ((!wps->wps->registrar->force_per_enrollee_psk ||
+		    wps->wps->use_passphrase) && wps->wps->network_key) {
+		wpa_printf(MSG_DEBUG,
+			   "WPS: Use passphrase format for Network key");
 		os_memcpy(wps->cred.key, wps->wps->network_key,
 			  wps->wps->network_key_len);
 		wps->cred.key_len = wps->wps->network_key_len;
@@ -3666,6 +3656,35 @@ int wps_registrar_config_ap(struct wps_registrar *reg,
 		return reg->wps->cred_cb(reg->wps->cb_ctx, cred);
 
 	return -1;
+}
+
+
+int wps_registrar_update_multi_ap(struct wps_registrar *reg,
+				  const u8 *multi_ap_backhaul_ssid,
+				  size_t multi_ap_backhaul_ssid_len,
+				  const u8 *multi_ap_backhaul_network_key,
+				  size_t multi_ap_backhaul_network_key_len)
+{
+	if (multi_ap_backhaul_ssid) {
+		os_memcpy(reg->multi_ap_backhaul_ssid,
+			  multi_ap_backhaul_ssid, multi_ap_backhaul_ssid_len);
+		reg->multi_ap_backhaul_ssid_len = multi_ap_backhaul_ssid_len;
+	}
+
+	os_free(reg->multi_ap_backhaul_network_key);
+	reg->multi_ap_backhaul_network_key = NULL;
+	reg->multi_ap_backhaul_network_key_len = 0;
+	if (multi_ap_backhaul_network_key) {
+		reg->multi_ap_backhaul_network_key =
+			os_memdup(multi_ap_backhaul_network_key,
+				  multi_ap_backhaul_network_key_len);
+		if (!reg->multi_ap_backhaul_network_key)
+			return -1;
+		reg->multi_ap_backhaul_network_key_len =
+			multi_ap_backhaul_network_key_len;
+	}
+
+	return 0;
 }
 
 

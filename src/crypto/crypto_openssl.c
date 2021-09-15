@@ -81,12 +81,14 @@ static void EVP_MD_CTX_free(EVP_MD_CTX *ctx)
 }
 
 
+#ifdef CONFIG_ECC
 static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
 {
 	if (pkey->type != EVP_PKEY_EC)
 		return NULL;
 	return pkey->pkey.ec;
 }
+#endif /* CONFIG_ECC */
 
 #endif /* OpenSSL version < 1.1.0 */
 
@@ -204,8 +206,8 @@ int md4_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 int des_encrypt(const u8 *clear, const u8 *key, u8 *cypher)
 {
 	u8 pkey[8], next, tmp;
-	int i;
-	DES_key_schedule ks;
+	int i, plen, ret = -1;
+	EVP_CIPHER_CTX *ctx;
 
 	/* Add parity bits to the key */
 	next = 0;
@@ -216,10 +218,19 @@ int des_encrypt(const u8 *clear, const u8 *key, u8 *cypher)
 	}
 	pkey[i] = next | 1;
 
-	DES_set_key((DES_cblock *) &pkey, &ks);
-	DES_ecb_encrypt((DES_cblock *) clear, (DES_cblock *) cypher, &ks,
-			DES_ENCRYPT);
-	return 0;
+	ctx = EVP_CIPHER_CTX_new();
+	if (ctx &&
+	    EVP_EncryptInit_ex(ctx, EVP_des_ecb(), NULL, pkey, NULL) == 1 &&
+	    EVP_CIPHER_CTX_set_padding(ctx, 0) == 1 &&
+	    EVP_EncryptUpdate(ctx, cypher, &plen, clear, 8) == 1 &&
+	    EVP_EncryptFinal_ex(ctx, &cypher[plen], &plen) == 1)
+		ret = 0;
+	else
+		wpa_printf(MSG_ERROR, "OpenSSL: DES encrypt failed");
+
+	if (ctx)
+		EVP_CIPHER_CTX_free(ctx);
+	return ret;
 }
 
 
@@ -237,8 +248,8 @@ int rc4_skip(const u8 *key, size_t keylen, size_t skip,
 
 	ctx = EVP_CIPHER_CTX_new();
 	if (!ctx ||
-	    !EVP_CIPHER_CTX_set_padding(ctx, 0) ||
 	    !EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, NULL, NULL, 1) ||
+	    !EVP_CIPHER_CTX_set_padding(ctx, 0) ||
 	    !EVP_CIPHER_CTX_set_key_length(ctx, keylen) ||
 	    !EVP_CipherInit_ex(ctx, NULL, NULL, key, NULL, 1))
 		goto out;
@@ -698,8 +709,8 @@ struct crypto_cipher * crypto_cipher_init(enum crypto_cipher_alg alg,
 	}
 
 	if (!(ctx->enc = EVP_CIPHER_CTX_new()) ||
-	    !EVP_CIPHER_CTX_set_padding(ctx->enc, 0) ||
 	    !EVP_EncryptInit_ex(ctx->enc, cipher, NULL, NULL, NULL) ||
+	    !EVP_CIPHER_CTX_set_padding(ctx->enc, 0) ||
 	    !EVP_CIPHER_CTX_set_key_length(ctx->enc, key_len) ||
 	    !EVP_EncryptInit_ex(ctx->enc, NULL, NULL, key, iv)) {
 		if (ctx->enc)
@@ -709,8 +720,8 @@ struct crypto_cipher * crypto_cipher_init(enum crypto_cipher_alg alg,
 	}
 
 	if (!(ctx->dec = EVP_CIPHER_CTX_new()) ||
-	    !EVP_CIPHER_CTX_set_padding(ctx->dec, 0) ||
 	    !EVP_DecryptInit_ex(ctx->dec, cipher, NULL, NULL, NULL) ||
+	    !EVP_CIPHER_CTX_set_padding(ctx->dec, 0) ||
 	    !EVP_CIPHER_CTX_set_key_length(ctx->dec, key_len) ||
 	    !EVP_DecryptInit_ex(ctx->dec, NULL, NULL, key, iv)) {
 		EVP_CIPHER_CTX_free(ctx->enc);

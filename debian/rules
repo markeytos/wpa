@@ -81,13 +81,11 @@ endif
 override_dh_auto_install:
 	$(info Skip dh_auto_install ...)
 
-override_dh_clean:
+execute_before_dh_clean:
 	# make sure to remove the staging directory for the udeb
 	rm -rf debian/wpasupplicant-udeb
-	dh_clean
 
-override_dh_install:
-	dh_install
+execute_after_dh_install:
 	# install D-Bus service activation files & configuration
 	install --mode=644 -D wpa_supplicant/dbus/dbus-wpa_supplicant.conf \
 		debian/wpasupplicant/etc/dbus-1/system.d/wpa_supplicant.conf
@@ -106,13 +104,8 @@ endif
 	dh_installchangelogs --remaining-packages
 ### end dh overrides
 
-override_dh_installexamples:
-	dh_installexamples
+execute_after_dh_installexamples:
 	sed -e 's="includes.h"=<stddef.h>=' -e 's="common/wpa_ctrl.h"=<wpa_ctrl.h>=' -i debian/*/usr/share/doc/*/examples/*.c
 
 %:
-	dh ${@}
-
-get-orig-source:
-	chmod +x $(CURDIR)/debian/get-orig-source
-	$(CURDIR)/debian/get-orig-source $(CURDIR)
+	dh $@

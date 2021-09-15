@@ -552,7 +552,7 @@ static int wnm_nei_get_chan(struct wpa_supplicant *wpa_s, u8 op_class, u8 chan)
 			freq = 2407 + chan * 5;
 		else if (chan == 14)
 			freq = 2484;
-		else if (chan >= 36 && chan <= 169)
+		else if (chan >= 36 && chan <= 177)
 			freq = 5000 + chan * 5;
 	}
 	return freq;
@@ -1343,11 +1343,11 @@ static int wnm_fetch_scan_results(struct wpa_supplicant *wpa_s)
 				continue;
 			bss = wpa_s->current_bss;
 			ssid_ie = wpa_scan_get_ie(res, WLAN_EID_SSID);
-			if (bss && ssid_ie &&
+			if (bss && ssid_ie && ssid_ie[1] &&
 			    (bss->ssid_len != ssid_ie[1] ||
 			     os_memcmp(bss->ssid, ssid_ie + 2,
 				       bss->ssid_len) != 0))
-				continue;
+				continue; /* Skip entries for other ESSs */
 
 			/* Potential candidate found */
 			found = 1;

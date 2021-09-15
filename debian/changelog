@@ -17,6 +17,88 @@ wpa (2:2.9.0+git20200221+f65da0c-1) experimental; urgency=medium
 
  -- Andrej Shadura <andrewsh@debian.org>  Sat, 22 Feb 2020 11:31:25 +0300
 
+wpa (2:2.9.0-22) unstable; urgency=medium
+
+  * Test systemctl is available before using it.
+  * hostapd.service: Do not repeat repeat yourself — remove the second
+    -B (Closes: #977703)
+  * Enable IPv6 support in eapol_test (Closes: #985912)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 15 Sep 2021 16:27:12 +0100
+
+wpa (2:2.9.0-21) unstable; urgency=high
+
+  * Fix typos in the package descriptions.
+    Thanks to Beatrice Torracca (Closes: #982673).
+  * SECURITY ISSUE:
+    - P2P: Fix a corner case in peer addition based on PD Request.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 25 Feb 2021 22:19:14 +0100
+
+wpa (2:2.9.0-20) unstable; urgency=medium
+
+  * Add IgnoreOnIsolate=yes to keep wpa-supplicant running while
+    systemctl isolate (LP: #1576024)
+  * Disable -Werror for eapol_test.
+  * Update descriptions of the packages.
+  * Prefer pkgconf to pkg-config.
+  * Set Rules-Requires-Root: no.
+  * Remove the unused system-sleep hook.
+  * Remove get-orig-source/uscan-hook.
+  * Use execute_before/execute_after instead of overrides in a few places.
+  * Update descriptions in init scripts and service files.
+  * Update wpasupplicant.README.Debian.
+  * Actually delete an old patch not accepted upstream.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 16:09:13 +0100
+
+wpa (2:2.9.0-19) unstable; urgency=medium
+
+  * Replace proposed fixes with actual changes accepted upstream:
+    - WPS: Reconfigure credentials on hostapd config reload
+    - hostapd: Fix error message for radius_accept_attr config option
+  * Drop old lintian overrides.
+  * Move libwpa-client-dev to section libdevel.
+  * Drop old entries from debian/copyright.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 12:01:09 +0100
+
+wpa (2:2.9.0-18) unstable; urgency=medium
+
+  * Apply upstream patches from Ubuntu (LP: #1879087, #1912609, #1893563):
+    - D-Bus: Move roam metrics to the correct interface
+    - nl80211: Unbreak mode processing due to presence of S1G band
+    - D-Bus: Allow changing an interface bridge via D-Bus
+  * Enable support for WPA-EAP-SUITE-B(-192) (Closes: #982548).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 12 Feb 2021 11:31:57 +0100
+
+wpa (2:2.9.0-17) unstable; urgency=medium
+
+  [ Salvatore Bonaccorso ]
+  * P2P: Fix copying of secondary device types for P2P group client
+    (CVE-2021-0326) (Closes: #981971).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 06 Feb 2021 18:04:13 +0100
+
+wpa (2:2.9.0-16) unstable; urgency=high
+
+  * Restrict eapoltest to linux-any kfreebsd-any.
+  * Add an upstream patch to fix a crash with a long P2P interface name
+    (Closes: #976091).
+  * Security fix: CVE-2020-12695.
+    A vulnerability in the UPnP SUBSCRIBE command can trigger the AP to
+    initiate a HTTP (TCP/IP) connection to an arbitrary URL or to trigger
+    misbehavior in hostapd and cause the process to either get terminated
+    or to start using more CPU resources.
+    The issue can also be mitigated by building hostapd without UPnP support
+    (CONFIG_WPS_UPNP=n) or disabling it at runtime by removing the upnp_iface
+    parameter.
+    (Closes: #976106)
+  * Refresh patches.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 30 Nov 2020 10:02:04 +0100
+
 wpa (2:2.9.0-15) unstable; urgency=medium
 
   * Don’t fail the build on -Warray-bounds.

@@ -19,18 +19,6 @@
 #include "scan.h"
 #include "bss.h"
 
-
-#define WPA_BSS_FREQ_CHANGED_FLAG	BIT(0)
-#define WPA_BSS_SIGNAL_CHANGED_FLAG	BIT(1)
-#define WPA_BSS_PRIVACY_CHANGED_FLAG	BIT(2)
-#define WPA_BSS_MODE_CHANGED_FLAG	BIT(3)
-#define WPA_BSS_WPAIE_CHANGED_FLAG	BIT(4)
-#define WPA_BSS_RSNIE_CHANGED_FLAG	BIT(5)
-#define WPA_BSS_WPS_CHANGED_FLAG	BIT(6)
-#define WPA_BSS_RATES_CHANGED_FLAG	BIT(7)
-#define WPA_BSS_IES_CHANGED_FLAG	BIT(8)
-
-
 static void wpa_bss_set_hessid(struct wpa_bss *bss)
 {
 #ifdef CONFIG_INTERWORKING
@@ -361,8 +349,7 @@ static bool is_p2p_pending_bss(struct wpa_supplicant *wpa_s,
 		      ETH_ALEN) == 0)
 		return true;
 	if (!is_zero_ether_addr(wpa_s->pending_join_dev_addr) &&
-	    p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
-			       addr) == 0 &&
+	    p2p_parse_dev_addr(wpa_bss_ie_ptr(bss), bss->ie_len, addr) == 0 &&
 	    os_memcmp(addr, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0)
 		return true;
 #endif /* CONFIG_P2P */
@@ -465,7 +452,7 @@ static struct wpa_bss * wpa_bss_add(struct wpa_supplicant *wpa_s,
 	bss->ssid_len = ssid_len;
 	bss->ie_len = res->ie_len;
 	bss->beacon_ie_len = res->beacon_ie_len;
-	os_memcpy(bss + 1, res + 1, res->ie_len + res->beacon_ie_len);
+	os_memcpy(bss->ies, res + 1, res->ie_len + res->beacon_ie_len);
 	wpa_bss_set_hessid(bss);
 
 	if (wpa_s->num_bss + 1 > wpa_s->conf->bss_max_count &&
@@ -568,7 +555,7 @@ static u32 wpa_bss_compare_res(const struct wpa_bss *old,
 		changes |= WPA_BSS_MODE_CHANGED_FLAG;
 
 	if (old->ie_len == new_res->ie_len &&
-	    os_memcmp(old + 1, new_res + 1, old->ie_len) == 0)
+	    os_memcmp(wpa_bss_ie_ptr(old), new_res + 1, old->ie_len) == 0)
 		return changes;
 	changes |= WPA_BSS_IES_CHANGED_FLAG;
 
@@ -589,8 +576,8 @@ static u32 wpa_bss_compare_res(const struct wpa_bss *old,
 }
 
 
-static void notify_bss_changes(struct wpa_supplicant *wpa_s, u32 changes,
-			       const struct wpa_bss *bss)
+void notify_bss_changes(struct wpa_supplicant *wpa_s, u32 changes,
+			const struct wpa_bss *bss)
 {
 	if (changes & WPA_BSS_FREQ_CHANGED_FLAG)
 		wpas_notify_bss_freq_changed(wpa_s, bss->id);
@@ -692,7 +679,7 @@ wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 #endif /* CONFIG_P2P */
 	if (bss->ie_len + bss->beacon_ie_len >=
 	    res->ie_len + res->beacon_ie_len) {
-		os_memcpy(bss + 1, res + 1, res->ie_len + res->beacon_ie_len);
+		os_memcpy(bss->ies, res + 1, res->ie_len + res->beacon_ie_len);
 		bss->ie_len = res->ie_len;
 		bss->beacon_ie_len = res->beacon_ie_len;
 	} else {
@@ -713,7 +700,7 @@ wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 				wpa_s->current_bss = nbss;
 			wpa_bss_update_pending_connect(wpa_s, bss, nbss);
 			bss = nbss;
-			os_memcpy(bss + 1, res + 1,
+			os_memcpy(bss->ies, res + 1,
 				  res->ie_len + res->beacon_ie_len);
 			bss->ie_len = res->ie_len;
 			bss->beacon_ie_len = res->beacon_ie_len;
@@ -1075,7 +1062,7 @@ struct wpa_bss * wpa_bss_get_p2p_dev_addr(struct wpa_supplicant *wpa_s,
 	struct wpa_bss *bss, *found = NULL;
 	dl_list_for_each_reverse(bss, &wpa_s->bss, struct wpa_bss, list) {
 		u8 addr[ETH_ALEN];
-		if (p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+		if (p2p_parse_dev_addr(wpa_bss_ie_ptr(bss), bss->ie_len,
 				       addr) != 0 ||
 		    os_memcmp(addr, dev_addr, ETH_ALEN) != 0)
 			continue;
@@ -1139,7 +1126,22 @@ struct wpa_bss * wpa_bss_get_id_range(struct wpa_supplicant *wpa_s,
  */
 const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
 {
-	return get_ie((const u8 *) (bss + 1), bss->ie_len, ie);
+	return get_ie(wpa_bss_ie_ptr(bss), bss->ie_len, ie);
+}
+
+
+/**
+ * wpa_bss_get_ie_ext - Fetch a specified extended IE from a BSS entry
+ * @bss: BSS table entry
+ * @ext: Information element extension identifier (WLAN_EID_EXT_*)
+ * Returns: Pointer to the information element (id field) or %NULL if not found
+ *
+ * This function returns the first matching information element in the BSS
+ * entry.
+ */
+const u8 * wpa_bss_get_ie_ext(const struct wpa_bss *bss, u8 ext)
+{
+	return get_ie_ext(wpa_bss_ie_ptr(bss), bss->ie_len, ext);
 }
 
 
@@ -1157,7 +1159,7 @@ const u8 * wpa_bss_get_vendor_ie(const struct wpa_bss *bss, u32 vendor_type)
 	const u8 *ies;
 	const struct element *elem;
 
-	ies = (const u8 *) (bss + 1);
+	ies = wpa_bss_ie_ptr(bss);
 
 	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, bss->ie_len) {
 		if (elem->datalen >= 4 &&
@@ -1190,7 +1192,7 @@ const u8 * wpa_bss_get_vendor_ie_beacon(const struct wpa_bss *bss,
 	if (bss->beacon_ie_len == 0)
 		return NULL;
 
-	ies = (const u8 *) (bss + 1);
+	ies = wpa_bss_ie_ptr(bss);
 	ies += bss->ie_len;
 
 	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies,
@@ -1224,7 +1226,7 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi(const struct wpa_bss *bss,
 	if (buf == NULL)
 		return NULL;
 
-	pos = (const u8 *) (bss + 1);
+	pos = wpa_bss_ie_ptr(bss);
 	end = pos + bss->ie_len;
 
 	while (end - pos > 1) {
@@ -1273,7 +1275,7 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi_beacon(const struct wpa_bss *bss,
 	if (buf == NULL)
 		return NULL;
 
-	pos = (const u8 *) (bss + 1);
+	pos = wpa_bss_ie_ptr(bss);
 	pos += bss->ie_len;
 	end = pos + bss->beacon_ie_len;
 
@@ -1359,7 +1361,7 @@ int wpa_bss_get_bit_rates(const struct wpa_bss *bss, u8 **rates)
 
 
 #ifdef CONFIG_FILS
-const u8 * wpa_bss_get_fils_cache_id(struct wpa_bss *bss)
+const u8 * wpa_bss_get_fils_cache_id(const struct wpa_bss *bss)
 {
 	const u8 *ie;
 
@@ -1376,6 +1378,8 @@ const u8 * wpa_bss_get_fils_cache_id(struct wpa_bss *bss)
 
 int wpa_bss_ext_capab(const struct wpa_bss *bss, unsigned int capab)
 {
+	if (!bss)
+		return 0;
 	return ieee802_11_ext_capab(wpa_bss_get_ie(bss, WLAN_EID_EXT_CAPAB),
 				    capab);
 }

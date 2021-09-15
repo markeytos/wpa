@@ -115,6 +115,8 @@ struct ieee802_11_elems {
 	const u8 *short_ssid_list;
 	const u8 *he_6ghz_band_cap;
 	const u8 *sae_pk;
+	const u8 *s1g_capab;
+	const u8 *pasn_params;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -168,6 +170,7 @@ struct ieee802_11_elems {
 	u8 he_operation_len;
 	u8 short_ssid_list_len;
 	u8 sae_pk_len;
+	u8 pasn_params_len;
 
 	struct mb_ies_info mb_ies;
 	struct frag_ies_info frag_ies;
@@ -215,6 +218,7 @@ int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
 				  int sec_channel, u8 *op_class, u8 *channel);
 int ieee80211_is_dfs(int freq, const struct hostapd_hw_modes *modes,
 		     u16 num_modes);
+int is_dfs_global_op_class(u8 op_class);
 enum phy_type ieee80211_get_phy_type(int freq, int ht, int vht);
 
 int supp_rates_11b_only(struct ieee802_11_elems *elems);
@@ -258,14 +262,18 @@ u8 country_to_global_op_class(const char *country, u8 op_class);
 const struct oper_class_map * get_oper_class(const char *country, u8 op_class);
 int oper_class_bw_to_int(const struct oper_class_map *map);
 int center_idx_to_bw_6ghz(u8 idx);
-int is_6ghz_freq(int freq);
-int is_6ghz_op_class(u8 op_class);
-int is_6ghz_psc_frequency(int freq);
+bool is_6ghz_freq(int freq);
+bool is_6ghz_op_class(u8 op_class);
+bool is_6ghz_psc_frequency(int freq);
+int get_6ghz_sec_channel(int channel);
 
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len);
 
 int ieee802_11_ext_capab(const u8 *ie, unsigned int capab);
+bool ieee802_11_rsnx_capab_len(const u8 *rsnxe, size_t rsnxe_len,
+			       unsigned int capab);
+bool ieee802_11_rsnx_capab(const u8 *rsnxe, unsigned int capab);
 int op_class_to_bandwidth(u8 op_class);
 int op_class_to_ch_width(u8 op_class);
 

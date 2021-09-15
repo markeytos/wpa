@@ -4,6 +4,11 @@ Modes of Operation in wpasupplicant for Debian
 The Debian wpasupplicant package provides two (2) convenient modes of operation
 that are closely integrated to the core networking infrastructure; ifupdown.
 
+Apart from that, wpa_supplicant supports D-Bus-activated operation, when the
+daemon is spawned on demand by software needing it, e.g. NetworkManager or connman.
+When used in that mode, wpa_supplicant does't require any manual configuration and
+is configured using its D-Bus API.
+
 Table of Contents
 =================
 

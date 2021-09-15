@@ -389,6 +389,10 @@ CONFIG_DPP=y
 # Simultaneous Authentication of Equals (SAE)
 CONFIG_SAE=y
 
+# WPA3-Enterprise (SuiteB-192)
+CONFIG_SUITEB=y
+CONFIG_SUITEB192=y
+
 # Airtime policy support
 #CONFIG_AIRTIME_POLICY=y
 

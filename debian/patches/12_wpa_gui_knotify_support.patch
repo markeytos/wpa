@@ -1,8 +1,14 @@
 From: Raphael Geissert <geissert@debian.org>
+Date: Tue, 8 Mar 2011 22:02:17 +1000
 Subject: Use KDE's KNotify when running under KDE
 
 Bug-Debian: http://bugs.debian.org/582793
 ---
+ wpa_supplicant/wpa_gui-qt4/wpagui.cpp | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/wpa_supplicant/wpa_gui-qt4/wpagui.cpp b/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
+index 9404ab4..2cac07c 100644
 --- a/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
 +++ b/wpa_supplicant/wpa_gui-qt4/wpagui.cpp
 @@ -11,13 +11,16 @@
@@ -22,7 +28,7 @@ Bug-Debian: http://bugs.debian.org/582793
  
  #include "wpagui.h"
  #include "dirent.h"
-@@ -1430,10 +1433,21 @@
+@@ -1430,10 +1433,21 @@ void WpaGui::createTrayIcon(bool trayOnly)
  void WpaGui::showTrayMessage(QSystemTrayIcon::MessageIcon type, int sec,
  			     const QString & msg)
  {

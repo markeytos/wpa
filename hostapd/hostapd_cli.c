@@ -1475,6 +1475,20 @@ static int hostapd_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 
 #ifdef CONFIG_DPP2
 
+static int hostapd_cli_cmd_dpp_controller_start(struct wpa_ctrl *ctrl, int argc,
+						char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_CONTROLLER_START", 1, argc, argv);
+}
+
+
+static int hostapd_cli_cmd_dpp_controller_stop(struct wpa_ctrl *ctrl, int argc,
+					       char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_CONTROLLER_STOP");
+}
+
+
 static int hostapd_cli_cmd_dpp_chirp(struct wpa_ctrl *ctrl, int argc,
 				     char *argv[])
 {
@@ -1525,6 +1539,14 @@ static int hostapd_cli_cmd_reload_wpa_psk(struct wpa_ctrl *ctrl, int argc,
 {
 	return wpa_ctrl_command(ctrl, "RELOAD_WPA_PSK");
 }
+
+
+#ifdef ANDROID
+static int hostapd_cli_cmd_driver(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DRIVER", 1, argc, argv);
+}
+#endif /* ANDROID */
 
 
 struct hostapd_cli_cmd {
@@ -1698,6 +1720,10 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	{ "dpp_pkex_remove", hostapd_cli_cmd_dpp_pkex_remove, NULL,
 	  "*|<id> = remove DPP pkex information" },
 #ifdef CONFIG_DPP2
+	{ "dpp_controller_start", hostapd_cli_cmd_dpp_controller_start, NULL,
+	  "[tcp_port=<port>] [role=..] = start DPP controller" },
+	{ "dpp_controller_stop", hostapd_cli_cmd_dpp_controller_stop, NULL,
+	  "= stop DPP controller" },
 	{ "dpp_chirp", hostapd_cli_cmd_dpp_chirp, NULL,
 	  "own=<BI ID> iter=<count> = start DPP chirp" },
 	{ "dpp_stop_chirp", hostapd_cli_cmd_dpp_stop_chirp, NULL,
@@ -1714,6 +1740,10 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "<addr> [req_mode=] <measurement request hexdump>  = send a Beacon report request to a station" },
 	{ "reload_wpa_psk", hostapd_cli_cmd_reload_wpa_psk, NULL,
 	  "= reload wpa_psk_file only" },
+#ifdef ANDROID
+	{ "driver", hostapd_cli_cmd_driver, NULL,
+	  "<driver sub command> [<hex formatted data>] = send driver command data" },
+#endif /* ANDROID */
 	{ NULL, NULL, NULL, NULL }
 };
 

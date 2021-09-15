@@ -389,6 +389,10 @@ CONFIG_DPP=y
 # Simultaneous Authentication of Equals (SAE)
 CONFIG_SAE=y
 
+# WPA3-Enterprise (SuiteB-192)
+CONFIG_SUITEB=y
+CONFIG_SUITEB192=y
+
 # Override default value for the wpa_disable_eapol_key_retries configuration
 # parameter. See that parameter in hostapd.conf for more details.
 #CFLAGS += -DDEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES=1

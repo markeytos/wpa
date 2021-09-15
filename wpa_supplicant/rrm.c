@@ -556,14 +556,14 @@ static int * wpas_add_channels(const struct oper_class_map *op,
 static int * wpas_op_class_freqs(const struct oper_class_map *op,
 				 struct hostapd_hw_modes *mode, int active)
 {
-	u8 channels_80mhz_5ghz[] = { 42, 58, 106, 122, 138, 155 };
-	u8 channels_160mhz_5ghz[] = { 50, 114 };
+	u8 channels_80mhz_5ghz[] = { 42, 58, 106, 122, 138, 155, 171 };
+	u8 channels_160mhz_5ghz[] = { 50, 114, 163 };
 	u8 channels_80mhz_6ghz[] = { 7, 23, 39, 55, 71, 87, 103, 119, 135, 151,
 				     167, 183, 199, 215 };
 	u8 channels_160mhz_6ghz[] = { 15, 47, 79, 111, 143, 175, 207 };
 	const u8 *channels = NULL;
 	size_t num_chan = 0;
-	int is_6ghz = is_6ghz_op_class(op->op_class);
+	bool is_6ghz = is_6ghz_op_class(op->op_class);
 
 	/*
 	 * When adding all channels in the operating class, 80 + 80 MHz
@@ -775,10 +775,10 @@ int wpas_get_op_chan_phy(int freq, const u8 *ies, size_t ies_len,
 static int wpas_beacon_rep_add_frame_body(struct bitfield *eids,
 					  enum beacon_report_detail detail,
 					  struct wpa_bss *bss, u8 *buf,
-					  size_t buf_len, u8 **ies_buf,
+					  size_t buf_len, const u8 **ies_buf,
 					  size_t *ie_len, int add_fixed)
 {
-	u8 *ies = *ies_buf;
+	const u8 *ies = *ies_buf;
 	size_t ies_len = *ie_len;
 	u8 *pos = buf;
 	int rem_len;
@@ -860,7 +860,7 @@ static int wpas_add_beacon_rep_elem(struct beacon_rep_data *data,
 				    struct wpa_bss *bss,
 				    struct wpabuf **wpa_buf,
 				    struct rrm_measurement_beacon_report *rep,
-				    u8 **ie, size_t *ie_len, u8 idx)
+				    const u8 **ie, size_t *ie_len, u8 idx)
 {
 	int ret;
 	u8 *buf, *pos;
@@ -927,8 +927,8 @@ static int wpas_add_beacon_rep(struct wpa_supplicant *wpa_s,
 			       u64 start, u64 parent_tsf)
 {
 	struct beacon_rep_data *data = &wpa_s->beacon_rep_data;
-	u8 *ies = (u8 *) (bss + 1);
-	u8 *pos = ies;
+	const u8 *ies = wpa_bss_ie_ptr(bss);
+	const u8 *pos = ies;
 	size_t ies_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
 	struct rrm_measurement_beacon_report rep;
 	u8 idx = 0;

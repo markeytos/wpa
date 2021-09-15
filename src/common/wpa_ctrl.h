@@ -126,6 +126,10 @@ extern "C" {
 #define WPA_EVENT_FREQ_CONFLICT "CTRL-EVENT-FREQ-CONFLICT "
 /** Frequency ranges that the driver recommends to avoid */
 #define WPA_EVENT_AVOID_FREQ "CTRL-EVENT-AVOID-FREQ "
+/** A new network profile was added (followed by network entry id) */
+#define WPA_EVENT_NETWORK_ADDED "CTRL-EVENT-NETWORK-ADDED "
+/** A network profile was removed (followed by prior network entry id) */
+#define WPA_EVENT_NETWORK_REMOVED "CTRL-EVENT-NETWORK-REMOVED "
 /** Result of MSCS setup */
 #define WPA_EVENT_MSCS_RESULT "CTRL-EVENT-MSCS-RESULT "
 /** WPS overlap detected in PBC mode */
@@ -157,6 +161,8 @@ extern "C" {
 #define WPS_EVENT_ENROLLEE_SEEN "WPS-ENROLLEE-SEEN "
 
 #define WPS_EVENT_OPEN_NETWORK "WPS-OPEN-NETWORK "
+/** Result of SCS setup */
+#define WPA_EVENT_SCS_RESULT "CTRL-EVENT-SCS-RESULT "
 
 /* WPS ER events */
 #define WPS_EVENT_ER_AP_ADD "WPS-ER-AP-ADD "
@@ -271,7 +277,7 @@ extern "C" {
 #define P2P_EVENT_P2PS_PROVISION_DONE "P2PS-PROV-DONE "
 
 #define INTERWORKING_AP "INTERWORKING-AP "
-#define INTERWORKING_BLACKLISTED "INTERWORKING-BLACKLISTED "
+#define INTERWORKING_EXCLUDED "INTERWORKING-BLACKLISTED "
 #define INTERWORKING_NO_MATCH "INTERWORKING-NO-MATCH "
 #define INTERWORKING_ALREADY_CONNECTED "INTERWORKING-ALREADY-CONNECTED "
 #define INTERWORKING_SELECTED "INTERWORKING-SELECTED "
@@ -404,9 +410,15 @@ extern "C" {
  * frame=<saqueryreq/saqueryresp> error=<error string> */
 #define OCV_FAILURE "OCV-FAILURE "
 
+/* Event triggered for received management frame */
+#define AP_MGMT_FRAME_RECEIVED "AP-MGMT-FRAME-RECEIVED "
+
 #ifndef BIT
 #define BIT(x) (1U << (x))
 #endif
+
+/* PASN authentication status */
+#define PASN_AUTH_STATUS "PASN-AUTH-STATUS "
 
 /* BSS command information masks */
 

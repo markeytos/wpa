@@ -64,7 +64,6 @@ Depends: ${shlibs:Depends},
  ${misc:Depends},
  wpasupplicant (>= 0.7.3~),
  libqt5svg5
-Recommends: menu
 Description: graphical user interface for wpa_supplicant
  wpagui provides a Qt interface for choosing which configured network
  to connect to. It also provides a method for browsing 802.11 SSID scan

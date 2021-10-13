@@ -3,8 +3,8 @@
 06_wpa_gui_menu_exec_path.patch
 07_dbus_service_syslog.patch
 12_wpa_gui_knotify_support.patch
-networkd-driver-fallback.patch
 wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
 disable-eapol-werror.patch
 wpa_service_ignore-on-isolate.patch
+wpa_supplicant-Try-all-drivers-by-default.patch

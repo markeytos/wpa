@@ -1,3 +1,11 @@
+wpa (2:2.9.0-23) unstable; urgency=medium
+
+  * Implement driver fallback directly in wpa_supplicant.
+    Thanks to Kees Cook.
+  * Enable airtime policy support (Closes: #996742)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 19 Oct 2021 10:35:00 +0200
+
 wpa (2:2.9.0-22) unstable; urgency=medium
 
   * Test systemctl is available before using it.

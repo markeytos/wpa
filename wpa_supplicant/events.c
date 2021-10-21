@@ -2680,6 +2680,91 @@ static int wpas_fst_update_mbie(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_FST */
 
 
+static int wpa_supplicant_use_own_rsne_params(struct wpa_supplicant *wpa_s,
+					      union wpa_event_data *data)
+{
+	int sel;
+	const u8 *p;
+	int l, len;
+	bool found = false;
+	struct wpa_ie_data ie;
+	struct wpa_ssid *ssid = wpa_s->current_ssid;
+
+	if (!ssid)
+		return 0;
+
+	p = data->assoc_info.req_ies;
+	l = data->assoc_info.req_ies_len;
+
+	while (p && l >= 2) {
+		len = p[1] + 2;
+		if (len > l) {
+			wpa_hexdump(MSG_DEBUG, "Truncated IE in assoc_info",
+				    p, l);
+			break;
+		}
+		if (((p[0] == WLAN_EID_VENDOR_SPECIFIC && p[1] >= 6 &&
+		      (os_memcmp(&p[2], "\x00\x50\xF2\x01\x01\x00", 6) == 0)) ||
+		     (p[0] == WLAN_EID_VENDOR_SPECIFIC && p[1] >= 4 &&
+		      (os_memcmp(&p[2], "\x50\x6F\x9A\x12", 4) == 0)) ||
+		     (p[0] == WLAN_EID_RSN && p[1] >= 2))) {
+			found = true;
+			break;
+		}
+		l -= len;
+		p += len;
+	}
+
+	if (!found || wpa_parse_wpa_ie(p, len, &ie) < 0)
+		return 0;
+
+	wpa_hexdump(MSG_DEBUG,
+		    "WPA: Update cipher suite selection based on IEs in driver-generated WPA/RSNE in AssocReq",
+		    p, l);
+
+	sel = ie.group_cipher;
+	if (ssid->group_cipher)
+		sel &= ssid->group_cipher;
+
+	wpa_dbg(wpa_s, MSG_DEBUG,
+		"WPA: AP group cipher 0x%x network group cipher 0x%x; available group cipher 0x%x",
+		ie.group_cipher, ssid->group_cipher, sel);
+	if (ie.group_cipher && !sel) {
+		wpa_supplicant_deauthenticate(
+			wpa_s, WLAN_REASON_GROUP_CIPHER_NOT_VALID);
+		return -1;
+	}
+
+	wpa_s->group_cipher = ie.group_cipher;
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_GROUP, wpa_s->group_cipher);
+	wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using GTK %s",
+		wpa_cipher_txt(wpa_s->group_cipher));
+
+	sel = ie.pairwise_cipher;
+	if (ssid->pairwise_cipher)
+		sel &= ssid->pairwise_cipher;
+
+	wpa_dbg(wpa_s, MSG_DEBUG,
+		"WPA: AP pairwise cipher 0x%x network pairwise cipher 0x%x; available pairwise cipher 0x%x",
+		ie.pairwise_cipher, ssid->pairwise_cipher, sel);
+	if (ie.pairwise_cipher && !sel) {
+		wpa_supplicant_deauthenticate(
+			wpa_s, WLAN_REASON_PAIRWISE_CIPHER_NOT_VALID);
+		return -1;
+	}
+
+	wpa_s->pairwise_cipher = ie.pairwise_cipher;
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_PAIRWISE,
+			 wpa_s->pairwise_cipher);
+	wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using PTK %s",
+		wpa_cipher_txt(wpa_s->pairwise_cipher));
+
+	wpas_set_mgmt_group_cipher(wpa_s, ssid, &ie);
+
+	return 0;
+}
+
+
 static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 					  union wpa_event_data *data)
 {
@@ -2977,6 +3062,9 @@ no_pfs:
 
 	wpa_s->assoc_freq = data->assoc_info.freq;
 
+	wpas_handle_assoc_resp_qos_mgmt(wpa_s, data->assoc_info.resp_ies,
+					data->assoc_info.resp_ies_len);
+
 	return 0;
 }
 
@@ -3120,6 +3208,10 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 			return;
 		}
 	}
+
+	if (!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
+	    data && wpa_supplicant_use_own_rsne_params(wpa_s, data) < 0)
+		return;
 
 	multi_ap_set_4addr_mode(wpa_s);
 
@@ -4273,6 +4365,13 @@ static void wpas_event_rx_mgmt_action(struct wpa_supplicant *wpa_s,
 		return;
 	}
 
+	if (category == WLAN_ACTION_VENDOR_SPECIFIC_PROTECTED && plen > 4 &&
+	    WPA_GET_BE32(payload) == QM_ACTION_VENDOR_TYPE) {
+		wpas_handle_qos_mgmt_recv_action(wpa_s, mgmt->sa,
+						 payload + 4, plen - 4);
+		return;
+	}
+
 	wpas_p2p_rx_action(wpa_s, mgmt->da, mgmt->sa, mgmt->bssid,
 			   category, payload, plen, freq);
 	if (wpa_s->ifmsh)
@@ -5245,13 +5344,21 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		break;
 	case EVENT_INTERFACE_MAC_CHANGED:
 		wpa_supplicant_update_mac_addr(wpa_s);
+		wpa_sm_pmksa_cache_flush(wpa_s->wpa, NULL);
 		break;
 	case EVENT_INTERFACE_ENABLED:
 		wpa_dbg(wpa_s, MSG_DEBUG, "Interface was enabled");
 		if (wpa_s->wpa_state == WPA_INTERFACE_DISABLED) {
+			u8 addr[ETH_ALEN];
+
 			eloop_cancel_timeout(wpas_clear_disabled_interface,
 					     wpa_s, NULL);
+			os_memcpy(addr, wpa_s->own_addr, ETH_ALEN);
 			wpa_supplicant_update_mac_addr(wpa_s);
+			if (os_memcmp(addr, wpa_s->own_addr, ETH_ALEN) != 0)
+				wpa_sm_pmksa_cache_flush(wpa_s->wpa, NULL);
+			else
+				wpa_sm_pmksa_cache_reconfig(wpa_s->wpa);
 			wpa_supplicant_set_default_scan_ies(wpa_s);
 			if (wpa_s->p2p_mgmt) {
 				wpa_supplicant_set_state(wpa_s,

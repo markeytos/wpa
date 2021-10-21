@@ -524,6 +524,19 @@ struct robust_av_data {
 	bool valid_config;
 };
 
+struct dscp_policy_status {
+	u8 id;
+	u8 status;
+};
+
+struct dscp_resp_data {
+	bool more;
+	bool reset;
+	bool solicited;
+	struct dscp_policy_status *policy;
+	int num_policies;
+};
+
 #ifdef CONFIG_PASN
 
 struct pasn_fils {
@@ -590,6 +603,7 @@ struct ipv4_params {
 	u16 dst_port;
 	u8 dscp;
 	u8 protocol;
+	u8 param_mask;
 };
 
 
@@ -601,6 +615,7 @@ struct ipv6_params {
 	u8 dscp;
 	u8 next_header;
 	u8 flow_label[3];
+	u8 param_mask;
 };
 
 
@@ -1498,6 +1513,11 @@ struct wpa_supplicant {
 #endif /* CONFIG_TESTING_OPTIONS */
 	struct dl_list active_scs_ids;
 	bool ongoing_scs_req;
+	u8 dscp_req_dialog_token;
+	u8 dscp_query_dialog_token;
+	unsigned int enable_dscp_policy_capa:1;
+	unsigned int connection_dscp:1;
+	unsigned int wait_for_dscp_req:1;
 };
 
 
@@ -1523,6 +1543,8 @@ int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s);
 int wpa_supplicant_driver_init(struct wpa_supplicant *wpa_s);
 int wpa_supplicant_update_bridge_ifname(struct wpa_supplicant *wpa_s,
 					const char *bridge_ifname);
+void wpas_set_mgmt_group_cipher(struct wpa_supplicant *wpa_s,
+				struct wpa_ssid *ssid, struct wpa_ie_data *ie);
 int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 			      struct wpa_bss *bss, struct wpa_ssid *ssid,
 			      u8 *wpa_ie, size_t *wpa_ie_len);
@@ -1763,6 +1785,7 @@ static inline int wpas_mode_to_ieee80211_mode(enum wpas_mode mode)
 
 int wpas_network_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);
 int wpas_get_ssid_pmf(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);
+int pmf_in_use(struct wpa_supplicant *wpa_s, const u8 *addr);
 
 int wpas_init_ext_pw(struct wpa_supplicant *wpa_s);
 
@@ -1837,6 +1860,16 @@ void wpas_handle_robust_av_scs_recv_action(struct wpa_supplicant *wpa_s,
 					   const u8 *src, const u8 *buf,
 					   size_t len);
 void wpas_scs_deinit(struct wpa_supplicant *wpa_s);
+void wpas_handle_qos_mgmt_recv_action(struct wpa_supplicant *wpa_s,
+				      const u8 *src,
+				      const u8 *buf, size_t len);
+void wpas_dscp_deinit(struct wpa_supplicant *wpa_s);
+int wpas_send_dscp_response(struct wpa_supplicant *wpa_s,
+			    struct dscp_resp_data *resp_data);
+void wpas_handle_assoc_resp_qos_mgmt(struct wpa_supplicant *wpa_s,
+				     const u8 *ies, size_t ies_len);
+int wpas_send_dscp_query(struct wpa_supplicant *wpa_s, const char *domain_name,
+			 size_t domain_name_length);
 
 int wpas_pasn_auth_start(struct wpa_supplicant *wpa_s,
 			 const u8 *bssid, int akmp, int cipher,

@@ -2520,6 +2520,11 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 	if (nl80211_register_action_frame(bss, (u8 *) "\x13\x05", 2) < 0)
 		ret = -1;
 
+	/* Protected QoS Management Action frame */
+	if (nl80211_register_action_frame(bss, (u8 *) "\x7e\x50\x6f\x9a\x1a",
+					  5) < 0)
+		ret = -1;
+
 	nl80211_mgmt_handle_register_eloop(bss);
 
 	return ret;
@@ -5155,7 +5160,7 @@ static int wpa_driver_nl80211_sta_add(void *priv,
 			/*
 			 * cfg80211 validates that AID is non-zero, so we have
 			 * to make this a non-zero value for the TDLS case where
-			 * a dummy STA entry is used for now and for a station
+			 * a stub STA entry is used for now and for a station
 			 * that is still not associated.
 			 */
 			wpa_printf(MSG_DEBUG, "  * aid=1 (%s workaround)",

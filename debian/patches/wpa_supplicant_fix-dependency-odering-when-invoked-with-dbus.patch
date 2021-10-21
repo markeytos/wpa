@@ -1,5 +1,5 @@
 From: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Date: Mon, 30 Nov 2020 09:32:57 +0100
+Date: Mon, 23 Nov 2015 00:09:00 +0000
 Subject: wpa_supplicant: Fix dependency ordering when invoked with DBus
 
 Make sure that DBus isn't shut down before wpa_supplicant, as that would

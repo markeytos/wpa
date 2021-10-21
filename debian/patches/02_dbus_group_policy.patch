@@ -8,9 +8,11 @@ makes it work on Debian and Ubuntu.
 
 Bug-Debian: http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=15;bug=412179
 ---
- wpa_supplicant/dbus/dbus-wpa_supplicant.conf | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ wpa_supplicant/dbus/dbus-wpa_supplicant.conf | 5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/wpa_supplicant/dbus/dbus-wpa_supplicant.conf b/wpa_supplicant/dbus/dbus-wpa_supplicant.conf
+index e81b495..413c049 100644
 --- a/wpa_supplicant/dbus/dbus-wpa_supplicant.conf
 +++ b/wpa_supplicant/dbus/dbus-wpa_supplicant.conf
 @@ -9,6 +9,11 @@

@@ -7,4 +7,3 @@ wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
 disable-eapol-werror.patch
 wpa_service_ignore-on-isolate.patch
-wpa_supplicant-Try-all-drivers-by-default.patch

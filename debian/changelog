@@ -1,3 +1,14 @@
+wpa (2:2.9.0+git20211018+2e122945fa53-1) experimental; urgency=medium
+
+  * New upstream snapshot.
+  * Update the copyright years.
+  * Refresh patches, drop patch applied upstream.
+  * Drop KNotify patch for wpa-gui.
+  * Drop patch modifying the wpa_gui’s desktop file for /usr/sbin.
+  * Install wpa_gui into /usr/bin.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Thu, 21 Oct 2021 12:20:49 +0200
+
 wpa (2:2.9.0+git20210909+a75fdcd-1) experimental; urgency=medium
 
   * New upstream snapshot.

@@ -2409,6 +2409,23 @@ static int drv_supports_vht(struct wpa_supplicant *wpa_s,
 }
 
 
+static bool ibss_mesh_is_80mhz_avail(int channel, struct hostapd_hw_modes *mode)
+{
+	int i;
+
+	for (i = channel; i < channel + 16; i += 4) {
+		struct hostapd_channel_data *chan;
+
+		chan = hw_get_channel_chan(mode, i, NULL);
+		if (!chan ||
+		    chan->flag & (HOSTAPD_CHAN_DISABLED | HOSTAPD_CHAN_NO_IR))
+			return false;
+	}
+
+	return true;
+}
+
+
 void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 			  const struct wpa_ssid *ssid,
 			  struct hostapd_freq_params *freq)
@@ -2418,7 +2435,10 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	struct hostapd_hw_modes *mode = NULL;
 	int ht40plus[] = { 36, 44, 52, 60, 100, 108, 116, 124, 132, 149, 157,
 			   184, 192 };
-	int vht80[] = { 36, 52, 100, 116, 132, 149 };
+	int bw80[] = { 5180, 5260, 5500, 5580, 5660, 5745, 5955,
+		       6035, 6115, 6195, 6275, 6355, 6435, 6515,
+		       6595, 6675, 6755, 6835, 6915, 6995 };
+	int bw160[] = { 5955, 6115, 6275, 6435, 6595, 6755, 6915 };
 	struct hostapd_channel_data *pri_chan = NULL, *sec_chan = NULL;
 	u8 channel;
 	int i, chan_idx, ht40 = -1, res, obss_scan = 1;
@@ -2426,7 +2446,7 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	struct hostapd_freq_params vht_freq;
 	int chwidth, seg0, seg1;
 	u32 vht_caps = 0;
-	int is_24ghz;
+	bool is_24ghz, is_6ghz;
 
 	freq->freq = ssid->frequency;
 
@@ -2482,6 +2502,13 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 
 	is_24ghz = hw_mode == HOSTAPD_MODE_IEEE80211G ||
 		hw_mode == HOSTAPD_MODE_IEEE80211B;
+
+	/* HT/VHT and corresponding overrides are not applicable to 6 GHz.
+	 * However, HE is mandatory for 6 GHz.
+	 */
+	is_6ghz = is_6ghz_freq(freq->freq);
+	if (is_6ghz)
+		goto skip_to_6ghz;
 
 #ifdef CONFIG_HT_OVERRIDES
 	if (ssid->disable_ht) {
@@ -2610,8 +2637,6 @@ skip_ht40:
 	    !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_VHT_IBSS))
 		return;
 
-	vht_freq = *freq;
-
 #ifdef CONFIG_VHT_OVERRIDES
 	if (ssid->disable_vht) {
 		freq->vht_enabled = 0;
@@ -2619,46 +2644,67 @@ skip_ht40:
 	}
 #endif /* CONFIG_VHT_OVERRIDES */
 
+skip_to_6ghz:
+	vht_freq = *freq;
+
+	/* 6 GHz does not have VHT enabled, so allow that exception here. */
 	vht_freq.vht_enabled = vht_supported(mode);
-	if (!vht_freq.vht_enabled)
+	if (!vht_freq.vht_enabled && !is_6ghz)
 		return;
 
 	/* Enable HE with VHT for 5 GHz */
 	freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
 
 	/* setup center_freq1, bandwidth */
-	for (j = 0; j < ARRAY_SIZE(vht80); j++) {
-		if (freq->channel >= vht80[j] &&
-		    freq->channel < vht80[j] + 16)
+	for (j = 0; j < ARRAY_SIZE(bw80); j++) {
+		if (freq->freq >= bw80[j] &&
+		    freq->freq < bw80[j] + 80)
 			break;
 	}
 
-	if (j == ARRAY_SIZE(vht80))
+	if (j == ARRAY_SIZE(bw80) ||
+	    ieee80211_freq_to_chan(bw80[j], &channel) == NUM_HOSTAPD_MODES)
 		return;
 
-	for (i = vht80[j]; i < vht80[j] + 16; i += 4) {
-		struct hostapd_channel_data *chan;
-
-		chan = hw_get_channel_chan(mode, i, NULL);
-		if (!chan)
-			return;
-
-		/* Back to HT configuration if channel not usable */
-		if (chan->flag & (HOSTAPD_CHAN_DISABLED | HOSTAPD_CHAN_NO_IR))
-			return;
-	}
+	/* Back to HT configuration if channel not usable */
+	if (!ibss_mesh_is_80mhz_avail(channel, mode))
+		return;
 
 	chwidth = CHANWIDTH_80MHZ;
-	seg0 = vht80[j] + 6;
+	seg0 = channel + 6;
 	seg1 = 0;
+
+	if ((mode->he_capab[ieee80211_mode].phy_cap[
+		     HE_PHYCAP_CHANNEL_WIDTH_SET_IDX] &
+	     HE_PHYCAP_CHANNEL_WIDTH_SET_160MHZ_IN_5G) && is_6ghz) {
+		/* In 160 MHz, the initial four 20 MHz channels were validated
+		 * above; check the remaining four 20 MHz channels for the total
+		 * of 160 MHz bandwidth.
+		 */
+		if (!ibss_mesh_is_80mhz_avail(channel + 16, mode))
+			return;
+
+		for (j = 0; j < ARRAY_SIZE(bw160); j++) {
+			if (freq->freq == bw160[j]) {
+				chwidth = CHANWIDTH_160MHZ;
+				seg0 = channel + 14;
+				break;
+			}
+		}
+	}
 
 	if (ssid->max_oper_chwidth == CHANWIDTH_80P80MHZ) {
 		/* setup center_freq2, bandwidth */
-		for (k = 0; k < ARRAY_SIZE(vht80); k++) {
+		for (k = 0; k < ARRAY_SIZE(bw80); k++) {
 			/* Only accept 80 MHz segments separated by a gap */
-			if (j == k || abs(vht80[j] - vht80[k]) == 16)
+			if (j == k || abs(bw80[j] - bw80[k]) == 80)
 				continue;
-			for (i = vht80[k]; i < vht80[k] + 16; i += 4) {
+
+			if (ieee80211_freq_to_chan(bw80[k], &channel) ==
+			    NUM_HOSTAPD_MODES)
+				return;
+
+			for (i = channel; i < channel + 16; i += 4) {
 				struct hostapd_channel_data *chan;
 
 				chan = hw_get_channel_chan(mode, i, NULL);
@@ -2672,9 +2718,10 @@ skip_ht40:
 
 				/* Found a suitable second segment for 80+80 */
 				chwidth = CHANWIDTH_80P80MHZ;
-				vht_caps |=
-					VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ;
-				seg1 = vht80[k] + 6;
+				if (!is_6ghz)
+					vht_caps |=
+						VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ;
+				seg1 = channel + 6;
 			}
 
 			if (chwidth == CHANWIDTH_80P80MHZ)
@@ -2692,7 +2739,7 @@ skip_ht40:
 		}
 	} else if (ssid->max_oper_chwidth == CHANWIDTH_USE_HT) {
 		chwidth = CHANWIDTH_USE_HT;
-		seg0 = vht80[j] + 2;
+		seg0 = channel + 2;
 #ifdef CONFIG_HT_OVERRIDES
 		if (ssid->disable_ht40)
 			seg0 = 0;

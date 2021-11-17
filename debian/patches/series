@@ -1,7 +1,5 @@
-01_use_pkg-config_for_pcsc-lite_module.patch
 02_dbus_group_policy.patch
 07_dbus_service_syslog.patch
-wpa_supplicant_fix-dependency-odering-when-invoked-with-dbus.patch
 allow-tlsv1.patch
 disable-eapol-werror.patch
 wpa_service_ignore-on-isolate.patch

@@ -1,6 +1,7 @@
 From: Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>
-Subject: Add IgnoreOnIsolate=yes to keep wpa-supplicant running while systemctl isolate
 Date: Mon, 13 Mar 2017 13:46:12 -0400
+Subject: Add IgnoreOnIsolate=yes to keep wpa-supplicant running while
+ systemctl isolate
 
 > Add IgnoreOnIsolate=yes so that when switching "runlevels" in
 > oem-config will not kill off wpa and cause wireless to be

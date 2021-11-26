@@ -21,6 +21,8 @@ wpa (2:2.9.0+git20210909+a75fdcd-1) experimental; urgency=medium
   * New upstream snapshot.
   * Refresh patches.
   * Merge changes from unstable.
+  * Enable WNM, MBO, FILS and mesh networking
+    (Closes: #886414, #930751).
 
  -- Andrej Shadura <andrewsh@debian.org>  Wed, 15 Sep 2021 21:41:39 +0100
 

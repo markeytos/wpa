@@ -1,3 +1,10 @@
+wpa (2:2.10-1) unstable; urgency=medium
+
+  * Upload to unstable.
+  * New upstream release.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 17 Jan 2022 10:30:13 +0100
+
 wpa (2:2.9.0+git20211116+0b853303ae31-1) experimental; urgency=medium
 
   * New upstream snapshot.

@@ -306,7 +306,7 @@ CONFIG_L2_PACKET=freebsd
 CONFIG_IEEE80211W=y
 
 # Support Operating Channel Validation
-#CONFIG_OCV=y
+CONFIG_OCV=y
 
 # Select TLS implementation
 # openssl = OpenSSL (default)

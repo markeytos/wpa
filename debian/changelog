@@ -1,3 +1,17 @@
+wpa (2:2.10-2) unstable; urgency=medium
+
+  [ Ryutaroh Matsumoto ]
+  * Add reload support to the systemd unit files (Closes: #931554).
+
+  [ Michael Yartys ]
+  * Enable OCV in compile-time config.
+
+  [ Andrej Shadura ]
+  * Apply an upstream patch to fix broadcom-wl (Closes: #1004524).
+    Thanks to David Bauer for the patch.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 02 Feb 2022 01:14:41 +0100
+
 wpa (2:2.10-1) unstable; urgency=medium
 
   * Upload to unstable.

@@ -4,4 +4,5 @@ allow-tlsv1.patch
 disable-eapol-werror.patch
 wpa_service_ignore-on-isolate.patch
 systemd-add-reload-support.patch
+manpage-replace-wheel-with-netdev.patch
 upstream-fixes/0001-nl80211-add-extra-ies-only-if-allowed-by-driver.patch

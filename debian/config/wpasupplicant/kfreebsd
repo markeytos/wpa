@@ -614,3 +614,6 @@ CONFIG_DPP=y
 
 # Used by eapol_test only, see #985912
 CONFIG_IPV6=y
+
+# Re-enable WEP for legacy networks
+CONFIG_WEP=y

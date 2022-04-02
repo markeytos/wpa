@@ -7,7 +7,7 @@ Priority: optional
 Build-Depends: debhelper-compat (= 13),
  libdbus-1-dev,
  libssl-dev,
- qtbase5-dev <!pkg.wpa.nogui>,
+ qtbase5-dev [linux-any] <!pkg.wpa.nogui>,
  libncurses5-dev,
  libpcsclite-dev,
  libnl-3-dev [linux-any],
@@ -55,7 +55,7 @@ Description: access point and authentication server for Wi-Fi and Ethernet
   * Any wired Ethernet driver for wired IEEE 802.1X authentication.
 
 Package: wpagui
-Architecture: linux-any kfreebsd-any
+Architecture: linux-any
 Build-Profiles: <!pkg.wpa.nogui>
 Multi-Arch: foreign
 Depends: ${shlibs:Depends},

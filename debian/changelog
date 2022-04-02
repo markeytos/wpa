@@ -1,3 +1,10 @@
+wpa (2:2.10-4exp1) experimental; urgency=medium
+
+  * Synchronise build configs with defconfigs.
+  * Disable options not compilable on kFreeBSD in kFreeBSD builds.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 02 Apr 2022 19:07:18 +0200
+
 wpa (2:2.10-4) unstable; urgency=medium
 
   * Skip GUI build on kFreeBSD, not Hurd.

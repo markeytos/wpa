@@ -1,0 +1,48 @@
+#!/bin/sh
+
+enabled_options() {
+	grep -E '^CONFIG.*=.*$' "$1"
+}
+
+disabled_options() {
+	grep -E '^undefine CONFIG.*$' "$1" | grep -o 'CONFIG.*$'
+}
+
+for module in hostapd wpasupplicant
+do
+	srcmod=$module
+	[ "$module" = wpasupplicant ] && srcmod=wpa_supplicant
+
+	for os in kfreebsd linux
+	do
+		cp ../../$srcmod/defconfig config.tmp
+		config=$module/$os
+
+		for opt in $(enabled_options "$config")
+		do
+			key="${opt%%=*}"
+			if grep -q "$key=" config.tmp
+			then
+				sed -i 's%^#* *'"$key"'=.*$%'"$opt%" config.tmp
+			else
+				echo >> config.tmp
+				grep -m1 -B1 "$opt" "$config" | grep -E "^(#|$key=)" >> config.tmp
+			fi
+		done
+
+		for opt in $(disabled_options "$config")
+		do
+			if grep -q "$opt=" config.tmp
+			then
+				sed -i 's%^#* *'"$opt"'=.*$%'"undefine $opt%" config.tmp
+			else
+				echo >> config.tmp
+				grep -m1 -B1 "undefine $opt" "$config" | grep -E "^(#|undefine $opt)" >> config.tmp
+			fi
+		done
+
+		sed -i 's/^# Example/# Debian/' config.tmp
+
+		mv config.tmp $config.tmp
+	done
+done

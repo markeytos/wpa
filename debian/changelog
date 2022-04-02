@@ -1,3 +1,22 @@
+wpa (2:2.10-3) unstable; urgency=medium
+
+  [ Andrej Shadura ]
+  * Bump debhelper from old 12 to 13.
+  * Avoid explicitly specifying -Wl,--as-needed linker flag.
+  * Drop dh-exec usage, dh 13 supports substitutions natively.
+  * Re-enable WEP (Closes: #1006366).
+  * Remove constraints unnecessary since buster.
+  * Clean up compiler flags.
+  * Don’t build the GUI on kFreeBSD since Qt 5 is uninstallable.
+  * Add sync-config script to simplify synchronising configuration.
+  * Explicitly undefine options we want to disable.
+
+  [ Thomas Glanzmann ]
+  * Replace the wheel group with netdev in the manpage
+    (Closes: #1005639).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 02 Apr 2022 15:30:45 +0200
+
 wpa (2:2.10-2) unstable; urgency=medium
 
   [ Ryutaroh Matsumoto ]

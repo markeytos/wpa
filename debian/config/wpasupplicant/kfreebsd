@@ -111,6 +111,16 @@ CONFIG_EAP_TTLS=y
 # EAP-FAST
 CONFIG_EAP_FAST=y
 
+# EAP-TEAP
+# Note: The current EAP-TEAP implementation is experimental and should not be
+# enabled for production use. The IETF RFC 7170 that defines EAP-TEAP has number
+# of conflicting statements and missing details and the implementation has
+# vendor specific workarounds for those and as such, may not interoperate with
+# any other implementation. This should not be used for anything else than
+# experimentation and interoperability testing until those issues has been
+# resolved.
+#CONFIG_EAP_TEAP=y
+
 # EAP-GTC
 CONFIG_EAP_GTC=y
 
@@ -119,6 +129,9 @@ CONFIG_EAP_OTP=y
 
 # EAP-SIM (enable CONFIG_PCSC, if EAP-SIM is used)
 CONFIG_EAP_SIM=y
+
+# Enable SIM simulator (Milenage) for EAP-SIM
+#CONFIG_SIM_SIMULATOR=y
 
 # EAP-PSK (experimental; this is _not_ needed for WPA-PSK)
 CONFIG_EAP_PSK=y
@@ -235,11 +248,7 @@ CONFIG_READLINE=y
 # Simultaneous Authentication of Equals (SAE), WPA3-Personal
 CONFIG_SAE=y
 
-# WPA3-Enterprise (SuiteB-192)
-CONFIG_SUITEB=y
-CONFIG_SUITEB192=y
-
-# Disable scan result processing (ap_mode=1) to save code size by about 1 kB.
+# Disable scan result processing (ap_scan=1) to save code size by about 1 kB.
 # This can be used if ap_scan=1 mode is never enabled.
 #CONFIG_NO_SCAN_PROCESSING=y
 
@@ -301,10 +310,6 @@ CONFIG_L2_PACKET=freebsd
 # bridge interfaces (commit 'bridge: respect RFC2863 operational state')').
 #CONFIG_NO_LINUX_PACKET_SOCKET_WAR=y
 
-# IEEE 802.11w (management frame protection), also known as PMF
-# Driver support is also needed for IEEE 802.11w.
-CONFIG_IEEE80211W=y
-
 # Support Operating Channel Validation
 CONFIG_OCV=y
 
@@ -357,7 +362,7 @@ CONFIG_TLS_DEFAULT_CIPHERS="DEFAULT@SECLEVEL=1"
 #PLATFORMSDKLIB="/opt/Program Files/Microsoft Platform SDK/Lib"
 
 # Add support for new DBus control interface
-# (fi.w1.hostap.wpa_supplicant1)
+# (fi.w1.wpa_supplicant1)
 CONFIG_CTRL_IFACE_DBUS_NEW=y
 
 # Add introspection support for new DBus control interface
@@ -466,11 +471,7 @@ CONFIG_DELAYED_MIC_ERROR_REPORT=y
 # Requires glibc 2.25 to build, falls back to /dev/random if unavailable.
 #CONFIG_GETRANDOM=y
 
-# IEEE 802.11n (High Throughput) support (mainly for AP mode)
-CONFIG_IEEE80211N=y
-
 # IEEE 802.11ac (Very High Throughput) support (mainly for AP mode)
-# (depends on CONFIG_IEEE80211N)
 CONFIG_IEEE80211AC=y
 
 # Wireless Network Management (IEEE Std 802.11v-2011)
@@ -529,6 +530,8 @@ CONFIG_AUTOSCAN_PERIODIC=y
 #
 # External password backend for testing purposes (developer use)
 #CONFIG_EXT_PASSWORD_TEST=y
+# File-based backend to read passwords from an external file.
+#CONFIG_EXT_PASSWORD_FILE=y
 
 # Enable Fast Session Transfer (FST)
 CONFIG_FST=y
@@ -565,13 +568,6 @@ CONFIG_FST=y
 # http://wireless.kernel.org/en/users/Documentation/acs
 CONFIG_ACS=y
 
-# XXX: Debian #737465
-# fix FTBS using gcc-4.8 by linking with -ldl on kfreebsd-any. This is
-# already accounted for by the upstream Makefile, however wrongly depending
-# on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
-# rather than the kernel.
-LIBS += -ldl
-
 # Support Multi Band Operation
 CONFIG_MBO=y
 
@@ -607,13 +603,47 @@ CONFIG_BGSCAN_LEARN=y
 # Experimental implementation of draft-harkins-owe-07.txt
 CONFIG_OWE=y
 
-# Device Provisioning Protocol (DPP)
-# This requires CONFIG_IEEE80211W=y to be enabled, too. (see
-# wpa_supplicant/README-DPP for details)
+# Device Provisioning Protocol (DPP) (also known as Wi-Fi Easy Connect)
 CONFIG_DPP=y
+# DPP version 2 support
+CONFIG_DPP2=y
+# DPP version 3 support (experimental and still changing; do not enable for
+# production use)
+#CONFIG_DPP3=y
+
+# Wired equivalent privacy (WEP)
+# WEP is an obsolete cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used for anything anymore. The
+# functionality needed to use WEP is available in the current wpa_supplicant
+# release under this optional build parameter. This functionality is subject to
+# be completely removed in a future release.
+CONFIG_WEP=y
+
+# Remove all TKIP functionality
+# TKIP is an old cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used anymore for anything else than a
+# backwards compatibility option as a group cipher when connecting to APs that
+# use WPA+WPA2 mixed mode. For now, the default wpa_supplicant build includes
+# support for this by default, but that functionality is subject to be removed
+# in the future.
+#CONFIG_NO_TKIP=y
+
+# Pre-Association Security Negotiation (PASN)
+# Experimental implementation based on IEEE P802.11z/D2.6 and the protocol
+# design is still subject to change. As such, this should not yet be enabled in
+# production use.
+#CONFIG_PASN=y
+
+# WPA3-Enterprise (SuiteB-192)
+CONFIG_SUITEB=y
+
+CONFIG_SUITEB192=y
+
+# Driver support is also needed for IEEE 802.11w.
+CONFIG_IEEE80211W=y
+
+# IEEE 802.11n (High Throughput) support (mainly for AP mode)
+CONFIG_IEEE80211N=y
 
 # Used by eapol_test only, see #985912
 CONFIG_IPV6=y
-
-# Re-enable WEP for legacy networks
-CONFIG_WEP=y

@@ -44,14 +44,8 @@ CONFIG_DRIVER_BSD=y
 # Driver interface for no driver (e.g., RADIUS server only)
 CONFIG_DRIVER_NONE=y
 
-# IEEE 802.11F/IAPP
-#CONFIG_IAPP=y
-
 # WPA2/IEEE 802.11i RSN pre-authentication
 CONFIG_RSN_PREAUTH=y
-
-# IEEE 802.11w (management frame protection)
-CONFIG_IEEE80211W=y
 
 # Support Operating Channel Validation
 CONFIG_OCV=y
@@ -108,10 +102,17 @@ CONFIG_EAP_GPSK=y
 CONFIG_EAP_GPSK_SHA256=y
 
 # EAP-FAST for the integrated EAP server
-# Note: If OpenSSL is used as the TLS library, OpenSSL 1.0 or newer is needed
-# for EAP-FAST support. Older OpenSSL releases would need to be patched, e.g.,
-# with openssl-0.9.8x-tls-extensions.patch, to add the needed functions.
 CONFIG_EAP_FAST=y
+
+# EAP-TEAP for the integrated EAP server
+# Note: The current EAP-TEAP implementation is experimental and should not be
+# enabled for production use. The IETF RFC 7170 that defines EAP-TEAP has number
+# of conflicting statements and missing details and the implementation has
+# vendor specific workarounds for those and as such, may not interoperate with
+# any other implementation. This should not be used for anything else than
+# experimentation and interoperability testing until those issues has been
+# resolved.
+#CONFIG_EAP_TEAP=y
 
 # Wi-Fi Protected Setup (WPS)
 CONFIG_WPS=y
@@ -146,9 +147,6 @@ CONFIG_IEEE80211R=y
 # Use the hostapd's IEEE 802.11 authentication (ACL), but without
 # the IEEE 802.11 Management capability (e.g., FreeBSD/net80211)
 #CONFIG_DRIVER_RADIUS_ACL=y
-
-# IEEE 802.11n (High Throughput) support
-CONFIG_IEEE80211N=y
 
 # Wireless Network Management (IEEE Std 802.11v-2011)
 # Note: This is experimental and not complete implementation.
@@ -348,19 +346,12 @@ CONFIG_TESTING_OPTIONS=y
 # * ath10k
 #
 # For more details refer to:
-# http://wireless.kernel.org/en/users/Documentation/acs
+# https://wireless.wiki.kernel.org/en/users/documentation/acs
 #
 CONFIG_ACS=y
 
-# XXX: Debian #737465
-# fix FTBS using gcc-4.8 by linking with -ldl on kfreebsd-any. This is
-# already accounted for by the upstream Makefile, however wrongly depending
-# on !CONFIG_DRIVER_BSD, while it is actually depending on the target libc
-# rather than the kernel.
-LIBS += -ldl
-
 # Multiband Operation support
-# These extentions facilitate efficient use of multiple frequency bands
+# These extensions facilitate efficient use of multiple frequency bands
 # available to the AP and the devices that may associate with it.
 CONFIG_MBO=y
 
@@ -386,16 +377,6 @@ CONFIG_OWE=y
 # Airtime policy support
 CONFIG_AIRTIME_POLICY=y
 
-# Device Provisioning Protocol (DPP)
-CONFIG_DPP=y
-
-# Simultaneous Authentication of Equals (SAE)
-CONFIG_SAE=y
-
-# WPA3-Enterprise (SuiteB-192)
-CONFIG_SUITEB=y
-CONFIG_SUITEB192=y
-
 # Override default value for the wpa_disable_eapol_key_retries configuration
 # parameter. See that parameter in hostapd.conf for more details.
 #CFLAGS += -DDEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES=1
@@ -407,3 +388,36 @@ CONFIG_SUITEB192=y
 # release under this optional build parameter. This functionality is subject to
 # be completely removed in a future release.
 CONFIG_WEP=y
+
+# Remove all TKIP functionality
+# TKIP is an old cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used anymore. For now, the default hostapd
+# build includes this to allow mixed mode WPA+WPA2 networks to be enabled, but
+# that functionality is subject to be removed in the future.
+#CONFIG_NO_TKIP=y
+
+# Pre-Association Security Negotiation (PASN)
+# Experimental implementation based on IEEE P802.11z/D2.6 and the protocol
+# design is still subject to change. As such, this should not yet be enabled in
+# production use.
+# This requires CONFIG_IEEE80211W=y to be enabled, too.
+#CONFIG_PASN=y
+
+# Device Provisioning Protocol (DPP) (also known as Wi-Fi Easy Connect)
+CONFIG_DPP=y
+# DPP version 2 support
+CONFIG_DPP2=y
+# DPP version 3 support (experimental and still changing; do not enable for
+# production use)
+#CONFIG_DPP3=y
+
+# IEEE 802.11n (High Throughput) support
+CONFIG_IEEE80211N=y
+
+# Simultaneous Authentication of Equals (SAE)
+CONFIG_SAE=y
+
+# WPA3-Enterprise (SuiteB-192)
+CONFIG_SUITEB=y
+
+CONFIG_SUITEB192=y

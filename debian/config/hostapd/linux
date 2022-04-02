@@ -44,14 +44,8 @@ CONFIG_LIBNL32=y
 # Driver interface for no driver (e.g., RADIUS server only)
 CONFIG_DRIVER_NONE=y
 
-# IEEE 802.11F/IAPP
-CONFIG_IAPP=y
-
 # WPA2/IEEE 802.11i RSN pre-authentication
 CONFIG_RSN_PREAUTH=y
-
-# IEEE 802.11w (management frame protection)
-CONFIG_IEEE80211W=y
 
 # Support Operating Channel Validation
 CONFIG_OCV=y
@@ -153,9 +147,6 @@ CONFIG_IEEE80211R=y
 # Use the hostapd's IEEE 802.11 authentication (ACL), but without
 # the IEEE 802.11 Management capability (e.g., FreeBSD/net80211)
 #CONFIG_DRIVER_RADIUS_ACL=y
-
-# IEEE 802.11n (High Throughput) support
-CONFIG_IEEE80211N=y
 
 # Wireless Network Management (IEEE Std 802.11v-2011)
 # Note: This is experimental and not complete implementation.
@@ -355,7 +346,7 @@ CONFIG_TESTING_OPTIONS=y
 # * ath10k
 #
 # For more details refer to:
-# http://wireless.kernel.org/en/users/Documentation/acs
+# https://wireless.wiki.kernel.org/en/users/documentation/acs
 #
 CONFIG_ACS=y
 
@@ -386,19 +377,6 @@ CONFIG_OWE=y
 # Airtime policy support
 CONFIG_AIRTIME_POLICY=y
 
-# Device Provisioning Protocol (DPP)
-CONFIG_DPP=y
-
-# Simultaneous Authentication of Equals (SAE)
-CONFIG_SAE=y
-
-# WPA3-Enterprise (SuiteB-192)
-CONFIG_SUITEB=y
-CONFIG_SUITEB192=y
-
-# Airtime policy support
-#CONFIG_AIRTIME_POLICY=y
-
 # Override default value for the wpa_disable_eapol_key_retries configuration
 # parameter. See that parameter in hostapd.conf for more details.
 #CFLAGS += -DDEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES=1
@@ -417,3 +395,32 @@ CONFIG_WEP=y
 # build includes this to allow mixed mode WPA+WPA2 networks to be enabled, but
 # that functionality is subject to be removed in the future.
 #CONFIG_NO_TKIP=y
+
+# Pre-Association Security Negotiation (PASN)
+# Experimental implementation based on IEEE P802.11z/D2.6 and the protocol
+# design is still subject to change. As such, this should not yet be enabled in
+# production use.
+# This requires CONFIG_IEEE80211W=y to be enabled, too.
+#CONFIG_PASN=y
+
+# Device Provisioning Protocol (DPP) (also known as Wi-Fi Easy Connect)
+CONFIG_DPP=y
+# DPP version 2 support
+CONFIG_DPP2=y
+# DPP version 3 support (experimental and still changing; do not enable for
+# production use)
+#CONFIG_DPP3=y
+
+# IEEE 802.11F/IAPP
+CONFIG_IAPP=y
+
+# IEEE 802.11n (High Throughput) support
+CONFIG_IEEE80211N=y
+
+# Simultaneous Authentication of Equals (SAE)
+CONFIG_SAE=y
+
+# WPA3-Enterprise (SuiteB-192)
+CONFIG_SUITEB=y
+
+CONFIG_SUITEB192=y

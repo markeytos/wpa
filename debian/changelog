@@ -1,3 +1,9 @@
+wpa (2:2.10-4) unstable; urgency=medium
+
+  * Skip GUI build on kFreeBSD, not Hurd.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sat, 02 Apr 2022 17:25:31 +0200
+
 wpa (2:2.10-3) unstable; urgency=medium
 
   [ Andrej Shadura ]

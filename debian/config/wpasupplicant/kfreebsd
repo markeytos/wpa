@@ -77,7 +77,7 @@ CONFIG_DRIVER_WIRED=y
 #CONFIG_DRIVER_MACSEC_QCA=y
 
 # Driver interface for Linux MACsec drivers
-#CONFIG_DRIVER_MACSEC_LINUX=y
+undefine CONFIG_DRIVER_MACSEC_LINUX
 
 # Driver interface for the Broadcom RoboSwitch family
 #CONFIG_DRIVER_ROBOSWITCH=y
@@ -183,7 +183,7 @@ CONFIG_EAP_IKEV2=y
 CONFIG_EAP_EKE=y
 
 # MACsec
-#CONFIG_MACSEC=y
+undefine CONFIG_MACSEC
 
 # PKCS#12 (PFX) support (used to read private key and certificate file from
 # a file that usually has extension .p12 or .pfx)
@@ -246,7 +246,7 @@ CONFIG_READLINE=y
 #CONFIG_NO_WPA_PASSPHRASE=y
 
 # Simultaneous Authentication of Equals (SAE), WPA3-Personal
-CONFIG_SAE=y
+undefine CONFIG_SAE
 
 # Disable scan result processing (ap_scan=1) to save code size by about 1 kB.
 # This can be used if ap_scan=1 mode is never enabled.
@@ -572,9 +572,9 @@ CONFIG_ACS=y
 CONFIG_MBO=y
 
 # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
-CONFIG_FILS=y
+undefine CONFIG_FILS
 # FILS shared key authentication with PFS
-CONFIG_FILS_SK_PFS=y
+undefine CONFIG_FILS_SK_PFS
 
 # Support RSN on IBSS networks
 # This is needed to be able to use mode=1 network profile with proto=RSN and
@@ -587,7 +587,7 @@ CONFIG_IBSS_RSN=y
 CONFIG_PMKSA_CACHE_EXTERNAL=y
 
 # Mesh Networking (IEEE 802.11s)
-CONFIG_MESH=y
+undefine CONFIG_MESH
 
 # Background scanning modules
 # These can be used to request wpa_supplicant to perform background scanning

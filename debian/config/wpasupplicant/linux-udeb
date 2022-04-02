@@ -8,6 +8,7 @@ CONFIG_MAIN=main
 CONFIG_OS=unix
 CONFIG_ELOOP=eloop
 CONFIG_L2_PACKET=linux
+CONFIG_WEP=y
 
 # At least one of these two is needed to get 
 # the netlink driver working, why this is the case

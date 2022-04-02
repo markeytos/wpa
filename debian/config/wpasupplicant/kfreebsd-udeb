@@ -7,6 +7,7 @@ CONFIG_MAIN=main
 CONFIG_OS=unix
 CONFIG_ELOOP=eloop
 CONFIG_L2_PACKET=freebsd
+CONFIG_WEP=y
 
 # enable syslog support, as requested by d-i/ netcfg
 CONFIG_DEBUG_SYSLOG=y

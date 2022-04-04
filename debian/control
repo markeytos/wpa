@@ -17,8 +17,8 @@ Build-Depends: debhelper-compat (= 13),
  libbsd-dev [kfreebsd-any],
  libreadline-dev,
  pkgconf | pkg-config,
- docbook-to-man,
- docbook-utils
+ docbook-to-man <!nodoc>,
+ docbook-utils <!nodoc>,
 Standards-Version: 4.4.1
 Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/debian/wpa

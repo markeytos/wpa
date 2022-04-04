@@ -35,10 +35,12 @@ ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))
 endif
 
 override_dh_auto_build:
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
 	# build documentation
 	dh_auto_build --sourcedirectory=wpa_supplicant/doc/docbook \
 	              --buildsystem=makefile \
 	              -- man
+endif
 ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	# build wpasupplicant-udeb
 	cp -v --remove-destination $(WPASUPPLICANT_UDEB_DOT_CONFIG) wpa_supplicant/.config
@@ -65,8 +67,10 @@ endif
 	dh_auto_clean --sourcedirectory=src --buildsystem=makefile
 
 override_dh_auto_clean:
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean --sourcedirectory=wpa_supplicant/doc/docbook \
 	              --buildsystem=makefile
+endif
 	dh_auto_clean --sourcedirectory=wpa_supplicant \
 	              --buildsystem=makefile
 ifeq (,$(filter pkg.wpa.nogui,$(DEB_BUILD_PROFILES)))

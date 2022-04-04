@@ -13,6 +13,7 @@ include /usr/share/dpkg/default.mk
 
 ifeq ($(DEB_HOST_ARCH_OS),kfreebsd)
 DEB_BUILD_PROFILES := pkg.wpa.nogui $(DEB_BUILD_PROFILES)
+export LIBS = -ldl
 endif
 
 BINDIR    = /sbin

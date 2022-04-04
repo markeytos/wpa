@@ -1,9 +1,9 @@
-wpa (2:2.10-4exp1) experimental; urgency=medium
+wpa (2:2.10-5) unstable; urgency=medium
 
   * Synchronise build configs with defconfigs.
   * Disable options not compilable on kFreeBSD in kFreeBSD builds.
 
- -- Andrej Shadura <andrewsh@debian.org>  Sat, 02 Apr 2022 19:07:18 +0200
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 04 Apr 2022 13:59:59 +0200
 
 wpa (2:2.10-4) unstable; urgency=medium
 

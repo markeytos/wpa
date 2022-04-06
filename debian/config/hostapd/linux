@@ -161,6 +161,9 @@ CONFIG_IEEE80211AC=y
 # final IEEE 802.11ax version.
 #CONFIG_IEEE80211AX=y
 
+# Simultaneous Authentication of Equals (SAE), WPA3-Personal
+CONFIG_SAE=y
+
 # Remove debugging code that is printing out debug messages to stdout.
 # This can be used to reduce the size of the hostapd considerably if debugging
 # code is not needed.
@@ -416,9 +419,6 @@ CONFIG_IAPP=y
 
 # IEEE 802.11n (High Throughput) support
 CONFIG_IEEE80211N=y
-
-# Simultaneous Authentication of Equals (SAE)
-CONFIG_SAE=y
 
 # WPA3-Enterprise (SuiteB-192)
 CONFIG_SUITEB=y

@@ -75,6 +75,7 @@ Depends: ${shlibs:Depends},
  ${misc:Depends},
  lsb-base,
  adduser
+Breaks: network-manager (<< 1.36.4-2~)
 Suggests: wpagui,
  libengine-pkcs11-openssl
 Description: client support for WPA and WPA2 (IEEE 802.11i)

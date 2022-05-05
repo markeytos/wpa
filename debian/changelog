@@ -1,3 +1,11 @@
+wpa (2:2.10-9) UNRELEASED; urgency=medium
+
+  * debian/patches/allow-legacy-renegotiation.patch:
+    Allow legacy renegotiation to fix PEAP issues with some servers
+    (Closes: #1010603, LP: #1962541)
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Thu, 05 May 2022 11:31:26 +0200
+
 wpa (2:2.10-8) unstable; urgency=medium
 
   * Pull the defconfig updates from the upstream’s Git.

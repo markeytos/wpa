@@ -1,3 +1,10 @@
+wpa (2:2.10-10) unstable; urgency=medium
+
+  * Configure wpa_supplicant.service to create control sockets owned by group netdev
+    (Closes: #1012844)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 21 Dec 2022 10:03:29 +0100
+
 wpa (2:2.10-9) unstable; urgency=medium
 
   [ Sebastien Bacher ]

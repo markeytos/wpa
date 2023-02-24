@@ -1,3 +1,11 @@
+wpa (2:2.10-12) unstable; urgency=medium
+
+  * Prevent hostapd units from being started if there’s
+    no config provided (Closes: #1028088).
+  * hostapd: Enable 802.11ax support (Closes: #1013732).
+
+ -- Andrej Shadura <andrewsh@debian.org>  Fri, 24 Feb 2023 14:01:35 +0100
+
 wpa (2:2.10-11) unstable; urgency=medium
 
   * Drop security level to 0 with OpenSSL 3.0 when using TLS 1.0/1.1

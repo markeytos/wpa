@@ -1,3 +1,18 @@
+wpa (2:2.10-13) unstable; urgency=medium
+
+  [ Gioele Barabucci ]
+  * d/rules: Install dbus policy in /usr instead of /etc (Closes: #1035609).
+
+  [ Andrej Shadura ]
+  * Update lintian override info format in d/wpasupplicant.lintian-overrides
+  * Set upstream metadata fields: Repository.
+  * Apply upstream patches:
+    - wnm: Choose best available bss, not just first one
+    - Fix wpa_supplicant configuration parsing error
+    - Fix multiple BSSID STA aid count.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Tue, 22 Aug 2023 21:34:36 +0200
+
 wpa (2:2.10-12) unstable; urgency=medium
 
   * Prevent hostapd units from being started if there’s

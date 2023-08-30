@@ -12,3 +12,4 @@ allow-legacy-renegotiation.patch
 wpa_service_netdev.patch
 upstream-fixes/0013-wnm-Choose-best-available-bss-not-just-first-one.patch
 upstream-fixes/0014-wpa_supplicant-Fix-wpa_supplicant-configuration-pars.patch
+upstream-fixes/0015-Abort-ongoing-scan.patch

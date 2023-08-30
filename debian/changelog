@@ -1,3 +1,13 @@
+wpa (2:2.10-15) unstable; urgency=medium
+
+  * Apply proposed upstream patch:
+    - Abort ongoing scan:
+      Along with canceling queued scan, abort ongoing scan if any, this
+      ensures Wi-Fi interface is in usable state after disconnect is issued,
+      else subsequent scan after disconnect might fail with EBUSY.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Wed, 30 Aug 2023 14:28:29 +0200
+
 wpa (2:2.10-14) unstable; urgency=medium
 
   * Drop a patch with a missing dependency.

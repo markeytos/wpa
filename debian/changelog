@@ -1,3 +1,9 @@
+wpa (2:2.10-16) unstable; urgency=medium
+
+  * Move binaries to /usr.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 26 Nov 2023 12:01:06 +0000
+
 wpa (2:2.10-15) unstable; urgency=medium
 
   * Apply proposed upstream patch:

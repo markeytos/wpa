@@ -93,7 +93,7 @@ do_start () {
 			exit 1
 		fi
 		IF_WPA_CONF="$IF_WPA_ROAM"
-		WPA_ACTION_SCRIPT="/sbin/wpa_action"
+		WPA_ACTION_SCRIPT="/usr/sbin/wpa_action"
 	fi
 
 	# master function; determines if ifupdown.sh should do something or not

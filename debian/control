@@ -5,7 +5,6 @@ Uploaders:
 Section: net
 Priority: optional
 Build-Depends: debhelper-compat (= 13),
- dh-sequence-movetousr,
  libdbus-1-dev,
  libssl-dev,
  qtbase5-dev [linux-any] <!pkg.wpa.nogui>,

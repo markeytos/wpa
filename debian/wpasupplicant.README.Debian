@@ -247,7 +247,7 @@ In the 'post-down' phase, the wpa_supplicant daemon is terminated.
 ========================
 
 A self contained, simplistic roaming mechanism is provided by this package. It
-is in the form of a wpa_cli action script, /sbin/wpa_action, and it assumes
+is in the form of a wpa_cli action script, /usr/sbin/wpa_action, and it assumes
 control of ifupdown once activated. The wpa_action(8) manpage describes its
 technical details in great depth.
 
@@ -295,21 +295,21 @@ wpa_supplicant.conf
 network={
         ssid="foo"
         key_mgmt=NONE
-        # this id_str will notify /sbin/wpa_action to 'ifup uni'
+        # this id_str will notify /usr/sbin/wpa_action to 'ifup uni'
         id_str="uni"
 }
 
 network={
         ssid="bar"
         psk=123456789...
-        # this id_str will notify /sbin/wpa_action to 'ifup home_static'
+        # this id_str will notify /usr/sbin/wpa_action to 'ifup home_static'
         id_str="home_static"
 }
 
 network={
         ssid=""
         key_mgmt=NONE
-        # no 'id_str' parameter is given, /sbin/wpa_action will 'ifup default'
+        # no 'id_str' parameter is given, /usr/sbin/wpa_action will 'ifup default'
 }
 
 /etc/network/interfaces
@@ -339,7 +339,7 @@ A logical interface is brought up via ifup, and taken down via ifdown, as
 wpa_supplicant associates and de-associates with the network associated
 to it by the 'id_str' option used in the wpa_supplicant.conf configuration file.
 
-/sbin/wpa_action's actions are logged to syslog.
+/usr/sbin/wpa_action's actions are logged to syslog.
 
 Interacting with wpa_supplicant with wpa_cli and wpa_gui
 ========================================================
@@ -363,7 +363,7 @@ Once the roaming daemon is started, it assumes control of ifupdown. That is;
 wpa_cli calls ifup when wpa_supplicant has successfully associated with an
 access point, and calls ifdown when the connection is lost or terminated.
 While the roaming daemon is active, ifupdown should not be controlled directly
-by manually issued commands, rather /sbin/wpa_action is supplied to stop and
+by manually issued commands, rather /usr/sbin/wpa_action is supplied to stop and
 reload the roaming daemon. For example, to stop the
 romaing daemon on the device 'eth1':
 

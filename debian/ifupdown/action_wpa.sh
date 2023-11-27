@@ -9,7 +9,7 @@
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
-if [ ! -x /sbin/wpa_action ]; then
+if [ ! -x /usr/sbin/wpa_action ]; then
 	exit 0
 fi
 

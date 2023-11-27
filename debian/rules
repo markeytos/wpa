@@ -16,7 +16,7 @@ DEB_BUILD_PROFILES := pkg.wpa.nogui $(DEB_BUILD_PROFILES)
 export LIBS = -ldl
 endif
 
-BINDIR    = /sbin
+BINDIR    = /usr/sbin
 V = 1
 
 PKG_CONFIG ?= $(DEB_HOST_GNU_TYPE)-pkg-config

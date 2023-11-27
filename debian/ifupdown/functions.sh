@@ -31,14 +31,14 @@ PATH=/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 #####################################################################
 ## global variables
 # wpa_supplicant variables
-WPA_SUP_BIN="/sbin/wpa_supplicant"
+WPA_SUP_BIN="/usr/sbin/wpa_supplicant"
 WPA_SUP_PNAME="wpa_supplicant"
 WPA_SUP_PIDFILE="/run/wpa_supplicant.${WPA_IFACE}.pid"
 WPA_SUP_OMIT_DIR="/run/sendsigs.omit.d"
 WPA_SUP_OMIT_PIDFILE="${WPA_SUP_OMIT_DIR}/wpasupplicant.wpa_supplicant.${WPA_IFACE}.pid"
 
 # wpa_cli variables
-WPA_CLI_BIN="/sbin/wpa_cli"
+WPA_CLI_BIN="/usr/sbin/wpa_cli"
 WPA_CLI_PNAME="wpa_cli"
 WPA_CLI_PIDFILE="/run/wpa_action.${WPA_IFACE}.pid"
 WPA_CLI_TIMESTAMP="/run/wpa_action.${WPA_IFACE}.timestamp"

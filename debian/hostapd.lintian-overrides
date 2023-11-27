@@ -3,7 +3,7 @@
 hostapd binary: possible-gpl-code-linked-with-openssl
 
 # no need for per-interface init scripts since hostapd has ifupdown integration
-hostapd: package-supports-alternative-init-but-no-init.d-script lib/systemd/system/hostapd@.service
+hostapd: package-supports-alternative-init-but-no-init.d-script usr/lib/systemd/system/hostapd@.service
 
 # we want to call systemctl and not anything else to mask a unit
 hostapd: maintainer-script-calls-systemctl

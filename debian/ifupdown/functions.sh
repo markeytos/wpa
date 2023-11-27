@@ -26,6 +26,8 @@
 # On Debian GNU/Linux systems, the text of the GPL license,
 # version 2, can be found in /usr/share/common-licenses/GPL-2.
 
+PATH=/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
 #####################################################################
 ## global variables
 # wpa_supplicant variables
@@ -92,7 +94,7 @@ wpa_msg () {
 		shift
 		case "$WPA_ACTION" in
 			"CONNECTED"|"DISCONNECTED")
-				[ -x /usr/bin/logger ] || return
+				command -v logger >/dev/null || return
 				if [ "$#" -gt 0 ]; then
 					logger -t "wpa_action" "$@"
 				else
@@ -931,7 +933,7 @@ ifup () {
 	fi
 
 	if [ -n "$WPA_LOGICAL_IFACE" ]; then
-		if ! /sbin/ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2>&1; then
+		if ! ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2>&1; then
 			wpa_msg log "network settings not defined for $WPA_LOGICAL_IFACE in $INTERFACES_FILE and included files."
 			WPA_LOGICAL_IFACE="default"
 		fi
@@ -940,11 +942,11 @@ ifup () {
 
 		ifupdown_lock
 
-		if /sbin/ifquery "$WPA_IFACE" | grep -q '^wpa-roam: ' ; then
+		if ifquery "$WPA_IFACE" | grep -q '^wpa-roam: ' ; then
 			# Force settings over the unconfigured "master" IFACE
-			/sbin/ifup -v --force "$WPA_IFACE=$WPA_LOGICAL_IFACE"
+			ifup -v --force "$WPA_IFACE=$WPA_LOGICAL_IFACE"
 		else
-			/sbin/ifup -v "$WPA_IFACE=$WPA_LOGICAL_IFACE"
+			ifup -v "$WPA_IFACE=$WPA_LOGICAL_IFACE"
 		fi
 		IFUP_RETVAL="$?"
 
@@ -968,7 +970,7 @@ ifdown () {
 
 	ifupdown_lock
 
-	/sbin/ifdown -v "$WPA_IFACE"
+	ifdown -v "$WPA_IFACE"
 
 	ifupdown_unlock
 
@@ -984,7 +986,7 @@ ifdown () {
 # NB: use iproute if present, flushing the IFACE first
 #
 if_post_down_up () {
-	if [ -x /bin/ip ]; then
+	if command -v ip >/dev/null; then
 		ip addr flush dev "$WPA_IFACE" 2>/dev/null
 		ip link set "$WPA_IFACE" up
 	else

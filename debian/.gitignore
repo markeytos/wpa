@@ -1,0 +1,11 @@
+*.debhelper
+*.substvars
+.debhelper/
+debhelper-build-stamp
+eapoltest/
+files
+hostapd/
+libwpa-client-dev/
+wpagui/
+wpasupplicant-udeb/
+wpasupplicant/

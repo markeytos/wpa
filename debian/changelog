@@ -1,3 +1,12 @@
+wpa (2:2.10-17) unstable; urgency=medium
+
+  [ Guillem Jover ]
+  * Do not hardcode absolute pathnames to third-party commands.
+  * Fully move files from / to canonical /usr locations
+    (Closes: #1056976).
+
+ -- Andrej Shadura <andrew.shadura@collabora.co.uk>  Tue, 28 Nov 2023 13:24:46 +0100
+
 wpa (2:2.10-16) unstable; urgency=medium
 
   * Move binaries to /usr.

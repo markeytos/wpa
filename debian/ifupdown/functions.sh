@@ -933,7 +933,7 @@ ifup () {
 	fi
 
 	if [ -n "$WPA_LOGICAL_IFACE" ]; then
-		if ! ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2>&1; then
+		if ! command ifquery "${WPA_LOGICAL_IFACE}" > /dev/null 2>&1; then
 			wpa_msg log "network settings not defined for $WPA_LOGICAL_IFACE in $INTERFACES_FILE and included files."
 			WPA_LOGICAL_IFACE="default"
 		fi
@@ -942,11 +942,11 @@ ifup () {
 
 		ifupdown_lock
 
-		if ifquery "$WPA_IFACE" | grep -q '^wpa-roam: ' ; then
+		if command ifquery "$WPA_IFACE" | grep -q '^wpa-roam: ' ; then
 			# Force settings over the unconfigured "master" IFACE
-			ifup -v --force "$WPA_IFACE=$WPA_LOGICAL_IFACE"
+			command ifup -v --force "$WPA_IFACE=$WPA_LOGICAL_IFACE"
 		else
-			ifup -v "$WPA_IFACE=$WPA_LOGICAL_IFACE"
+			command ifup -v "$WPA_IFACE=$WPA_LOGICAL_IFACE"
 		fi
 		IFUP_RETVAL="$?"
 
@@ -970,7 +970,7 @@ ifdown () {
 
 	ifupdown_lock
 
-	ifdown -v "$WPA_IFACE"
+	command ifdown -v "$WPA_IFACE"
 
 	ifupdown_unlock
 

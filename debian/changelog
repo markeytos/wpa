@@ -1,3 +1,11 @@
+wpa (2:2.10-19) unstable; urgency=medium
+
+  [ Andrey Skvortsov ]
+  * Override ieee80211w from pmf for AP mode in wpa_supplicant
+    (Closes: #1057494)
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 10 Dec 2023 16:17:49 +0100
+
 wpa (2:2.10-18) unstable; urgency=medium
 
   * Use "command" when calling actual ifupdown and not its shell wrappers

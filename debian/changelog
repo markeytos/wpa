@@ -1,3 +1,9 @@
+wpa (2:2.10-20) unstable; urgency=medium
+
+  * Add a trailing newline to the patch series file.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Sun, 10 Dec 2023 17:03:00 +0100
+
 wpa (2:2.10-19) unstable; urgency=medium
 
   [ Andrey Skvortsov ]

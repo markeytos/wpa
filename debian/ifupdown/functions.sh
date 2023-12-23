@@ -51,10 +51,14 @@ fi
 
 # verbosity variables
 if [ -n "$IF_WPA_VERBOSITY" ] || [ "$VERBOSITY" = "1" ]; then
-	TO_NULL="/dev/stdout"
+	to_null () {
+		"$@"
+	}
 	DAEMON_VERBOSITY="--verbose"
 else
-	TO_NULL="/dev/null"
+	to_null () {
+		"$@" >/dev/null
+	}
 	DAEMON_VERBOSITY="--quiet"
 fi
 
@@ -111,15 +115,15 @@ wpa_msg () {
 	case "$1" in 
 		"verbose")
 			shift
-			echo "$WPA_SUP_PNAME: $@" >$TO_NULL
+			to_null echo "$WPA_SUP_PNAME: $@"
 			;;
 		"action")
 			shift
-			echo -n "$WPA_SUP_PNAME: $@ -- " >$TO_NULL
+			to_null echo -n "$WPA_SUP_PNAME: $@ -- "
 			;;
 		"stderr")
 			shift
-			echo "$WPA_SUP_PNAME: $@" >/dev/stderr
+			echo "$WPA_SUP_PNAME: $@" >&2
 			;;
 		*)
 			;;
@@ -460,7 +464,7 @@ wpa_cli_do () {
 
 	wpa_msg action "$WPACLISET_DESC"
 	
-	wpa_cli $WPACLISET_VARIABLE "$WPACLISET_VALUE" >$TO_NULL
+	to_null wpa_cli $WPACLISET_VARIABLE "$WPACLISET_VALUE"
 
 	if [ "$?" -ne 0 ]; then
 		wpa_msg stderr "$WPACLISET_DESC failed!"

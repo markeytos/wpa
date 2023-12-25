@@ -1,3 +1,10 @@
+wpa (2:2.10-21) unstable; urgency=medium
+
+  [ Jan Van Buggenhout ]
+  * Work around missing /dev/stderr and /dev/stdout during early boot.
+
+ -- Andrej Shadura <andrewsh@debian.org>  Mon, 25 Dec 2023 10:47:06 +0100
+
 wpa (2:2.10-20) unstable; urgency=medium
 
   * Add a trailing newline to the patch series file.

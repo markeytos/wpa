@@ -3104,7 +3104,7 @@ void wpa_config_set_network_defaults(struct wpa_ssid *ssid)
 #ifdef IEEE8021X_EAPOL
 	ssid->eapol_flags = DEFAULT_EAPOL_FLAGS;
 	ssid->eap_workaround = DEFAULT_EAP_WORKAROUND;
-	ssid->eap.fragment_size = DEFAULT_FRAGMENT_SIZE;
+	ssid->eap.fragment_size = 1024;
 	ssid->eap.sim_num = DEFAULT_USER_SELECTED_SIM;
 #endif /* IEEE8021X_EAPOL */
 #ifdef CONFIG_MESH

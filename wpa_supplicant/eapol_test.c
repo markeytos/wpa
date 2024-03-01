@@ -247,7 +247,7 @@ static void ieee802_1x_encapsulate_radius(struct eapol_test_data *e,
 	 * IEEE 802.11, but use 1400 to avoid problems with too large packets
 	 */
 	if (!find_extra_attr(e->extra_attrs, RADIUS_ATTR_FRAMED_MTU) &&
-	    !radius_msg_add_attr_int32(msg, RADIUS_ATTR_FRAMED_MTU, 1400)) {
+	    !radius_msg_add_attr_int32(msg, RADIUS_ATTR_FRAMED_MTU, 1024)) {
 		printf("Could not add Framed-MTU\n");
 		goto fail;
 	}

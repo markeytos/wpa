@@ -582,6 +582,9 @@ static int test_eapol(struct eapol_test_data *e, struct wpa_supplicant *wpa_s,
 	struct eapol_ctx *ctx;
 	struct wpa_sm_ctx *wctx;
 
+	// Randomize Identifier
+	e->radius->next_radius_identifier = os_random() & 0xff;
+
 	ctx = os_zalloc(sizeof(*ctx));
 	if (ctx == NULL) {
 		printf("Failed to allocate EAPOL context.\n");

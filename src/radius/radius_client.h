@@ -237,7 +237,102 @@ typedef enum {
 	RADIUS_RX_INVALID_AUTHENTICATOR
 } RadiusRxResult;
 
-struct radius_client_data;
+
+/**
+ * struct radius_client_data - Internal RADIUS client data
+ *
+ * This data structure is used internally inside the RADIUS client module.
+ * External users allocate this by calling radius_client_init() and free it by
+ * calling radius_client_deinit(). The pointer to this opaque data is used in
+ * calls to other functions as an identifier for the RADIUS client instance.
+ */
+struct radius_client_data {
+	/**
+	 * ctx - Context pointer for hostapd_logger() callbacks
+	 */
+	void *ctx;
+
+	/**
+	 * conf - RADIUS client configuration (list of RADIUS servers to use)
+	 */
+	struct hostapd_radius_servers *conf;
+
+	/**
+	 * auth_serv_sock - IPv4 socket for RADIUS authentication messages
+	 */
+	int auth_serv_sock;
+
+	/**
+	 * acct_serv_sock - IPv4 socket for RADIUS accounting messages
+	 */
+	int acct_serv_sock;
+
+	/**
+	 * auth_serv_sock6 - IPv6 socket for RADIUS authentication messages
+	 */
+	int auth_serv_sock6;
+
+	/**
+	 * acct_serv_sock6 - IPv6 socket for RADIUS accounting messages
+	 */
+	int acct_serv_sock6;
+
+	/**
+	 * auth_sock - Currently used socket for RADIUS authentication server
+	 */
+	int auth_sock;
+
+	/**
+	 * acct_sock - Currently used socket for RADIUS accounting server
+	 */
+	int acct_sock;
+
+	/**
+	 * auth_handlers - Authentication message handlers
+	 */
+	struct radius_rx_handler *auth_handlers;
+
+	/**
+	 * num_auth_handlers - Number of handlers in auth_handlers
+	 */
+	size_t num_auth_handlers;
+
+	/**
+	 * acct_handlers - Accounting message handlers
+	 */
+	struct radius_rx_handler *acct_handlers;
+
+	/**
+	 * num_acct_handlers - Number of handlers in acct_handlers
+	 */
+	size_t num_acct_handlers;
+
+	/**
+	 * msgs - Pending outgoing RADIUS messages
+	 */
+	struct radius_msg_list *msgs;
+
+	/**
+	 * num_msgs - Number of pending messages in the msgs list
+	 */
+	size_t num_msgs;
+
+	/**
+	 * next_radius_identifier - Next RADIUS message identifier to use
+	 */
+	u8 next_radius_identifier;
+
+	/**
+	 * interim_error_cb - Interim accounting error callback
+	 */
+	void (*interim_error_cb)(const u8 *addr, void *ctx);
+
+	/**
+	 * interim_error_cb_ctx - interim_error_cb() context data
+	 */
+	void *interim_error_cb_ctx;
+};
+
 
 int radius_client_register(struct radius_client_data *radius,
 			   RadiusType msg_type,
